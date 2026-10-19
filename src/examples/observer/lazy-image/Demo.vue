@@ -36,8 +36,16 @@ const loadedCount = ref(0)
 /** 是否启用 100px 预加载（rootMargin 对比开关） */
 const usePreload = ref(true)
 
+/** 观察器回调日志条目（结构化，便于按类型着色） */
+interface LogEntry {
+  id: number
+  /** in-preload=命中预加载区 in-view=真进入视口 out=离开 */
+  kind: 'in-preload' | 'in-view' | 'out'
+  text: string
+}
+
 /** 回调日志（最新在前，最多 6 条） */
-const logs = ref<string[]>([])
+const logs = ref<LogEntry[]>([])
 
 /** 观察器实例（卸载 disconnect 用） */
 let observer: IntersectionObserver | null = null
@@ -64,11 +72,16 @@ function setupObserver(): void {
       for (const entry of entries) {
         // 用 data-id 反查是哪张图（entry.target 来自模板 ref）
         const id = Number((entry.target as HTMLElement).dataset.id)
-        const ratio = entry.intersectionRatio.toFixed(2)
+        const ratio = entry.intersectionRatio
 
-        logs.value.unshift(
-          `#${id} ${entry.isIntersecting ? '进入' : '离开'}视口 (ratio ${ratio})`,
-        )
+        // 人话日志：区分「命中预加载区」（ratio=0，rootMargin 外扩命中）与「真进视口」
+        if (!entry.isIntersecting) {
+          logs.value.unshift({ id, kind: 'out', text: `第 ${id} 张：离开` })
+        } else if (ratio === 0) {
+          logs.value.unshift({ id, kind: 'in-preload', text: `第 ${id} 张：进入预加载区（提前触发）` })
+        } else {
+          logs.value.unshift({ id, kind: 'in-view', text: `第 ${id} 张：进入视口 → 开始加载` })
+        }
         if (logs.value.length > 6) logs.value.pop()
 
         if (entry.isIntersecting) {
@@ -171,16 +184,16 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 回调日志 -->
+      <!-- 回调日志：类型着色的事件流 -->
       <div class="log-panel">
         <p class="log-title">
-          观察器回调日志
+          观察器事件流
         </p>
         <p
           v-if="logs.length === 0"
           class="log-empty"
         >
-          滚动右侧容器，进入/离开都会打印
+          滚动右侧列表，每张图的进入/离开都会记录在这里
         </p>
         <ul
           v-else
@@ -188,9 +201,15 @@ onUnmounted(() => {
         >
           <li
             v-for="(log, i) in logs"
-            :key="i"
+            :key="`${log.id}-${log.kind}-${i}`"
+            class="log-item"
+            :class="`log-item--${log.kind}`"
           >
-            {{ log }}
+            <span
+              class="log-tag"
+              aria-hidden="true"
+            >{{ log.kind === 'out' ? '离开' : log.kind === 'in-view' ? '视口' : '预载' }}</span>
+            {{ log.text }}
           </li>
         </ul>
       </div>
@@ -303,9 +322,69 @@ onUnmounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1.8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* 事件条目：按类型着色 + 最新一条淡入 */
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-sm);
+  animation: log-in 0.25s ease-out;
+}
+
+@keyframes log-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 类型色：真进视口=主色底、预加载区=虚线淡底、离开=灰 */
+.log-item--in-view {
+  background-color: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--text);
+}
+
+.log-item--in-preload {
+  background-color: color-mix(in srgb, var(--warning, #f59e0b) 14%, transparent);
+  color: var(--text);
+}
+
+.log-item--out {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+/* 事件类型标签（视口/预载/离开） */
+.log-tag {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.log-item--in-view .log-tag {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.log-item--in-preload .log-tag {
+  border-color: var(--warning, #f59e0b);
 }
 
 /* 小屏：日志挪到下方 */
