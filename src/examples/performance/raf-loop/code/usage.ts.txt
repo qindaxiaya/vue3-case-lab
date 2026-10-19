@@ -1,5 +1,5 @@
 // ============================================================
-// requestAnimationFrame 渲染循环教学片段
+// requestAnimationFrame 教学片段（动画循环 + 高频渲染合并）
 // 重点行用 //! 标记——展示时高亮、复制时自动去标记
 // ============================================================
 
@@ -34,25 +34,49 @@ function stop() {
   cancelAnimationFrame(rafId)
 }
 
-// --- 步骤二：时间戳驱动位移（与刷新率解耦） ---
+// --- 步骤二：时间戳驱动 + 正弦缓动往返 ---
 
-const SPEED = 120 // px/s
+const TRACK = 320 // 轨道长 px
+const PERIOD = 3.2 // 往返周期秒
 let startTs = 0 // 本段循环起点时间戳
 
 function render(now: number) {
-  //! 位置 = 总耗时秒 × 速度——直接由时间戳算，不累加固定步长
-  //! （固定步长会与刷新率耦合：144Hz 屏幕跑出 2.4 倍速）
   const elapsed = (now - startTs) / 1000
-  const x = elapsed * SPEED
+  const phase = (elapsed % PERIOD) / PERIOD // 归一化 0..1
+
+  //! 正弦缓动：sin 在两端斜率为 0 → 速度自然归零，折返无突变
+  //! （线性三角波在折返点速度瞬间反向，视觉上「生硬」）
+  const wave = (Math.sin(phase * Math.PI * 2 - Math.PI / 2) + 1) / 2 // 0..1
 
   // transform 驱动位移：只触发合成，不触发 layout/paint
-  box.style.transform = `translateX(${x % 320}px)`
+  box.style.transform = `translateX(${wave * TRACK}px)`
 }
 
 // 对比 setInterval：与刷新率无关地按时触发，动画会与屏幕刷新错拍（jank）；
 // rAF 只在「即将重绘」前执行，天然对齐刷新节奏，后台标签自动节流。
 
-// --- 步骤三：visibilitychange 暂停（可选优化） ---
+// --- 步骤三：高频渲染合并（mousemove 等高频事件的 rAF 节流） ---
+
+let pending = false // 合并标志：一帧只渲一次
+let latestX = 0 // 事件里只暂存最新值（非响应式）
+
+function onMouseMove(e: MouseEvent) {
+  eventCount++
+  latestX = e.offsetX // 不直接渲染——高频事件里做渲染是性能杀手
+
+  //! 关键模式：已有待执行 rAF 就不再挂——本帧所有事件共享一次渲染
+  if (!pending) {
+    pending = true
+    //! 只在「即将重绘」前执行一次，渲染次数从「事件数」降到「帧率」
+    requestAnimationFrame(() => {
+      pending = false
+      // 此刻才把最新值写进状态/样式（触发一次渲染）
+      dot.style.transform = `translateX(${latestX}px)`
+    })
+  }
+}
+
+// --- 步骤四：visibilitychange 暂停（可选优化） ---
 
 //! 页面不可见时停循环（后台标签 rAF 本就会被浏览器降频，主动停更省电）
 document.addEventListener('visibilitychange', () => {
@@ -63,9 +87,10 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
-// --- 步骤四：组件卸载兜底清理（Vue 场景） ---
+// --- 步骤五：组件卸载兜底清理（Vue 场景） ---
 
 // onUnmounted(() => {
 //   //! 路由离开必须取消——否则回调里引用已销毁组件的状态会持续报错
 //   cancelAnimationFrame(rafId)
+//   cancelAnimationFrame(throttleRafId)
 // })

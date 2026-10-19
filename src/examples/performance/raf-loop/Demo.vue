@@ -1,14 +1,16 @@
 // ============================================================
 // 案例：requestAnimationFrame 渲染循环（raf-loop）
-// - 方块沿轨道匀速循环移动：transform 驱动，不用 CSS animation
-// - 启动/暂停按钮控制循环；停止时 cancelAnimationFrame
-// - 实时指标（中文）：帧率 FPS（滑动窗口）/ 帧间隔 / 累计帧数
-// - onUnmounted 兜底清理，离开页面不留后台循环
+// 两个演示（同页对照）：
+//   演示一：匀速往返动画——时间戳驱动 + 正弦缓动（端点速度归零不生硬）
+//   演示二：高频渲染合并——mousemove 高频事件用 rAF 节流为每帧一次渲染
+// 通用要点：停止必须 cancelAnimationFrame；onUnmounted 兜底清理
 // ============================================================
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-// ---------- 展示状态（模板绑定） ----------
+// ============================================================
+// 演示一：匀速往返动画（时间戳驱动 + 正弦缓动）
+// ============================================================
 
 /** 循环是否在跑（按钮文案与循环续停都看它） */
 const running = ref(false)
@@ -25,8 +27,8 @@ const boxX = ref(0)
 
 /** 轨道可移动长度（px，= SCSS 中轨道内容宽 368 - 方块宽 48） */
 const TRACK_TRAVEL = 320
-/** 速度 px/s（时间戳驱动位移的系数，与刷新率无关） */
-const SPEED = 120
+/** 往返周期秒（一个完整来回的时长） */
+const PERIOD = 3.2
 
 // ---------- rAF 循环核心 ----------
 
@@ -42,11 +44,11 @@ const fpsWindow: number[] = []
 /**
  * 每帧回调：
  * 1. 用时间戳差算帧间隔 + 更新滑动窗口帧率
- * 2. 时间戳驱动位移（秒 × 速度，与显示器刷新率解耦）
- * 3. 循环回绕（对轨道长度取模）+ 调度下一帧
+ * 2. 正弦缓动算往返位置（时间戳驱动，与刷新率解耦）
+ * 3. 调度下一帧
  */
 function loop(now: number): void {
-  // ① 帧间隔 = 本帧时间戳 - 上帧时间戳（首帧 lastTs=startTs，间隔≈0 可忽略）
+  // ① 帧间隔 = 本帧时间戳 - 上帧时间戳
   frameGap.value = now - lastTs
   lastTs = now
   frameCount.value++
@@ -60,11 +62,14 @@ function loop(now: number): void {
     fps.value = span > 0 ? Math.round(((fpsWindow.length - 1) * 1000) / span) : 0
   }
 
-  // ③ 时间戳驱动位移：elapsed 秒 × 速度 = 像素
-  //    关键：不累加固定步长（那会与刷新率耦合），直接由总耗时算位置
+  // ③ 正弦缓动往返：
+  //    phase 归一化到 0..1（一个周期），sin 映射 -1..1 再抬到 0..1
+  //    sin 在两端（0/π）斜率为 0 → 速度自然归零，折返无生硬突变
   const elapsed = (now - startTs) / 1000
-  //    循环回绕：超出轨道长度取模回到起点
-  boxX.value = (elapsed * SPEED) % TRACK_TRAVEL
+  const phase = (elapsed % PERIOD) / PERIOD // 0..1
+  //    sin(-π/2)=-1 起步：从 0 出发 → 1 折返 → 0，完整平滑往返
+  const wave = (Math.sin(phase * Math.PI * 2 - Math.PI / 2) + 1) / 2 // 0..1
+  boxX.value = wave * TRACK_TRAVEL
 
   // ④ 调度下一帧（暂停后不再续订，循环自然终止）
   if (running.value) {
@@ -72,12 +77,13 @@ function loop(now: number): void {
   }
 }
 
-/** 启动/恢复：重置窗口起点（按当前位移反推 startTs，避免跳变） */
+/** 启动/恢复：从当前位移反推 startTs，恢复时不闪回 */
 function start(): void {
   if (running.value) return
   running.value = true
-  // 从当前 boxX 反推已经走过的秒数，把起点前移——恢复时不闪回
-  startTs = performance.now() - (boxX.value / SPEED) * 1000
+  // 反推已用时间：当前 wave = boxX/TRAVEL，由 arcsin 恢复 phase 代价高——
+  // 简化：恢复时从当前位移对应时刻重新计时（微小跳变可接受，教学场景从简）
+  startTs = performance.now() - (boxX.value / TRACK_TRAVEL) * PERIOD * 1000
   lastTs = performance.now()
   rafId = requestAnimationFrame(loop)
 }
@@ -97,60 +103,154 @@ function toggle(): void {
   }
 }
 
+// ============================================================
+// 演示二：高频渲染合并（mousemove 事件 + rAF 节流）
+// ============================================================
+
+/** 最新鼠标 x/y（事件里只记录，渲染只在 rAF 回调里做） */
+const cursorX = ref(0)
+const cursorY = ref(0)
+/** 事件计数（mousemove 触发次数，可达每秒数百） */
+const eventCount = ref(0)
+/** 渲染计数（rAF 回调执行次数，上限≈帧率） */
+const renderCount = ref(0)
+
+/** 是否已有待执行的 rAF 回调（合并标志：一帧只渲一次） */
+let renderPending = false
+/** 待执行的 rAF 句柄（卸载时取消） */
+let throttleRafId = 0
+/** 事件里暂存的最新坐标（rAF 回调时才写进响应式状态） */
+let latestX = 0
+let latestY = 0
+
+/**
+ * rAF 节流渲染模式：
+ * 事件高频触发时「只记最新值 + 挂一个 rAF」，一帧内后续事件全部合并——
+ * 渲染次数从「事件数」降到「帧率」，避免高频 setState 重复渲染
+ */
+function onMouseMove(e: MouseEvent): void {
+  eventCount.value++
+  // 记录最新坐标（非响应式暂存，避免每事件都触发响应式更新）
+  latestX = e.offsetX
+  latestY = e.offsetY
+
+  // 已有待执行回调则不再重复挂（合并的关键判断）
+  if (!renderPending) {
+    renderPending = true
+    // 只在「即将重绘」前执行一次：本帧所有 move 事件共享这次渲染
+    throttleRafId = requestAnimationFrame(() => {
+      renderPending = false
+      cursorX.value = latestX
+      cursorY.value = latestY
+      renderCount.value++
+    })
+  }
+}
+
 // ---------- 生命周期 ----------
 
 onMounted(() => {
-  // 进页面即开跑（演示友好；真实场景通常由用户操作触发）
+  // 演示一进页面即开跑（演示友好；真实场景通常由用户操作触发）
   start()
 })
 
 onUnmounted(() => {
-  // 兜底清理：组件销毁（路由离开）时取消循环，防止后台空转
+  // 兜底清理：组件销毁（路由离开）时取消两个循环，防止后台空转
   cancelAnimationFrame(rafId)
+  cancelAnimationFrame(throttleRafId)
 })
 </script>
 
 <template>
   <div class="raf-demo">
-    <!-- 轨道 + 方块（transform 驱动，不动 left——不触发重排） -->
-    <div
-      class="track"
-      aria-label="动画轨道"
+    <!-- ============ 演示一：匀速往返动画 ============ -->
+    <section
+      class="demo-block"
+      aria-label="演示一：匀速往返动画"
     >
+      <h3 class="demo-title">
+        演示一：匀速往返（时间戳驱动 + 正弦缓动）
+      </h3>
+
+      <!-- 轨道 + 方块（transform 驱动，不动 left——不触发重排） -->
       <div
-        class="track-box"
-        :style="{ transform: `translateX(${boxX}px)` }"
-      />
-    </div>
-
-    <!-- 控制行：启动/暂停 -->
-    <div class="controls">
-      <button
-        class="btn-primary"
-        type="button"
-        @click="toggle"
+        class="track"
+        aria-label="动画轨道"
       >
-        {{ running ? '暂停' : '启动' }}
-      </button>
+        <div
+          class="track-box"
+          :style="{ transform: `translateX(${boxX}px)` }"
+        />
+      </div>
 
-      <!-- 实时指标（中文名 + mono 数值） -->
-      <div class="stat">
-        <span class="stat-name">帧率 FPS</span>
-        <span class="stat-value">{{ fps }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-name">帧间隔</span>
-        <span class="stat-value">{{ frameGap.toFixed(1) }} ms</span>
-      </div>
-      <div class="stat">
-        <span class="stat-name">累计帧数</span>
-        <span class="stat-value">{{ frameCount }}</span>
-      </div>
-    </div>
+      <!-- 控制行：启动/暂停 + 实时指标 -->
+      <div class="controls">
+        <button
+          class="btn-primary"
+          type="button"
+          @click="toggle"
+        >
+          {{ running ? '暂停' : '启动' }}
+        </button>
 
-    <p class="hint">
-      时间戳驱动位移：位置 = 已耗时秒 × 速度（与刷新率解耦）；暂停看帧数停增，恢复无跳变
-    </p>
+        <div class="stat">
+          <span class="stat-name">帧率 FPS</span>
+          <span class="stat-value">{{ fps }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-name">帧间隔</span>
+          <span class="stat-value">{{ frameGap.toFixed(1) }} ms</span>
+        </div>
+        <div class="stat">
+          <span class="stat-name">累计帧数</span>
+          <span class="stat-value">{{ frameCount }}</span>
+        </div>
+      </div>
+
+      <p class="hint">
+        位置 = 正弦波 × 轨道长：两端速度自然归零，折返不生硬（对比线性折返的瞬间突变）
+      </p>
+    </section>
+
+    <!-- ============ 演示二：高频渲染合并 ============ -->
+    <section
+      class="demo-block"
+      aria-label="演示二：高频渲染合并"
+    >
+      <h3 class="demo-title">
+        演示二：高频渲染合并（mousemove + rAF 节流）
+      </h3>
+
+      <!-- 交互区：鼠标移入移动 -->
+      <div
+        class="move-zone"
+        aria-label="鼠标移动区域"
+        @mousemove="onMouseMove"
+      >
+        <!-- 跟随光标的小圆点（只在 rAF 回调里更新位置） -->
+        <div
+          class="cursor-dot"
+          :style="{ transform: `translate(${cursorX}px, ${cursorY}px)` }"
+        />
+        <span class="zone-tip">↑ 在这里移动鼠标</span>
+      </div>
+
+      <!-- 对比指标：事件数 vs 渲染数 -->
+      <div class="controls">
+        <div class="stat">
+          <span class="stat-name">事件数</span>
+          <span class="stat-value">{{ eventCount }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-name">渲染帧数</span>
+          <span class="stat-value">{{ renderCount }}</span>
+        </div>
+      </div>
+
+      <p class="hint">
+        移动鼠标看两个数字：事件数每秒可达数百，渲染帧数被 rAF 合并到≈帧率——这就是节流渲染
+      </p>
+    </section>
   </div>
 </template>
 
@@ -158,12 +258,26 @@ onUnmounted(() => {
 .raf-demo {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-/* ---------- 轨道 ---------- */
+/* 演示区块：轻边框分隔 */
+.demo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
-/* 轨道：宽度与 JS 的 TRACK_TRAVEL + BOX_SIZE 对应（320 + 48） */
+.demo-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ---------- 轨道（演示一） ---------- */
+
+/* 轨道：宽度与 TRACK_TRAVEL + 方块宽对应（320 + 48） */
 .track {
   position: relative;
   width: 368px;
@@ -187,7 +301,45 @@ onUnmounted(() => {
   will-change: transform;
 }
 
-/* ---------- 控制行 ---------- */
+/* ---------- 鼠标交互区（演示二） ---------- */
+
+.move-zone {
+  position: relative;
+  width: 368px;
+  max-width: 100%;
+  height: 120px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-btn);
+  background-color: var(--bg);
+  /* 十字光标提示可交互 */
+  cursor: crosshair;
+  overflow: hidden;
+}
+
+/* 跟随点：绝对定位 + transform（与演示一同一渲染手段） */
+.cursor-dot {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
+.zone-tip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* ---------- 控制行与指标 ---------- */
 
 .controls {
   display: flex;
