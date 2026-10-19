@@ -7,7 +7,7 @@
 // ============================================================
 <script setup lang="ts">
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 
 // ============================================================
 // 可视化数据：脉冲条
@@ -86,15 +86,10 @@ function resetAll(): void {
   keyword.value = ''
   lastSearch.value = '（还没触发过）'
   pulses.value = []
-  debouncedSearch.cancel()
-  throttledScroll.cancel()
 }
 
-// ---------- 卸载清理：cancel 计时器（组合式封装时放 onUnmounted） ----------
-onUnmounted(() => {
-  debouncedSearch.cancel()
-  throttledScroll.cancel()
-})
+// ---------- 卸载清理 ----------
+// 无需手动 cancel：VueUse 在组件作用域销毁时自动清理内部计时器。
 </script>
 
 <template>

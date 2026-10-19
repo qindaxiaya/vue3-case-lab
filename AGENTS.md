@@ -52,7 +52,7 @@
 
 ## 当前进度
 
-- **阶段**：P0 八案例 + P1 七案例全部完成（共 15 案例，5 分类）；框架/案例抽离约束已固化
+- **阶段**：P0+P1 共 15 案例完成；工程实践类 8 案例进行中（1/8 完成，VueUse/fuse.js 已装）；「不造轮子」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 已完成：
@@ -60,9 +60,12 @@
   - ✅ Task 1~4 脚手架/注册表/站点壳/案例页双 tab 工作台
   - ✅ P0 八案例：perf-observer / raf-loop / idle-schedule / lazy-image / virtual-list / watch-traps / async-suspense / reactive-inject
   - ✅ P1 七案例：infinite-scroll / resize-observer / mutation-observer / shallow-markraw / v-memo / teleport-layer / use-event-listener
-  - ✅ 分类扩展 composables；registry 排序复用 categories.ts（新增分类只改一处）
+  - ✅ 分类 composables + practice（工程实践）；registry 排序复用 categories.ts（新增分类只改一处）
   - ✅ landing 首页 + 信息架构精简（无侧边栏）+ 页面宽度根因修复
-- 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
+  - ✅ 工程实践第 1 例：debounce-throttle（VueUse useDebounceFn/useThrottleFn + 脉冲波形对比）
+- 待做：
+  - 工程实践剩 7 例（用户已确认全做）：command-palette（Ctrl+K，fuse.js）/ toast-queue / web-worker / json-viewer / image-compress / ripple-button / color-picker——**按「不造轮子」约定写**
+  - Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -80,3 +83,5 @@
 | 2026-10-19 | **删侧边栏：列表页全宽 + 分类筛选 chips** | 用户反馈侧边栏不好看也不要了；顶栏加「案例」nav，详情页面包屑返回 |
 | 2026-10-19 | **案例说明三行化 + Demo 保留实时面板** | 用户反馈说明太长没兴趣看、看不到重点；notes 每段 ≤3 行，仅关键坑用 callout；Demo 日志/sparkline 保留（用户未要求删） |
 | 2026-10-19 | 按钮类必须显式覆盖全局 a 样式 | RouterLink 用作按钮时 `a:hover` 的下划线/链接色会覆盖按钮样式——`.btn-primary:hover` 须显式 `color:#fff; text-decoration:none` |
+| 2026-10-19 | **框架与案例抽离** | 案例差异全部收在案例目录内自包含；多演示通用约定（emit `tabs` + `demoActive` + code `<key>.*.txt` 过滤），新案例用约定不改框架 |
+| 2026-10-19 | **不造轮子** | 工程实践案例优先现成库/原生 API（VueUse/fuse.js 已装），不手写已解决的通用工具；UI 库仍禁（Toast 教学案例除外）；原生浏览器 API 不算造轮子 |
