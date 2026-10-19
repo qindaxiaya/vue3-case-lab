@@ -17,4 +17,5 @@ export const categories: Category[] = [
   { id: 'observer', name: '观察者' },
   { id: 'virtual', name: '虚拟渲染' },
   { id: 'vue3', name: 'Vue 3 API' },
+  { id: 'composables', name: '组合式函数' },
 ]

@@ -56,8 +56,9 @@ const attempt = ref(0)
  * loadingComponent / errorComponent —— 加载中 / 失败的展示组件
  */
 const AsyncPanel = defineAsyncComponent({
+  // 显式泛型：reject 分支会让 TS 把 resolve 参数推窄成 never
   loader: () =>
-    new Promise((resolve, reject) => {
+    new Promise<typeof SlowPanel>((resolve, reject) => {
       setTimeout(() => {
         if (failNext.value) {
           reject(new Error('模拟加载失败'))

@@ -1,0 +1,60 @@
+// ============================================================
+// 无限滚动加载教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { onMounted, onUnmounted, ref } from 'vue'
+
+const loading = ref(false)
+const list = ref<number[]>([])
+
+let observer: IntersectionObserver | null = null
+const sentinel = ref<HTMLElement | null>(null)
+
+/** 加载一页（真实项目：调接口） */
+async function loadMore(): Promise<void> {
+  //! 防重入：哨兵可能连续多次相交——loading 门闩保证同时只有一个请求在飞
+  if (loading.value) return
+  loading.value = true
+  try {
+    const page = await fetchNextPage()
+    list.value.push(...page)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fetchNextPage(): Promise<number[]> {
+  return await Promise.resolve([1, 2, 3])
+}
+
+onMounted(() => {
+  //! rootMargin 只向下扩 200px：哨兵距容器底 200px 就触发——
+  //! 用户滚到底之前数据已经回来，「秒开下一页」的体验来源
+  observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        //! isIntersecting 时调 loadMore（内部自带 loading 防重入）
+        if (entry.isIntersecting) void loadMore()
+      }
+    },
+    {
+      root: document.getElementById('list') ?? undefined,
+      rootMargin: '0px 0px 200px 0px', // 上右下左：只扩下边
+      threshold: 0,
+    },
+  )
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+onUnmounted(() => {
+  //! 释放观察器——组件卸载后哨兵 DOM 消失，不 disconnect 会内存泄漏
+  observer?.disconnect()
+  observer = null
+})
+
+// 模板结构：
+// <div id="list" style="overflow:auto">
+//   <div v-for="item in list">{{ item }}</div>
+//   <div ref="sentinel" style="height:1px" />  <!-- 哨兵：列表最底部的锚点 -->
+// </div>

@@ -24,8 +24,8 @@ import {
 
 // ---------- Symbol key（类型化 InjectionKey，防字符串污染） ----------
 
-/** 主题注入 key */
-const THEME_KEY: InjectionKey<Ref<string>> = Symbol('theme')
+/** 主题注入 key（字面量联合类型，切换映射表才能正确索引） */
+const THEME_KEY: InjectionKey<Ref<'light' | 'dark' | 'auto'>> = Symbol('theme')
 /** 只读计数上限注入 key（computed 只读） */
 const MAX_KEY: InjectionKey<Readonly<Ref<number>>> = Symbol('maxCount')
 /** readonly 对象注入 key */
@@ -108,6 +108,7 @@ const GrandChild = defineComponent({
           {
             class: 'ri-btn',
             onClick: () => {
+              // @ts-expect-error 故意写 readonly 注入——TS 禁止，运行时 Vue 警告且不生效（演示点）
               st.visits++
               log(`[GrandChild] 写 readonly visits → ${st.visits}（开发模式有警告，值不变）`)
             },

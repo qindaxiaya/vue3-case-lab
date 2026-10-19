@@ -11,6 +11,7 @@
 // ============================================================
 import type { Component } from 'vue'
 import type { CaseMeta } from '../types/case'
+import { categories } from './categories'
 
 /** 代码片段 tab（CodeWorkbench 展示单元） */
 export interface CodeTab {
@@ -178,8 +179,8 @@ export const allCases: RegisteredCase[] = (() => {
     })
   }
 
-  // 排序：按 categories 声明顺序分组，组内按案例 id 字典序
-  const categoryOrder = ['performance', 'observer', 'virtual', 'vue3']
+  // 排序：按 categories 声明顺序分组（复用分类定义，新增分类只改 categories.ts 一处），组内按案例 id 字典序
+  const categoryOrder = categories.map((c) => c.id)
   result.sort((a, b) => {
     const ca = categoryOrder.indexOf(a.categoryId)
     const cb = categoryOrder.indexOf(b.categoryId)
