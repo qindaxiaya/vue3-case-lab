@@ -1,0 +1,89 @@
+// ============================================================
+// watch/watchEffect 三大陷阱教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
+
+// --- 陷阱一：reactive 深层属性不加 deep 不触发 ---
+
+const state = reactive({ nested: { count: 0 } })
+
+//! watch(reactive) 默认浅监听：只盯对象引用——改嵌套属性引用没变，永远不触发
+watch(state, () => {
+  console.log('引用级变化（很少触发）')
+})
+
+//! deep: true 递归收集全部嵌套属性——改任何层级都触发；代价是大对象遍历开销
+watch(
+  state,
+  () => {
+    console.log('深层变化')
+  },
+  { deep: true },
+)
+
+// 实践：只盯深层字段直接用 getter 精确收集，比 deep 全量递归便宜：
+watch(
+  () => state.nested.count, // 精确依赖：只在 count 变化时触发
+  (v) => console.log('count =', v),
+)
+
+// --- 陷阱二：watchEffect 的依赖收集是「条件分支制」 ---
+
+const enabled = ref(true)
+const keyword = ref('')
+
+//! watchEffect 首次立即执行、自动收集本次执行路径上碰过的所有响应式依赖
+//! 但——切到未走过的分支后，新分支的依赖不会被补收（本例 enabled=false 时 keyword 失效）
+watchEffect(() => {
+  if (enabled.value) {
+    // enabled=false 时这行不执行 → keyword 不再被收集 → 改 keyword 无反应
+    console.log('搜索：', keyword.value)
+  }
+})
+
+// 解法：改依赖用 watch + getter 手动声明；或 enabled 恢复后依赖会被重新收集（下次执行时）
+
+// --- 陷阱三：过期异步要用 onCleanup ---
+
+const page = ref(1)
+
+//! watch 异步回调的标准防竞态写法：新一次触发前先跑 cleanup
+watch(
+  page,
+  async (p, _old, onCleanup) => {
+    let stale = false
+    onCleanup(() => {
+      stale = true // 标记过期：旧请求回来也丢弃结果
+    })
+
+    const data = await fetchData(p)
+    if (stale) return // 过期结果不写回状态（否则慢请求会覆盖快请求）
+    console.log('第', p, '页数据：', data)
+  },
+)
+
+async function fetchData(_p: number): Promise<string> {
+  return await Promise.resolve('data')
+}
+
+// --- 陷阱四（附）：flush 决定读 DOM 的时机 ---
+
+const text = ref('')
+const el = ref<HTMLSpanElement | null>(null)
+
+//! sync：每次变更立即跑——回调里 DOM 还是旧值
+watch(text, (v) => console.log('sync DOM:', el.value?.textContent), { flush: 'sync' })
+
+//! 默认 pre：渲染前跑——value 已新、DOM 未更新
+watch(text, (v) => console.log('pre  DOM:', el.value?.textContent))
+
+//! post：渲染后跑——value 与 DOM 都同步（要读/操作 DOM 选它）
+watch(text, (v) => console.log('post DOM:', el.value?.textContent), { flush: 'post' })
+
+// 模板：<span ref="el">{{ text }}</span>；nextTick 可在任意时机等到渲染完成：
+async function afterRender(): Promise<void> {
+  await nextTick()
+  console.log('nextTick 后 DOM:', el.value?.textContent)
+}
