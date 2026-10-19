@@ -69,15 +69,20 @@ const activeKey = ref('')
 
 /**
  * 全部 tab：
- * - 展示代码（多个片段时带文件名区分；单个时直接叫「展示代码」）
+ * - 展示代码（demoKey 非空时只显示当前演示这一套——标签 ↔ 演示 ↔ 代码一一对应）
  * - 可复制源码（Demo.vue 全文，复制即用）
  */
 const allTabs = computed(() => {
-  const coreTabs = props.tabs.map((t, i) => ({
+  // 按演示 key 过滤展示片段（约定：code/<key>.*.txt；无 key 显示全部）
+  const coreTabs = (
+    props.demoKey
+      ? props.tabs.filter((t) => t.name.startsWith(props.demoKey!))
+      : props.tabs
+  ).map((t, i) => ({
     key: `core:${t.name}`,
-    // label 去掉 .ts.txt 类后缀（track.ts.txt → track）
+    // 单套时直接叫「展示代码」；多套（无联动 key）时带文件名区分
     label:
-      props.tabs.length > 1
+      props.tabs.length > 1 && !props.demoKey
         ? `展示代码 · ${t.name.replace(/\.txt$/, '').replace(/\.\w+$/, '')}`
         : '展示代码',
     lang: t.lang,

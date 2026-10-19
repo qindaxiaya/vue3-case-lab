@@ -12,9 +12,20 @@ import CodeWorkbench from '../components/CodeWorkbench.vue'
 
 const route = useRoute()
 
-// 演示 tab key（Demo 组件 emit('change') 上报，代码区按同 key 联动）
-// 无多演示的案例不 emit，保持空串（CodeWorkbench 不联动）
+// 演示 tab：集合由 Demo 组件 emit('tabs') 上报，当前 key 由本页持有
+// 每个标签 = 一套完整案例（演示 + 对应展示代码，代码区按同 key 过滤联动）
+// 无多演示的案例不上报，保持空数组（标题行不出 tab）
+const demoTabs = ref<{ key: string; label: string }[]>([])
 const activeDemoKey = ref('')
+
+/** Demo 上报 tab 集合：记录并定位到初始 key */
+function onDemoTabs(
+  tabs: { key: string; label: string }[],
+  initial: string,
+): void {
+  demoTabs.value = tabs
+  activeDemoKey.value = initial
+}
 
 // 路由参数查找案例（不存在渲染空状态）
 const item = computed(() =>
@@ -115,17 +126,37 @@ const difficultyLabel = computed(() => {
           {{ item.meta.summary }}
         </p>
       </header>
-
-      <!-- ① 演示区 -->
+      <!-- ① 演示区：标题行携带演示 tab（每个标签 = 一套演示+代码） -->
       <section aria-label="可交互演示">
         <h2 class="section-title">
           演示
+          <div
+            v-if="demoTabs.length"
+            class="demo-tab-list"
+            role="tablist"
+            aria-label="演示切换"
+          >
+            <button
+              v-for="tab in demoTabs"
+              :key="tab.key"
+              class="demo-tab"
+              :class="{ 'demo-tab--active': activeDemoKey === tab.key }"
+              type="button"
+              role="tab"
+              :aria-selected="activeDemoKey === tab.key"
+              @click="activeDemoKey = tab.key"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
         </h2>
-        <!-- 演示组件：@change 上报演示 tab key，驱动代码区联动 -->
+
+        <!-- 演示组件：@tabs 上报集合，demo-active 受控当前 key -->
         <div class="card demo-card">
           <component
             :is="item.demoComponent"
-            @change="activeDemoKey = $event"
+            :demo-active="activeDemoKey"
+            @tabs="onDemoTabs"
           />
         </div>
       </section>
@@ -135,12 +166,6 @@ const difficultyLabel = computed(() => {
         <h2 class="section-title">
           代码
         </h2>
-
-        <!-- 使用说明：一眼讲清两个 tab 怎么用 -->
-        <p class="usage-hint">
-          <strong>展示代码</strong>：带 ★ 标记的重点行高亮，快速抓核心逻辑；
-          <strong>可复制源码</strong>：完整可运行代码，点「复制」直接粘贴到项目使用。
-        </p>
 
         <CodeWorkbench
           :tabs="item.codeTabs"
@@ -231,7 +256,7 @@ const difficultyLabel = computed(() => {
 /* 区块小标题（演示/代码） */
 .section-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.6rem;
   font-size: 1.125rem;
   font-weight: 600;
@@ -240,20 +265,36 @@ const difficultyLabel = computed(() => {
   margin-bottom: 1rem;
 }
 
-/* 代码区使用说明：浅底提示条 */
-.usage-hint {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-  background-color: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  padding: 0.5rem 0.85rem;
-  margin-bottom: 0.75rem;
+/* ---------- 演示 tab（标题行内） ---------- */
 
-  strong {
-    color: var(--text);
-  }
+.demo-tab-list {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.demo-tab:hover {
+  color: var(--text);
+  background-color: var(--bg);
+}
+
+.demo-tab--active {
+  color: var(--primary);
+  font-weight: 500;
+  background-color: var(--primary-soft);
 }
 
 /* 演示卡容器留白 */
