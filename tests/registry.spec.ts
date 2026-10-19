@@ -108,3 +108,42 @@ describe('filterCases — 搜索过滤（大小写不敏感子串匹配）', () 
     expect(filterCases(cases, '不存在的关键词')).toHaveLength(0)
   })
 })
+
+// ============================================================
+// 真实 glob 集成测试
+// 这组测试是「案例自动收录链路」的回归防线：
+// import.meta.glob → parseIdsFromPath → allCases → getCase
+// 曾因 glob key 格式（'./x/y/' 而非 '../examples/x/y/'）解析错误
+// 导致全部案例被静默跳过、侧边栏空白——本组测试防止复发。
+// 每新增一个案例目录，此链路测试自动扩展验证（allCases 增量）。
+// ============================================================
+import { allCases, getCase } from '../src/examples/registry'
+
+describe('真实 glob 收录链路（集成）', () => {
+  it('allCases 非空（glob 至少收录了已存在的案例）', () => {
+    // 此断言失败 = glob 路径或 parseIdsFromPath 再次出错
+    expect(allCases.length).toBeGreaterThan(0)
+  })
+
+  it('perf-observer 被完整收录（组件/源码/代码片段/meta 齐全）', () => {
+    const item = getCase('performance', 'perf-observer')
+    expect(item, 'getCase 应找到 perf-observer').toBeDefined()
+    // 演示组件已加载（不是空对象占位）
+    expect(item!.demoComponent).toBeTruthy()
+    // Demo.vue 完整源码非空
+    expect(item!.demoSource).toContain('PerformanceObserver')
+    // 教学代码片段已收录且带语言标记
+    expect(item!.codeTabs.length).toBeGreaterThan(0)
+    expect(item!.codeTabs[0].lang).toBe('typescript')
+  })
+
+  it('收录案例的 meta.id 与目录名全部一致（防止路由错乱）', () => {
+    for (const item of allCases) {
+      expect(item.meta.id, `${item.categoryId} 下 id 不匹配`).toMatch(
+        /^[a-z0-9-]+$/,
+      )
+      // meta.id 必须能在 getCase 中按 categoryId+id 查回（自洽性）
+      expect(getCase(item.categoryId, item.meta.id)).toBe(item)
+    }
+  })
+})

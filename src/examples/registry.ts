@@ -116,15 +116,16 @@ export function filterCases(
 
 /**
  * 从 glob key 解析分类 id 与案例 id
- * key 形如 '../examples/performance/perf-observer/Demo.vue'
+ * 注意：import.meta.glob 返回的 key 是相对当前模块目录的规范化路径，
+ * 形如 './performance/perf-observer/Demo.vue'（以 ./ 开头，不含 examples 段）
  * @returns [categoryId, caseId]，解析失败返回 null
  */
 function parseIdsFromPath(key: string): [string, string] | null {
-  // 按 / 切分，examples 之后的前两段即 category 与 case-id
+  // 按 / 切分：['.', '<category>', '<case-id>', 'Demo.vue']
   const segments = key.split('/')
-  const examplesIdx = segments.indexOf('examples')
-  if (examplesIdx === -1 || segments.length < examplesIdx + 3) return null
-  return [segments[examplesIdx + 1], segments[examplesIdx + 2]]
+  // 至少要有 . / category / case-id 三段
+  if (segments.length < 3 || !segments[0].startsWith('.')) return null
+  return [segments[1], segments[2]]
 }
 
 /** 已注册的全部案例（按分类顺序 + 目录名字典序排列） */
