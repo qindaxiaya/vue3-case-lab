@@ -1,0 +1,64 @@
+// ============================================================
+// useEventListener / useRafFn 封装范式教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { onUnmounted, ref } from 'vue'
+
+// --- 范式一：useEventListener（事件监听自动清理） ---
+
+export function useEventListener(
+  target: EventTarget,
+  type: string,
+  handler: (e: Event) => void,
+): void {
+  target.addEventListener(type, handler)
+  //! 清理与创建写在一起——「成对」由 composable 保证，调用方永远不记得 remove
+  onUnmounted(() => target.removeEventListener(type, handler))
+}
+
+// 使用：
+const x = ref(0)
+useEventListener(window, 'mousemove', (e) => {
+  x.value = (e as MouseEvent).clientX
+}) // 组件卸载自动解绑，无泄漏
+
+// --- 范式二：useRafFn（rAF 循环封装 + 幂等控制） ---
+
+export function useRafFn(fn: (t: number) => void): {
+  pause: () => void
+  resume: () => void
+} {
+  let rafId = 0
+  let active = false
+
+  function loop(t: number): void {
+    fn(t)
+    rafId = requestAnimationFrame(loop)
+  }
+
+  function resume(): void {
+    //! 幂等保护：已运行不重复启动（否则 resume 两次 = 双倍帧率回调）
+    if (active) return
+    active = true
+    rafId = requestAnimationFrame(loop)
+  }
+
+  function pause(): void {
+    active = false
+    cancelAnimationFrame(rafId)
+  }
+
+  resume()
+  //! 忘记 pause 也不泄漏——卸载兜底
+  onUnmounted(pause)
+
+  return { pause, resume }
+}
+
+// --- 封装 checklist（写任何 composable 都适用） ---
+
+// 1. 创建与清理必须在同一函数内成对出现（addEventListener/remove、rAF/cancel、timer/clear）
+// 2. 控制函数要幂等（pause/resume/toggle 重复调用不产生副作用叠加）
+// 3. onUnmounted 兜底清理 + 返回显式控制（两层保险）
+// 4. 不要吞掉调用方上下文：handler 保持普通函数传参，避免内部 arrow 包一层丢失 this
