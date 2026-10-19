@@ -8,6 +8,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
+// 演示 tab 变化时通知父级（CasePage）——代码区按同 key 联动切换
+const emit = defineEmits<{
+  (e: 'change', demo: 'track' | 'throttle'): void
+}>()
+
 // ============================================================
 // 演示一：匀速往返动画（时间戳驱动 + 正弦缓动）
 // ============================================================
@@ -173,6 +178,8 @@ function switchDemo(demo: 'track' | 'throttle'): void {
   }
 
   activeDemo.value = demo
+  // 通知父级：代码区联动到同 key 的展示代码 tab
+  emit('change', demo)
 
   // 往返演示切回来时恢复运行
   if (demo === 'track') {
@@ -185,6 +192,8 @@ function switchDemo(demo: 'track' | 'throttle'): void {
 onMounted(() => {
   // 演示一进页面即开跑（演示友好；真实场景通常由用户操作触发）
   start()
+  // 首次挂载也广播当前演示 key（代码区联动初始定位）
+  emit('change', 'track')
 })
 
 onUnmounted(() => {

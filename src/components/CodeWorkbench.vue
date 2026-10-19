@@ -32,6 +32,8 @@ const props = defineProps<{
   tabs: CodeTab[]
   /** Demo.vue 完整源码（「可复制源码」tab） */
   demoSource: string
+  /** 演示 tab key（Demo emit 上报）：变化时展示代码联动到同前缀的片段 */
+  demoKey?: string
 }>()
 
 const { isDark } = useTheme()
@@ -73,7 +75,11 @@ const activeKey = ref('')
 const allTabs = computed(() => {
   const coreTabs = props.tabs.map((t, i) => ({
     key: `core:${t.name}`,
-    label: props.tabs.length > 1 ? `展示代码 · ${t.name}` : '展示代码',
+    // label 去掉 .ts.txt 类后缀（track.ts.txt → track）
+    label:
+      props.tabs.length > 1
+        ? `展示代码 · ${t.name.replace(/\.txt$/, '').replace(/\.\w+$/, '')}`
+        : '展示代码',
     lang: t.lang,
     content: t.content,
     // 首个展示片段排最前（i 仅用于稳定排序，无视觉用途）
@@ -103,6 +109,23 @@ watch(
     }
   },
   { immediate: true },
+)
+
+// ---------- 演示 tab 与代码 tab 联动 ----------
+
+watch(
+  () => props.demoKey,
+  (key) => {
+    // 无 key（案例没有多演示）不联动
+    if (!key) return
+    // 用户正在看「可复制源码」时不打断（避免复制途中被切走）
+    if (activeKey.value.startsWith('source:')) return
+    // 找 name 以 key 开头的展示片段（约定：code/<key>.<label>.txt）
+    const hit = allTabs.value.find(
+      (t) => t.key.startsWith('core:') && t.key.slice(5).startsWith(key),
+    )
+    if (hit) activeKey.value = hit.key
+  },
 )
 
 // ---------- 行级渲染（行号 + 重点行标记 + 逐行高亮） ----------

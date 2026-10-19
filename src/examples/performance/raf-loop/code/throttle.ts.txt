@@ -1,0 +1,55 @@
+// ============================================================
+// 高频渲染合并：mousemove 事件 + rAF 节流（throttle 演示对应代码）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 背景：为什么需要合并 ---
+
+// mousemove 每秒可触发数百次；若每次事件都直接改状态/渲染，
+// 浏览器一帧内要做几十次无意义重绘——用 rAF 把「事件频率」降到「帧率」。
+
+// --- 步骤一：事件里只暂存最新值（非响应式） ---
+
+let latestX = 0
+let latestY = 0
+let eventCount = 0
+
+function onMouseMove(e: MouseEvent) {
+  eventCount++
+  //! 关键：事件回调里绝不直接渲染——只把最新坐标暂存到普通变量
+  latestX = e.offsetX
+  latestY = e.offsetY
+
+  scheduleRender()
+}
+
+// --- 步骤二：rAF 合并调度（一帧只渲一次） ---
+
+/** 是否已有待执行的 rAF 回调（合并标志） */
+let pending = false
+
+function scheduleRender() {
+  //! 合并的关键判断：本帧已挂过 rAF 就不再重复挂
+  if (pending) return
+  pending = true
+
+  //! 只在「即将重绘」前执行一次：本帧所有 move 事件共享这次渲染
+  requestAnimationFrame(() => {
+    pending = false
+    // 此刻才写样式/状态（触发一次渲染），读的是暂存的最新值
+    dot.style.transform = `translate(${latestX}px, ${latestY}px)`
+  })
+}
+
+// --- 步骤三：卸载时取消待执行回调（Vue 场景） ---
+
+// let throttleRafId = 0
+// function scheduleRender() {
+//   if (pending) return
+//   pending = true
+//   throttleRafId = requestAnimationFrame(() => { ... })
+// }
+// onUnmounted(() => {
+//   //! 若卸载瞬间恰有挂起的 rAF，必须取消，否则回调操作已销毁的 DOM
+//   cancelAnimationFrame(throttleRafId)
+// })

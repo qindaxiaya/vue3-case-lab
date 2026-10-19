@@ -4,13 +4,17 @@
 // 代码区两个 tab：展示代码（重点行高亮）+ 可复制源码（复制即用）
 // ============================================================
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { categories } from '../examples/categories'
 import { getCase } from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 
 const route = useRoute()
+
+// 演示 tab key（Demo 组件 emit('change') 上报，代码区按同 key 联动）
+// 无多演示的案例不 emit，保持空串（CodeWorkbench 不联动）
+const activeDemoKey = ref('')
 
 // 路由参数查找案例（不存在渲染空状态）
 const item = computed(() =>
@@ -117,8 +121,12 @@ const difficultyLabel = computed(() => {
         <h2 class="section-title">
           演示
         </h2>
+        <!-- 演示组件：@change 上报演示 tab key，驱动代码区联动 -->
         <div class="card demo-card">
-          <component :is="item.demoComponent" />
+          <component
+            :is="item.demoComponent"
+            @change="activeDemoKey = $event"
+          />
         </div>
       </section>
 
@@ -137,6 +145,7 @@ const difficultyLabel = computed(() => {
         <CodeWorkbench
           :tabs="item.codeTabs"
           :demo-source="item.demoSource"
+          :demo-key="activeDemoKey"
         />
       </section>
     </template>
