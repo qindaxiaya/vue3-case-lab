@@ -1,0 +1,50 @@
+// ============================================================
+// shallowRef / markRaw 性能边界教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { markRaw, reactive, ref, shallowRef, triggerRef, watch } from 'vue'
+
+// --- 三档响应式强度（同一数据结构） ---
+
+interface Big {
+  list: { id: number; nested: { v: number } }[]
+}
+
+declare function makeBig(): Big
+
+//! 第一档：reactive 深代理——每个嵌套属性都被 proxy 包裹
+//! 精确触发、最顺手；但 10k+ 项数据初始化慢、内存翻倍
+const deep = reactive(makeBig())
+
+//! 第二档：shallowRef——只代理 .value 替换，list 内容零代理
+//! 改嵌套不触发；替换 .value 或 triggerRef 触发。大数据/频繁变动列表首选
+const shallow = shallowRef(makeBig())
+
+//! 第三档：markRaw——对象永久豁免响应式（嵌进 ref 也不代理）
+//! 适合 class 实例（ECharts/Map 实例）：模板用得到但绝不需要触发更新
+const raw = ref(markRaw(makeBig()))
+
+// --- 触发行为对照 ---
+
+watch(deep, () => console.log('deep 触发'))
+deep.list[0].nested.v++ // ✅ 触发（精确收集到 nested.v）
+
+watch(shallow, () => console.log('shallow 触发'))
+shallow.value.list[0].nested.v++ // ❌ 不触发（未收集深层）
+shallow.value = makeBig() // ✅ 触发（.value 替换）
+
+// 嵌套改了但必须通知视图时——triggerRef 手动打补丁：
+shallow.value.list[0].nested.v++
+triggerRef(shallow) // ✅ 手动触发（不替换 .value 的唯一通知手段）
+
+watch(raw, () => console.log('raw 的 .value 触发'))
+raw.value.list[0].nested.v++ // ❌ 永不触发（markRaw 对象无代理）
+raw.value = markRaw(makeBig()) // ✅ 触发（.value 替换本身是 ref 层事件）
+
+// --- 实践口诀 ---
+
+// 1. 数据 < 1k 项、结构简单：reactive 直接用（开发效率优先）
+// 2. 列表/日志流/大状态（万级）：shallowRef + 整体替换（性能优先）
+// 3. 第三方实例/一次性大对象：markRaw（放进 reactive 防被代理拖慢）
+// 4. triggerRef 是逃生舱不是常规武器——能整体替换就别手动补丁
