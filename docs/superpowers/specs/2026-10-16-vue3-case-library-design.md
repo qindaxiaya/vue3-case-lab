@@ -39,7 +39,7 @@
 
 ### 反目标（做了算失败）
 
-- A1：不引入任何第三方 UI 组件库（Element Plus / Naive UI 等），全部 Tailwind 自建
+- A1：不引入任何第三方 UI 组件库（Element Plus / Naive UI 等），全部自行编写
 - A2：不引入重型状态管理（无需 Pinia，站点级状态极少）
 - A3：说明文字不说废话，不写「Vue 是一个渐进式框架」这类内容
 
@@ -47,9 +47,9 @@
 
 | 决策点 | 选择 | 理由 |
 |--------|------|------|
-| 构建 | Vite + `create-vue`（Vue 3 + TS + Router + Tailwind） | 用户技术栈首选 |
+| 构建 | Vite（Vue 3 + TS + Router） | 用户技术栈首选 |
 | 语言 | TypeScript strict | 用户规范 |
-| 样式 | Tailwind CSS（class 策略暗色模式） | 用户规范；组件类自建 `btn-*`/`card`/`tag` |
+| 样式 | Sass（SCSS 语法）+ CSS 变量（2026-10-19 用户拍板：不用 Tailwind） | Sass 变量/嵌套/mixin 组织样式，CSS 变量承载主题 token；暗色模式切换 `.dark` 类下变量值，案例不依赖 Tailwind 构建插件 |
 | 代码高亮 | highlight.js（异步按需加载语言） | 零构建配置、体积小、离线可用、支持 vue/ts/js/css/json/html；shiki 效果更好但配置重，速查场景性价比低 |
 | 说明渲染 | marked（渲染 meta 中的 Markdown 说明段） | 说明需要列表/强调等排版，纯结构化字段表达力不够；marked 极轻 |
 | 搜索 | 客户端内存过滤 | 案例量在 50 以内，无需任何搜索库 |
@@ -92,7 +92,7 @@ src/examples/<category>/<case-id>/
 - **完整源码下钻**：CodeWorkbench 提供「完整源码」tab，通过 `?raw` 直接导入 `Demo.vue` 全文（含其内部注释），解决「片段看不懂想看全貌」的场景
 - **说明与代码呼应**：`notes` 的「原理」段落按核心代码的逻辑分段组织，每段对应一个代码片段/步骤，讲清「为什么」而不复述「是什么」
 - `meta.ts` 导出 `CaseMeta` 接口数据；站点用 `import.meta.glob` 自动发现全部案例，**新增案例 = 新建目录，零注册成本**
-- 演示组件不引用站点内部组件（除 Tailwind 工具类），保持案例独立可搬运
+- 演示组件不引用站点内部组件与样式（样式用自身 scoped SCSS），保持案例独立可搬运
 
 ```ts
 // meta.ts 形态
@@ -141,21 +141,24 @@ export default {
 
 ### 设计定位
 
-标准技术文档站风格（参照 VueUse / Element Plus 文档站的普遍观感），不追求特立独行。遵循用户 CLAUDE.md 既有设计体系，熟悉、易读、信息清晰即可。
+标准技术文档站风格（参照 VueUse / Element Plus 文档站的普遍观感），不追求特立独行。熟悉、易读、信息清晰即可。
 
-### 设计 Token（来自用户 CLAUDE.md 设计体系）
+### 设计 Token（CSS 变量，定义在 `:root` 与 `.dark`）
 
 **色彩**：
 
-| Token | 浅色 | 暗色 | 用途 |
+| Token（CSS 变量） | 浅色 | 暗色 | 用途 |
 |-------|------|------|------|
-| bg | `#F9FAFB` gray-50 | `#111827` gray-900 | 页面底 |
-| surface | `#FFFFFF` | `#1F2937` gray-800 | 卡片/面板 |
-| text | `#111827` | `#F9FAFB` | 正文 |
-| primary | `#4F46E5` primary-600 | `#818CF8` primary-400 | 品牌/链接/当前导航/按钮 |
-| border | `#E5E7EB` | `#374151` | 边框/发丝线 |
+| `--bg` | `#F9FAFB` | `#111827` | 页面底 |
+| `--surface` | `#FFFFFF` | `#1F2937` | 卡片/面板 |
+| `--text` | `#111827` | `#F9FAFB` | 正文 |
+| `--primary` | `#4F46E5` | `#818CF8` | 品牌/链接/当前导航/按钮 |
+| `--border` | `#E5E7EB` | `#374151` | 边框/发丝线 |
+| `--radius-card` | `1rem` | 同 | 圆角 2xl |
+| `--radius-btn` | `0.75rem` | 同 | 按钮圆角 |
+| `--shadow-soft` | `0 1px 3px rgb(0 0 0 / 0.08)` | 暗色用更深阴影 | 浅阴影 |
 
-语义色保持 Tailwind 默认（green/red/yellow 用于状态提示）。
+语义色（green/red/yellow）同样定义为变量，用于状态提示。
 
 **字体**：
 
@@ -183,7 +186,7 @@ export default {
 
 ### 原则
 
-1. 标准卡片：圆角 2xl、浅阴影 shadow-soft、hover 提升——直接用 CLAUDE.md 组件类
+1. 标准卡片：圆角 2xl、浅阴影 shadow-soft、hover 提升——Sass 自建 `card` 等类
 2. 指标数据用 mono 字体 + 语义色区分状态，不做夸张的仪表式大数字
 3. 动效：卡片 hover 提升、按钮过渡、页面切换 fade；尊重 `prefers-reduced-motion`
 4. 暗色模式 class 策略 + localStorage 持久化
@@ -193,13 +196,15 @@ export default {
 
 - 站点级（`src/components/`）：`AppSidebar.vue`、`AppHeader.vue`、`CaseDemoCard.vue`、`CodeWorkbench.vue`、`CaseNotes.vue`、`SearchBox.vue`、`ThemeToggle.vue`
 - `CodeWorkbench.vue`：highlight.js 高亮 + 复制按钮 + 多文件 tab；tab 分两组——「核心代码」（`code/*.txt`）与「完整源码」（`Demo.vue` 全文，只读展示）
-- 自建类：`btn-primary` / `btn-ghost` / `card` / `tag`（浅/暗双模式）
+- 自建类：`btn-primary` / `btn-ghost` / `card` / `tag`（浅/暗双模式，SCSS 全局类，参考 §7 Token 表）
 - 可访问性：语义化标签、`aria-current`、emoji `aria-hidden`、键盘焦点可见
 
 ## 8. 约束
 
 - 全程中文界面与说明；变量/函数名英文
 - Vue 3 `<script setup lang="ts">` + strict TS
+- 样式：Sass（SCSS）+ CSS 变量主题（2026-10-19 拍板，弃 Tailwind）
+- **代码注释（2026-10-19 用户要求）**：站点自身全部代码（组件、composable、工具函数、路由等）必须写中文注释，与案例代码同等标准；关键逻辑逐行注释「做什么、为什么」，复杂分支/步骤加分段注释
 - 包管理：npm
 - 目录：`E:\MyProject\moyu`（当前为空目录）
 

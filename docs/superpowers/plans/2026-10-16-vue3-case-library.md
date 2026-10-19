@@ -4,19 +4,20 @@
 
 **Goal:** 构建一个本地运行的 Vue 3 高级案例速查站：分类导航 + 搜索，每个案例含可交互演示、带中文注释的核心代码、可下钻的完整源码、中文原理说明。
 
-**Architecture:** Vite + Vue 3 + TS strict + Tailwind v4 + Vue Router。案例以约定目录结构存放（`src/examples/<category>/<case-id>/` 含 Demo.vue、meta.ts、code/*.txt），通过 `import.meta.glob` 自动注册，新增案例零注册成本。代码展示用 highlight.js 异步高亮 + `?raw` 导入；说明用 marked 渲染 meta 中的 Markdown。
+**Architecture:** Vite + Vue 3 + TS strict + Sass（SCSS，CSS 变量主题）+ Vue Router。案例以约定目录结构存放（`src/examples/<category>/<case-id>/` 含 Demo.vue、meta.ts、code/*.txt），通过 `import.meta.glob` 自动注册，新增案例零注册成本。代码展示用 highlight.js 异步高亮 + `?raw` 导入；说明用 marked 渲染 meta 中的 Markdown。
 
-**Tech Stack:** Vue 3.5+（`<script setup lang="ts">`）、Vite、TypeScript strict、Tailwind CSS v4（class 暗色策略）、Vue Router、highlight.js、marked、vitest（仅测注册表纯逻辑）、npm。
+**Tech Stack:** Vue 3.5+（`<script setup lang="ts">`）、Vite、TypeScript strict、Sass（SCSS 语法，CSS 变量 `.dark` 暗色策略）、Vue Router、highlight.js、marked、vitest（仅测注册表纯逻辑）、npm。
 
 **Spec:** `docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`
 
 ## Global Constraints
 
-- 全程中文界面、中文注释、中文说明文案；变量/函数/文件名英文
+- 全程中文界面、中文说明文案；变量/函数/文件名英文
+- **站点自身全部代码写中文注释**（组件/composable/工具/路由），关键逻辑逐行注释「做什么、为什么」，与案例代码同等标准
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
-- 禁止第三方 UI 组件库、禁止 Pinia；样式只用 Tailwind 工具类 + 自建 `btn-primary`/`btn-ghost`/`card`/`tag` 类
-- 暗色模式：class 策略（`<html class="dark">`）+ `localStorage` 键 `moyu-theme` 持久化
+- 禁止第三方 UI 组件库、禁止 Pinia；样式用 Sass（SCSS）+ CSS 变量主题，自建全局类 `btn-primary`/`btn-ghost`/`card`/`tag`，案例 Demo 用自身 scoped SCSS
+- 暗色模式：`.dark` class 策略（`<html class="dark">`）+ CSS 变量切换 + `localStorage` 键 `moyu-theme` 持久化
 - 站点名固定「Vue 3 案例库」
 - 核心代码片段（`code/*.txt`）必须带中文注释，关键 API 逐行注释；超 60 行按 `// --- 步骤一：xxx ---` 分段；禁止裸代码块
 - 每任务结束 commit（Task 1 先 `git init`）
@@ -40,28 +41,28 @@
 **Files:**
 - Create: `package.json`、`vite.config.ts`、`tsconfig.json` 等脚手架文件
 - Create: `index.html`（含防闪白内联主题脚本占位）
-- Create: `src/main.ts`、`src/App.vue`、`src/style.css`
+- Create: `src/main.ts`、`src/App.vue`、`src/style.scss`（Sass 入口：token 变量、dark 主题、自建类）
 - Create: `src/types/case.ts`（空壳类型，Task 2 填充）
 - Create: `AGENTS.md`（项目记忆载体）
-- Init: git 仓库
+- Init: git 仓库（已存在，无需重复）
 
 **Interfaces:**
-- Produces: 可启动的空站；`src/style.css` 定义 Tailwind v4 入口、dark 变体、自建组件类
+- Produces: 可启动的空站；`src/style.scss` 定义 CSS 变量主题（`:root`/`.dark`）、自建组件类
 
-- [ ] **Step 1: 用 Vite 官方模板初始化项目**
+- [x] **Step 1: 用 Vite 官方模板初始化项目**
 
 ```powershell
 npm create vite@latest . -- --template vue-ts
 npm install
 npm install vue-router highlight.js marked
-npm install -D tailwindcss @tailwindcss/vite vitest
+npm install -D sass vitest
 ```
 
-若目录非空导致 create-vue 失败，手动创建等价文件（package.json scripts：`dev`/`build`/`preview`/`type-check`（`vue-tsc --noEmit`）/`lint`（eslint + eslint-plugin-vue + typescript-eslint））。
+若目录非空导致模板初始化失败，手动创建等价文件（package.json scripts：`dev`/`build`/`preview`/`type-check`（`vue-tsc --noEmit`）/`lint`（eslint + eslint-plugin-vue + typescript-eslint））。
 
-- [ ] **Step 2: 配置 Tailwind v4 与暗色变体**
+- [ ] **Step 2: 配置 Sass 入口与暗色主题**
 
-`vite.config.ts` 注册 `tailwindcss()` 插件；`src/style.css` 写 `@import "tailwindcss";` 与 `@custom-variant dark (&:where(.dark, .dark *));`，并定义自建类：`btn-primary`、`btn-ghost`、`card`、`tag`（浅/暗双模式，参考 spec §7 Token 表配色）。
+`src/style.scss` 写 `:root` 与 `.dark` 的 CSS 变量（spec §7 Token 表：颜色/圆角/阴影/字体），并定义自建类：`btn-primary`、`btn-ghost`、`card`、`tag`（用 CSS 变量实现浅/暗双模式）。Sass 用于组织嵌套、mixin、局部变量；主题切换值用 CSS 变量。全局组件样式放 `src/styles/` 下按模块拆分（`_tokens.scss`、`_base.scss`、`_components.scss`），由 `style.scss` 统一 `@use`。
 
 - [ ] **Step 3: 创建空壳类型文件 `src/types/case.ts`**
 
@@ -90,21 +91,10 @@ Expected: dev 服务启动无报错；type-check 通过
 - [ ] **Step 6: Commit**
 
 ```powershell
-git init; git add -A; git commit -m "chore: scaffold vite vue3 ts tailwind project with agents.md"
+git add -A; git commit -m "chore: scaffold vite vue3 ts sass project with agents.md"
 ```
 
-- [ ] **Step 7: 接入 GitHub 私有远程仓库**
-
-执行时先问用户选 A 或 B（用户已确认用 GitHub）：
-
-- **方式 A（推荐，装 gh CLI）**：`winget install GitHub.cli` → 重开终端 → `gh auth login`（浏览器授权）→ 在项目根执行 `gh repo create vue3-case-lab --private --source=. --remote=origin --push`，一条命令完成建仓+关联+首次推送
-- **方式 B（不装 gh）**：用户在 GitHub 网页手动创建私有仓库 `vue3-case-lab`（不初始化 README）→ 回来执行：
-  ```powershell
-  git remote add origin https://github.com/<用户名>/vue3-case-lab.git
-  git push -u origin main
-  ```
-
-验证：`git remote -v` 显示 origin；浏览器打开仓库页可见已推送的文件。
+- [x] **Step 7: 接入 GitHub 私有远程仓库**（✅ 2026-10-19 已完成：仓库 qindaxiaya/vue3-case-lab 私有，origin 已关联并首推）
 
 ### Task 2: 案例自动注册表与搜索过滤
 
@@ -212,7 +202,7 @@ git add -A; git commit -m "feat: site shell with sidebar nav search and dark the
 
 - [ ] **Step 2: 实现 `CaseNotes.vue`**
 
-`marked.parse(notes.usage/principle/caveats)` 三段渲染，段标题固定为「适用场景 / 原理 / 注意点」；`v-html` 仅渲染本地 meta 内容（可信，不引 sanitize 库，代码注明）。排版：正文行宽受限、`prose` 风格用 Tailwind 手工排（h3 用 primary 色小标题、code 用 mono 圆角底）。
+`marked.parse(notes.usage/principle/caveats)` 三段渲染，段标题固定为「适用场景 / 原理 / 注意点」；`v-html` 仅渲染本地 meta 内容（可信，不引 sanitize 库，代码注明）。排版：正文行宽受限、`prose` 风格用 SCSS 手工排（h3 用 primary 色小标题、code 用 mono 圆角底）。
 
 - [ ] **Step 3: 组装 `CasePage.vue`**
 
@@ -255,7 +245,7 @@ git add -A; git commit -m "feat: home page with featured cases"
 
 以下任务每个交付一个 P0 案例。**所有案例任务共同规范**（不再重复）：
 
-1. 目录 `src/examples/<category>/<case-id>/`，含 `Demo.vue`（可交互、Tailwind 样式、内部关键逻辑中文注释）、`meta.ts`（default export 满足 `CaseMeta`，notes 三段 Markdown）、`code/*.txt`（带逐行中文注释的教学代码，与 Demo 变量名一致，>60 行分段）
+1. 目录 `src/examples/<category>/<case-id>/`，含 `Demo.vue`（可交互、scoped SCSS 样式、内部关键逻辑中文注释）、`meta.ts`（default export 满足 `CaseMeta`，notes 三段 Markdown）、`code/*.txt`（带逐行中文注释的教学代码，与 Demo 变量名一致，>60 行分段）
 2. Demo.vue 不引用站点内部组件
 3. 每步验证：`npm run type-check`、`npm run lint` 通过；`npm run dev` 手工走查演示交互 + 代码展示 + 说明阅读三件事
 4. 收尾必做：更新 `AGENTS.md`「当前进度」段（已完成案例 id 清单）；重大实现取舍记入「决策记录」
