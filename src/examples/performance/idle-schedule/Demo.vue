@@ -6,7 +6,7 @@
 // 附：取消按钮（cancelIdleCallback）+ Safari 降级（无 ric 时 setTimeout 兜底）
 // ============================================================
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 // ---------- 展示状态 ----------
 
@@ -14,26 +14,12 @@ import { onMounted, onUnmounted, ref } from 'vue'
 const TOTAL = 200
 /** 已完成条数（进度条与状态都看它） */
 const done = ref(0)
-/** 最近一次「立即执行」的同步阻塞时长 ms */
-const blockingMs = ref(0)
+/** 最近一次「立即执行」的同步阻塞时长 ms（执行完固定不跳动） */
+const blockingMs = ref<number | null>(null)
 /** 分片日志（最新在前，最多 6 条） */
 const logs = ref<string[]>([])
 /** 运行中（禁用按钮防重入） */
 const running = ref(false)
-
-// ---------- 卡顿指示：rAF 帧间隔监控 ----------
-
-/** 当前帧间隔 ms（>50 视为卡顿，指示灯变红） */
-const frameGap = ref(0)
-let monitorRafId = 0
-let monitorLastTs = 0
-
-/** 连续 rAF 采样帧间隔：主线程被阻塞时帧间隔会骤增 */
-function monitorLoop(now: number): void {
-  frameGap.value = now - monitorLastTs
-  monitorLastTs = now
-  monitorRafId = requestAnimationFrame(monitorLoop)
-}
 
 // ---------- 空闲调度核心（含 Safari 降级） ----------
 
@@ -149,13 +135,8 @@ function cancel(): void {
 
 // ---------- 生命周期 ----------
 
-onMounted(() => {
-  monitorRafId = requestAnimationFrame(monitorLoop)
-})
-
 onUnmounted(() => {
-  // 兜底清理：监控循环 + 未完成的空闲调度
-  cancelAnimationFrame(monitorRafId)
+  // 兜底清理：未完成的空闲调度
   cancelIdle(idleHandle)
 })
 </script>
@@ -207,13 +188,10 @@ onUnmounted(() => {
       </div>
       <span class="done-text">{{ done }} / {{ TOTAL }}</span>
 
-      <!-- 卡顿指示灯：帧间隔 >50ms 变红 -->
-      <span
-        class="lag-dot"
-        :class="{ 'lag-dot--bad': frameGap > 50 }"
-        aria-hidden="true"
-      />
-      <span class="lag-text">主线程 {{ frameGap.toFixed(0) }} ms</span>
+      <!-- 最近一次立即执行的阻塞时长（固定值，不实时跳动） -->
+      <span class="block-text">
+        阻塞 {{ blockingMs === null ? '—' : `${blockingMs.toFixed(0)} ms` }}
+      </span>
     </div>
 
     <!-- 分片日志（中文，最新在前） -->
@@ -286,24 +264,12 @@ onUnmounted(() => {
   min-width: 4.5rem;
 }
 
-/* 卡顿指示灯：绿 = 正常帧；红 = 主线程被阻塞 */
-.lag-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--success);
-  transition: background-color 0.15s;
-  margin-left: 0.5rem;
-}
-
-.lag-dot--bad {
-  background-color: var(--danger);
-}
-
-.lag-text {
+/* 阻塞时长：执行完固定显示，mono 数字 */
+.block-text {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--text-secondary);
+  margin-left: 0.5rem;
 }
 
 /* ---------- 日志 ---------- */
