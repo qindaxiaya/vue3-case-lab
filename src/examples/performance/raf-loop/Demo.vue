@@ -30,8 +30,8 @@ const emit = defineEmits<{
  */
 watch(
   () => props.demoActive,
-  (next, prev) => {
-    // 停上一个演示
+  (_next, prev) => {
+    // 停上一个演示（切走即停，防隐藏区块空转）
     if (prev === 'track') {
       pause()
     } else if (prev === 'throttle') {
@@ -41,11 +41,7 @@ watch(
       eventCount.value = 0
       renderCount.value = 0
     }
-
-    // 切回往返演示时恢复运行（初始挂载 prev 为 undefined——默认不启动）
-    if (next === 'track' && prev === 'throttle') {
-      start()
-    }
+    // 切回不自动启动：一律默认暂停，由用户点「启动」触发
   },
 )
 
