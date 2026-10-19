@@ -1,0 +1,53 @@
+// ============================================================
+// IntersectionObserver 懒加载教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：创建观察器（三配置一句话讲清） ---
+
+/**
+ * root      —— 交叉计算的根容器；留空 = 视口（不是传 null！）
+ * rootMargin—— 根四周的外扩边距：'100px' = 视口外 100px 就提前触发（预加载带）
+ * threshold —— 触发比例阈值：0 = 进入即触发；0.5 = 进一半才触发
+ */
+const observer = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      //! entry.isIntersecting = 是否相交；ratio = 相交比例（0~1）
+      if (entry.isIntersecting) {
+        loadRealImage(entry.target as HTMLImageElement)
+        //! 加载过立即停止观察——懒加载的标准释放手段（防日后再触发）
+        observer.unobserve(entry.target)
+      }
+    }
+  },
+  { rootMargin: '100px', threshold: 0 },
+)
+
+// --- 步骤二：observe / unobserve / disconnect ---
+
+/** 观察所有占位图（真实场景：img 带 data-src） */
+document.querySelectorAll<HTMLImageElement>('img[data-src]').forEach((img) => {
+  observer.observe(img)
+})
+
+//! 卸载必须 disconnect()：不释放会持续持有 DOM 引用造成内存泄漏
+// onUnmounted(() => observer.disconnect())
+
+// --- 步骤三：真实 <img> 懒加载标准写法 ---
+
+// <img data-src="real.png" src="placeholder.png" alt="" />
+function loadRealImage(img: HTMLImageElement): void {
+  //! 进入视口才把 data-src 搬到 src——浏览器此刻才发起真实网络请求
+  const real = img.dataset.src
+  if (real) img.src = real
+}
+
+// --- 步骤四：常见应用一览 ---
+
+// 1. 图片/视频懒加载（本例）
+// 2. 无限滚动触点：列表底部放哨兵元素，相交时 loadMore
+// 3. 曝光统计：广告/卡片进入视口上报（threshold 0.5 = 半屏曝光）
+// 4. 吸顶/吸底检测：header 离开视口时显示返回顶部按钮
+// 原理：相交计算由浏览器异步完成（合成线程），不占 JS 主线程，
+//       比 scroll 事件 + getBoundingClientRect 手算便宜得多。
