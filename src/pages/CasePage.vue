@@ -145,7 +145,10 @@ const difficultyLabel = computed(() => {
 
 <style scoped>
 .case-page {
-  /* 纵向节奏 + 限宽（与列表页同级全宽容器内的正文列） */
+  /* width:100% 必须显式声明：父级是 flex column，仅靠 max-width + margin:auto
+     会禁用 stretch 而退化为 fit-content——页面宽度将随代码行内容实时变化
+     （切「可复制源码」tab 时长行会把整页撑宽的根因） */
+  width: 100%;
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 2rem 5rem;

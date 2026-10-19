@@ -180,7 +180,10 @@ function difficultyLabel(difficulty: string): string {
 
 <style scoped>
 .case-list-page {
-  /* 全宽布局（侧边栏删除），限宽避免行过长 */
+  /* 全宽布局（侧边栏删除），限宽避免行过长。
+     width:100% 显式声明，防止 flex 父级下 auto margin 禁用 stretch
+     导致宽度随内容漂移（与 CasePage 同一机制） */
+  width: 100%;
   max-width: 72rem;
   margin: 0 auto;
   padding: 2.5rem 2rem 5rem;
