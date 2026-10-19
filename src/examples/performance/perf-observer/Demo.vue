@@ -269,7 +269,7 @@ function fpsLevel(fps: number): string {
     <!-- 实时区：FPS + 内存 + 最近点击交互（打开就在跳动） -->
     <div class="live-row">
       <div class="live-card">
-        <span class="live-name">FPS</span>
+        <span class="live-name">帧率 FPS</span>
         <span
           class="live-value"
           :class="`lvl-${fpsLevel(live.fps)}`"
@@ -294,7 +294,7 @@ function fpsLevel(fps: number): string {
       </div>
 
       <div class="live-card">
-        <span class="live-name">JS 堆内存</span>
+        <span class="live-name">堆内存（JS）</span>
         <span class="live-value">{{ fmtHeap(live.heap) }}</span>
         <span class="live-sub">{{ live.heap === null ? '浏览器不支持' : '每秒采样' }}</span>
       </div>
@@ -309,23 +309,23 @@ function fpsLevel(fps: number): string {
     <!-- 加载指标 + CLS sparkline -->
     <div class="metric-grid">
       <div class="metric-card">
-        <span class="metric-name">FP</span>
+        <span class="metric-name">首次绘制 FP</span>
         <span class="metric-value">{{ fmt(metrics.fp) }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-name">FCP</span>
+        <span class="metric-name">首次内容绘制 FCP</span>
         <span class="metric-value">{{ fmt(metrics.fcp) }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-name">LCP</span>
+        <span class="metric-name">最大内容绘制 LCP</span>
         <span class="metric-value">{{ fmt(metrics.lcp) }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-name">TTFB</span>
+        <span class="metric-name">首字节时间 TTFB</span>
         <span class="metric-value">{{ fmt(metrics.ttfb) }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-name">CLS</span>
+        <span class="metric-name">布局偏移 CLS</span>
         <span
           class="metric-value"
           :class="`lvl-${clsLevel(metrics.cls)}`"

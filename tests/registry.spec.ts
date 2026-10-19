@@ -30,7 +30,6 @@ function makeMeta(
     difficulty: 'beginner',
     tags: ['Demo'],
     summary: '这是一个演示摘要',
-    notes: { usage: '', principle: '', caveats: '' },
     ...overrides,
   }
 }

@@ -18,9 +18,9 @@ const features = [
     desc: '核心代码逐行中文注释，关键行高亮标记，复制即可用',
   },
   {
-    icon: '📖',
-    title: '原理说明',
-    desc: '每段说明压到三行内，提示框标出关键坑，不写注水长文',
+    icon: '📋',
+    title: '复制即用',
+    desc: '展示代码抓重点（★ 行高亮），完整源码一键复制直接粘贴到项目用',
   },
   {
     icon: '🧩',
@@ -90,10 +90,10 @@ const features = [
 </template>
 
 <style scoped>
-/* landing 全宽布局（不受案例库 688px 排版轴限制） */
+/* landing 布局：与案例页/列表页同一宽度轴（max-width 72rem + 水平 padding 2rem） */
 .home-page {
   flex: 1;
-  padding: 4rem 2rem 5rem;
+  padding: 3rem 2rem 5rem;
 }
 
 /* ---------- Hero ---------- */
@@ -137,7 +137,8 @@ const features = [
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  max-width: 64rem;
+  /* 与 home-page 同宽轴（外层已有 padding，此处不再额外限宽） */
+  max-width: 72rem;
   margin: 0 auto;
 }
 

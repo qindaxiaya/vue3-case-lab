@@ -1,7 +1,7 @@
 // ============================================================
 // 案例详情页（/cases/:categoryId/:caseId）
-// 结构：面包屑 → 页头（标题+难度+标签）→ 演示区 → 代码区 → 说明区
-// 侧边栏已删除：顶部面包屑提供返回列表的导航路径
+// 结构：面包屑 → 页头（标题+难度+标签）→ 演示区 → 代码区
+// 代码区两个 tab：展示代码（重点行高亮）+ 可复制源码（复制即用）
 // ============================================================
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -9,7 +9,6 @@ import { useRoute } from 'vue-router'
 import { categories } from '../examples/categories'
 import { getCase } from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
-import CaseNotes from '../components/CaseNotes.vue'
 
 const route = useRoute()
 
@@ -123,27 +122,22 @@ const difficultyLabel = computed(() => {
         </div>
       </section>
 
-      <!-- ② 代码区（重点行高亮） -->
-      <section aria-label="核心代码">
+      <!-- ② 代码区（展示代码 + 可复制源码，均带语法高亮） -->
+      <section aria-label="代码">
         <h2 class="section-title">
           代码
-          <span
-            class="section-hint"
-            aria-hidden="true"
-          >★ 标记行为重点行</span>
         </h2>
+
+        <!-- 使用说明：一眼讲清两个 tab 怎么用 -->
+        <p class="usage-hint">
+          <strong>展示代码</strong>：带 ★ 标记的重点行高亮，快速抓核心逻辑；
+          <strong>可复制源码</strong>：完整可运行代码，点「复制」直接粘贴到项目使用。
+        </p>
+
         <CodeWorkbench
           :tabs="item.codeTabs"
           :demo-source="item.demoSource"
         />
-      </section>
-
-      <!-- ③ 说明区（callout 重点突出） -->
-      <section aria-label="原理说明">
-        <h2 class="section-title">
-          说明
-        </h2>
-        <CaseNotes :notes="item.meta.notes" />
       </section>
     </template>
   </div>
@@ -222,7 +216,7 @@ const difficultyLabel = computed(() => {
   margin: 0;
 }
 
-/* 区块小标题（演示/代码/说明） */
+/* 区块小标题（演示/代码） */
 .section-title {
   display: flex;
   align-items: baseline;
@@ -234,11 +228,20 @@ const difficultyLabel = computed(() => {
   margin-bottom: 1rem;
 }
 
-/* 代码区标题旁的重点行提示 */
-.section-hint {
-  font-size: 0.75rem;
-  font-weight: 400;
+/* 代码区使用说明：浅底提示条 */
+.usage-hint {
+  font-size: 0.8rem;
   color: var(--text-secondary);
+  line-height: 1.7;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 0.75rem;
+
+  strong {
+    color: var(--text);
+  }
 }
 
 /* 演示卡容器留白 */

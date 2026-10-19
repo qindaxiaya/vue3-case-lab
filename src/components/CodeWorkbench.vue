@@ -1,9 +1,12 @@
 // ============================================================
-// 代码工作台（2026-10-19 重设计：重点行高亮 + 行号）
+// 代码工作台（2026-10-19：展示代码 + 可复制源码，均带语法高亮）
+// - 两个 tab：「展示代码」（code/*.txt，//! 标记重点行高亮）
+//             「可复制源码」（Demo.vue 全文，复制即用）
 // - 重点行标记：code/*.txt 中行首 `//! ` 前缀的行会被高亮展示
 //   （渲染时去掉前缀，整行加主色浅背景 + 左侧色条——参照 VitePress line highlighting）
-// - 行号列固定显示（说明中提「第 N 行」可对照）
-// - tab 分组：「核心代码」（code/*.txt）+「完整源码」（Demo.vue 全文）
+// - vue 文件逐行高亮按段选语言（template→xml / script→ts / style→css），
+//   否则 script 内 TS 代码会被当 xml 处理而丢失全部着色
+// - 复制：去掉 //! 标记，输出可直接粘贴使用的代码
 // ============================================================
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -25,9 +28,9 @@ hljs.registerLanguage('css', css)
 hljs.registerLanguage('json', json)
 
 const props = defineProps<{
-  /** 核心代码片段 tabs */
+  /** 展示代码片段 tabs（code/*.txt，带 //! 重点行） */
   tabs: CodeTab[]
-  /** Demo.vue 完整源码（「完整源码」tab） */
+  /** Demo.vue 完整源码（「可复制源码」tab） */
   demoSource: string
 }>()
 
@@ -62,21 +65,31 @@ watch(
 // ---------- tab 状态 ----------
 const activeKey = ref('')
 
-/** 全部 tab：核心代码 + 完整源码 */
-const allTabs = computed(() => [
-  ...props.tabs.map((t) => ({
+/**
+ * 全部 tab：
+ * - 展示代码（多个片段时带文件名区分；单个时直接叫「展示代码」）
+ * - 可复制源码（Demo.vue 全文，复制即用）
+ */
+const allTabs = computed(() => {
+  const coreTabs = props.tabs.map((t, i) => ({
     key: `core:${t.name}`,
-    label: t.name,
+    label: props.tabs.length > 1 ? `展示代码 · ${t.name}` : '展示代码',
     lang: t.lang,
     content: t.content,
-  })),
-  {
-    key: 'source:Demo.vue',
-    label: 'Demo.vue（完整源码）',
-    lang: 'vue',
-    content: props.demoSource,
-  },
-])
+    // 首个展示片段排最前（i 仅用于稳定排序，无视觉用途）
+    _i: i,
+  }))
+  return [
+    ...coreTabs,
+    {
+      key: 'source:Demo.vue',
+      label: '可复制源码',
+      lang: 'vue',
+      content: props.demoSource,
+      _i: coreTabs.length,
+    },
+  ]
+})
 
 const activeTab = computed(
   () => allTabs.value.find((t) => t.key === activeKey.value) ?? allTabs.value[0],
@@ -105,19 +118,64 @@ interface CodeLine {
 }
 
 /**
+ * 为 vue 单文件的每一行选择高亮语言
+ * 跟踪 <template>/<script>/<style> 段落状态：
+ * - 开关标签行本身用 xml（它是标签不是代码）
+ * - script 段正文用 typescript，style 段正文用 css，其余（含 template 段）用 xml
+ * @param lines 原始行数组
+ * @returns 与行等长的语言 id 数组
+ */
+function vueLineLangs(lines: string[]): string[] {
+  const langs: string[] = []
+  // 初始落在 template 段
+  let section: 'template' | 'script' | 'style' = 'template'
+
+  for (const line of lines) {
+    // 段开启行：先按 xml 渲染标签行，再切换段状态
+    if (/<script[\s>]/.test(line)) {
+      langs.push('xml')
+      section = 'script'
+      continue
+    }
+    if (/<style[\s>]/.test(line)) {
+      langs.push('xml')
+      section = 'style'
+      continue
+    }
+    // 段关闭行：同理，关闭标签本身按 xml
+    if (/<\/script>/.test(line) || /<\/style>/.test(line)) {
+      langs.push('xml')
+      section = 'template'
+      continue
+    }
+    // 普通行：按当前段选语言
+    langs.push(section === 'script' ? 'typescript' : section === 'style' ? 'css' : 'xml')
+  }
+  return langs
+}
+
+/**
  * 把原始代码文本渲染为行数组：
  * 1. 行首 `//! ` 前缀 → 去掉前缀并标记为重点行
  * 2. 逐行 hljs 高亮（教学代码行短，逐行高亮足够；避免跨行 token 拆分问题）
+ * 3. vue 文件按段选语言（否则 script 内 TS 无着色）
  */
 const renderedLines = computed<CodeLine[]>(() => {
   const tab = activeTab.value
   if (!tab) return []
-  const lang = tab.lang === 'vue' || tab.lang === 'html' ? 'xml' : tab.lang
 
-  return tab.content.split('\n').map((rawLine, i) => {
+  const rawLines = tab.content.split('\n')
+  // vue 文件逐行分配语言；其他文件全篇同语言
+  const lineLangs =
+    tab.lang === 'vue'
+      ? vueLineLangs(rawLines)
+      : rawLines.map(() => (tab.lang === 'html' ? 'xml' : tab.lang))
+
+  return rawLines.map((rawLine, i) => {
     // 重点行标记：行首 //! + 空格（渲染时去掉标记符号，保留注释文字）
     const isHighlight = /^\s*\/\/!\s?/.test(rawLine)
     const line = isHighlight ? rawLine.replace(/^(\s*)\/\/!\s?/, '$1') : rawLine
+    const lang = lineLangs[i] ?? 'plaintext'
 
     let html: string
     try {
@@ -142,7 +200,7 @@ function tabHasHighlight(tab: { content: string }): boolean {
   return tab.content.split('\n').some((l) => /^\s*\/\/!\s?/.test(l))
 }
 
-// ---------- 复制（复制原始文本，含 //! 标记——方便对照源文件） ----------
+// ---------- 复制（去掉 //! 标记，输出可直接使用的代码） ----------
 const copied = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -296,12 +354,13 @@ async function copyCode(): Promise<void> {
 }
 
 .code-table {
-  /* 表格布局：行号列 + 代码列，宽度随内容 */
+  /* 表格统一占满卡宽（两个 tab 视觉宽度一致）；
+     长行超出部分只在 .code-scroll 内部横向滚动，不改变卡宽 */
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-size: 0.825rem;
   line-height: 1.7;
-  min-width: 100%;
+  width: 100%;
 }
 
 .line-no {
