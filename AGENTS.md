@@ -32,7 +32,11 @@
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
   2. 案例差异全部收在案例目录内自包含（Demo/meta/code）；框架只认通用约定
   3. 多演示的通用约定：Demo emit `tabs` 上报集合 + prop `demoActive` 受控；code 文件 `<key>.*.txt` 与演示 key 对应，代码区按 key 过滤——新案例直接用约定，不改框架
-- 案例分类：`performance`（性能监控）、`observer`（观察者）、`virtual`（虚拟渲染）、`vue3`（Vue 3 API）
+- **不造轮子（2026-10-19 用户拍板）**：
+  1. 工程实践类案例优先用现成库/原生 API（VueUse、fuse.js 等），**不手写已解决的通用工具**（debounce/throttle/深拷贝等）——案例代码应贴近真实项目写法
+  2. 原生浏览器 API（canvas/Worker/Clipboard/EyeDropper/Observer 系）不算造轮子，直接演示
+  3. 第三方 UI 组件库仍禁用；Toast 这类「教学如何做组件」的案例除外（注明真实项目可用 vue-toastification 等）
+- 案例分类：`performance`（性能监控）、`observer`（观察者）、`virtual`（虚拟渲染）、`vue3`（Vue 3 API）、`composables`（组合式函数）、`practice`（工程实践）
 - Commit：Conventional Commits + 中文描述；每任务收尾必 commit
 - **工作节奏（2026-10-19 用户拍板）**：
   1. 做完一个任务/一个案例必须停下，等用户检查确认后才继续下一步

@@ -1,0 +1,49 @@
+// ============================================================
+// 防抖节流教学片段（VueUse 现成方案，不手写闭包）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { useDebounceFn, useThrottleFn, watchDebounced, watchThrottled } from '@vueuse/core'
+import { ref, watch } from 'vue'
+
+const keyword = ref('')
+const scrollY = ref(0)
+
+// --- 场景一：搜索框防抖（函数版） ---
+
+//! 一行接入：连续触发只在停手 500ms 后执行最后一次；返回值自带 .cancel()/.isPending()
+const onSearch = useDebounceFn((v: string) => {
+  console.log('真正发起搜索：', v)
+}, 500)
+
+// 模板：<input v-model="keyword" @input="onSearch(keyword)">
+// 组件卸载时 VueUse 自动清理计时器——无需手动 cancel（内部已处理生命周期）
+
+// --- 场景二：滚动埋点节流（函数版） ---
+
+const onScroll = useThrottleFn(() => {
+  console.log('上报滚动位置：', scrollY.value)
+}, 100)
+
+// --- 场景三：侦听器版本（连事件绑定都省了） ---
+
+//! watchDebounced：侦听器自带防抖——搜索场景最省事的写法
+watchDebounced(
+  keyword,
+  (v) => console.log('watch 防抖搜索：', v),
+  { debounce: 500 },
+)
+
+//! watchThrottled：滚动位置/窗口尺寸等高频源的侦听节流
+watchThrottled(
+  scrollY,
+  (v) => console.log('watch 节流上报：', v),
+  { throttle: 100 },
+)
+
+// --- 原理一句话（面试/排查够用） ---
+
+// debounce：每次触发 clearTimeout + 重新 setTimeout——「停手」才执行
+// throttle：记录上次执行时间，窗口内用 setTimeout 补一次 trailing——「匀速放行」
+// 不建议手写：边界情况多（leading/trailing/maxWait/flush/cancel），
+//            VueUse 已打磨多年，真实项目直接用。
