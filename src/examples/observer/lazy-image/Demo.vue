@@ -1,7 +1,7 @@
 // ============================================================
 // 案例：IntersectionObserver 图片懒加载（lazy-image）
 // - 滚动容器 30 张占位色块，进入视口才「加载」（300ms 模拟网络）
-// - 观察器回调日志实时打印 isIntersecting / intersectionRatio
+// - 图片生命周期事件流：滚入记「开始加载」、300ms 后变色同时记「已显示」（与视觉严格同步）
 // - rootMargin 预加载开关对比：100px 提前加载 vs 进视口才加载
 // - onUnmounted disconnect() 释放观察器
 // ============================================================
@@ -36,11 +36,11 @@ const loadedCount = ref(0)
 /** 是否启用 100px 预加载（rootMargin 对比开关） */
 const usePreload = ref(true)
 
-/** 观察器回调日志条目（结构化，便于按类型着色） */
+/** 观察器日志条目（图片生命周期事件，与视觉严格同步） */
 interface LogEntry {
   id: number
-  /** in-preload=命中预加载区 in-view=真进入视口 out=离开 */
-  kind: 'in-preload' | 'in-view' | 'out'
+  /** in=滚入开始加载 loaded=图片已显示 out=滚出 */
+  kind: 'in' | 'loaded' | 'out'
   text: string
 }
 
@@ -72,20 +72,17 @@ function setupObserver(): void {
       for (const entry of entries) {
         // 用 data-id 反查是哪张图（entry.target 来自模板 ref）
         const id = Number((entry.target as HTMLElement).dataset.id)
-        const ratio = entry.intersectionRatio
 
-        // 人话日志：区分「命中预加载区」（ratio=0，rootMargin 外扩命中）与「真进视口」
-        if (!entry.isIntersecting) {
-          logs.value.unshift({ id, kind: 'out', text: `第 ${id} 张：离开` })
-        } else if (ratio === 0) {
-          logs.value.unshift({ id, kind: 'in-preload', text: `第 ${id} 张：进入预加载区（提前触发）` })
+        // 日志 = 图片生命周期：进入打「开始加载」，300ms 后真正显示时打「已显示」
+        if (entry.isIntersecting) {
+          logs.value.unshift({ id, kind: 'in', text: `第 ${id} 张：滚入 → 开始加载` })
         } else {
-          logs.value.unshift({ id, kind: 'in-view', text: `第 ${id} 张：进入视口 → 开始加载` })
+          logs.value.unshift({ id, kind: 'out', text: `第 ${id} 张：滚出` })
         }
         if (logs.value.length > 6) logs.value.pop()
 
         if (entry.isIntersecting) {
-          // 进入视口才开始「加载」（真实场景：data-src → src）
+          // 进入观察区才开始「加载」（真实场景：data-src → src）
           // 每次进入先取消上次未完成的加载，避免重复计数
           const old = loadTimers.get(id)
           if (old) clearTimeout(old)
@@ -94,8 +91,11 @@ function setupObserver(): void {
             setTimeout(() => {
               const img = images.value[id - 1]
               if (!img.loaded) {
+                //! 图片变色的同一时刻打「已显示」——日志与视觉严格同步
                 img.loaded = true
                 loadedCount.value++
+                logs.value.unshift({ id, kind: 'loaded', text: `第 ${id} 张：已显示` })
+                if (logs.value.length > 6) logs.value.pop()
               }
               loadTimers.delete(id)
             }, 300),
@@ -184,16 +184,16 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 回调日志：类型着色的事件流 -->
+      <!-- 日志：图片生命周期事件流（与右侧图片变色严格同步） -->
       <div class="log-panel">
         <p class="log-title">
-          观察器事件流
+          图片事件流
         </p>
         <p
           v-if="logs.length === 0"
           class="log-empty"
         >
-          滚动右侧列表，每张图的进入/离开都会记录在这里
+          滚动左侧列表：滚入先记「开始加载」，300ms 后图片变色同时记「已显示」
         </p>
         <ul
           v-else
@@ -208,7 +208,7 @@ onUnmounted(() => {
             <span
               class="log-tag"
               aria-hidden="true"
-            >{{ log.kind === 'out' ? '离开' : log.kind === 'in-view' ? '视口' : '预载' }}</span>
+            >{{ log.kind === 'in' ? '滚入' : log.kind === 'loaded' ? '显示' : '滚出' }}</span>
             {{ log.text }}
           </li>
         </ul>
@@ -350,14 +350,14 @@ onUnmounted(() => {
   }
 }
 
-/* 类型色：真进视口=主色底、预加载区=虚线淡底、离开=灰 */
-.log-item--in-view {
+/* 类型色：滚入=主色、已显示=绿色、滚出=灰 */
+.log-item--in {
   background-color: color-mix(in srgb, var(--primary) 14%, transparent);
   color: var(--text);
 }
 
-.log-item--in-preload {
-  background-color: color-mix(in srgb, var(--warning, #f59e0b) 14%, transparent);
+.log-item--loaded {
+  background-color: color-mix(in srgb, var(--success) 14%, transparent);
   color: var(--text);
 }
 
@@ -366,7 +366,7 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-/* 事件类型标签（视口/预载/离开） */
+/* 事件类型标签（滚入/显示/滚出） */
 .log-tag {
   flex-shrink: 0;
   font-size: 0.66rem;
@@ -378,13 +378,14 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-.log-item--in-view .log-tag {
+.log-item--in .log-tag {
   border-color: var(--primary);
   color: var(--primary);
 }
 
-.log-item--in-preload .log-tag {
-  border-color: var(--warning, #f59e0b);
+.log-item--loaded .log-tag {
+  border-color: var(--success);
+  color: var(--success);
 }
 
 /* 小屏：日志挪到下方 */
