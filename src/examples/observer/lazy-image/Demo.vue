@@ -73,13 +73,18 @@ function setupObserver(): void {
         // 用 data-id 反查是哪张图（entry.target 来自模板 ref）
         const id = Number((entry.target as HTMLElement).dataset.id)
 
-        // 日志 = 图片生命周期：进入打「开始加载」，300ms 后真正显示时打「已显示」
+        // 日志 = 加载生命周期：未加载图滚入打「开始加载」，300ms 后打「加载完成」
+        // 注意：rootMargin 开启时加载点在容器外 100px——「完成」时刻用户可能还看不见图
         if (entry.isIntersecting) {
-          logs.value.unshift({ id, kind: 'in', text: `第 ${id} 张：滚入 → 开始加载` })
+          if (!images.value[id - 1].loaded) {
+            logs.value.unshift({ id, kind: 'in', text: `第 ${id} 张：滚入 → 开始加载` })
+            if (logs.value.length > 6) logs.value.pop()
+          }
+          // 已加载的图滚入不再打日志（无加载事件，避免误导）
         } else {
           logs.value.unshift({ id, kind: 'out', text: `第 ${id} 张：滚出` })
+          if (logs.value.length > 6) logs.value.pop()
         }
-        if (logs.value.length > 6) logs.value.pop()
 
         if (entry.isIntersecting) {
           // 进入观察区才开始「加载」（真实场景：data-src → src）
@@ -91,10 +96,10 @@ function setupObserver(): void {
             setTimeout(() => {
               const img = images.value[id - 1]
               if (!img.loaded) {
-                //! 图片变色的同一时刻打「已显示」——日志与视觉严格同步
+                //! 加载完成的同一时刻变色 + 打日志（两者严格同步）
                 img.loaded = true
                 loadedCount.value++
-                logs.value.unshift({ id, kind: 'loaded', text: `第 ${id} 张：已显示` })
+                logs.value.unshift({ id, kind: 'loaded', text: `第 ${id} 张：加载完成` })
                 if (logs.value.length > 6) logs.value.pop()
               }
               loadTimers.delete(id)
@@ -121,9 +126,8 @@ function setupObserver(): void {
   })
 }
 
-/** 切换预加载开关：重建观察器（状态重置，方便来回对比） */
-function togglePreload(): void {
-  usePreload.value = !usePreload.value
+/** 切换 rootMargin 配置后重建观察器（v-model 已更新 usePreload，这里不再取反） */
+function rebuildObserver(): void {
   setupObserver()
 }
 
@@ -150,7 +154,7 @@ onUnmounted(() => {
         <input
           v-model="usePreload"
           type="checkbox"
-          @change="togglePreload"
+          @change="rebuildObserver"
         >
         rootMargin 100px 预加载
       </label>
@@ -193,7 +197,8 @@ onUnmounted(() => {
           v-if="logs.length === 0"
           class="log-empty"
         >
-          滚动左侧列表：滚入先记「开始加载」，300ms 后图片变色同时记「已显示」
+          滚动左侧列表：未加载的图滚入时记「开始加载」，300ms 后变色同时记「加载完成」。
+          开启预加载时，图在滚进容器前就已加载完成（rootMargin 在容器外 100px 触发）。
         </p>
         <ul
           v-else
@@ -208,7 +213,7 @@ onUnmounted(() => {
             <span
               class="log-tag"
               aria-hidden="true"
-            >{{ log.kind === 'in' ? '滚入' : log.kind === 'loaded' ? '显示' : '滚出' }}</span>
+            >{{ log.kind === 'in' ? '滚入' : log.kind === 'loaded' ? '完成' : '滚出' }}</span>
             {{ log.text }}
           </li>
         </ul>
