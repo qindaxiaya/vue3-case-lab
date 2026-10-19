@@ -50,6 +50,12 @@ export default tseslint.config(
       ],
       // 禁 any 改用 unknown（TS strict 项目约定）
       '@typescript-eslint/no-explicit-any': 'error',
+      // 关闭 v-html XSS 告警：项目约定 v-html 仅渲染 meta.ts 本地受信内容，
+      // 不存在用户输入流入（见 CaseNotes.vue 注释）
+      'vue/no-v-html': 'off',
+      // TS 项目标准做法：关闭 no-undef（类型未定义由 vue-tsc 检查，
+      // eslint 的 no-undef 会把 TS 类型名如 PerformanceObserverInit 误报为未定义）
+      'no-undef': 'off',
     },
   },
 )
