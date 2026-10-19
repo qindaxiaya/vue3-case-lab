@@ -1,0 +1,71 @@
+// ============================================================
+// requestAnimationFrame 渲染循环教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：rAF 基本配对（启动 / 取消必须成对） ---
+
+/** rAF 返回的句柄：取消循环全靠它 */
+let rafId = 0
+
+/** 循环是否在跑（暂停后不再续订，循环自然终止） */
+let running = false
+
+function loop(now: number) {
+  // 每帧逻辑：更新状态、驱动渲染……
+  render(now)
+
+  //! 续订下一帧：running 为 false 时不再排队，循环自行终止
+  if (running) {
+    rafId = requestAnimationFrame(loop)
+  }
+}
+
+function start() {
+  if (running) return
+  running = true
+  //! 启动：把 loop 交给浏览器（回调参数 now = performance.now() 时间戳）
+  rafId = requestAnimationFrame(loop)
+}
+
+function stop() {
+  running = false
+  //! 取消：与 requestAnimationFrame 成对；只停调度不取消会泄漏句柄
+  cancelAnimationFrame(rafId)
+}
+
+// --- 步骤二：时间戳驱动位移（与刷新率解耦） ---
+
+const SPEED = 120 // px/s
+let startTs = 0 // 本段循环起点时间戳
+
+function render(now: number) {
+  //! 位置 = 总耗时秒 × 速度——直接由时间戳算，不累加固定步长
+  //! （固定步长会与刷新率耦合：144Hz 屏幕跑出 2.4 倍速）
+  const elapsed = (now - startTs) / 1000
+  const x = elapsed * SPEED
+
+  // transform 驱动位移：只触发合成，不触发 layout/paint
+  box.style.transform = `translateX(${x % 320}px)`
+}
+
+// 对比 setInterval：与刷新率无关地按时触发，动画会与屏幕刷新错拍（jank）；
+// rAF 只在「即将重绘」前执行，天然对齐刷新节奏，后台标签自动节流。
+
+// --- 步骤三：visibilitychange 暂停（可选优化） ---
+
+//! 页面不可见时停循环（后台标签 rAF 本就会被浏览器降频，主动停更省电）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stop()
+  } else {
+    start() // 恢复时注意平移 startTs，避免瞬间跳变
+  }
+})
+
+// --- 步骤四：组件卸载兜底清理（Vue 场景） ---
+
+// onUnmounted(() => {
+//   //! 路由离开必须取消——否则回调里引用已销毁组件的状态会持续报错
+//   cancelAnimationFrame(rafId)
+// })
