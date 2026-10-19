@@ -1,0 +1,64 @@
+// ============================================================
+// Teleport 弹层管理教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const show = ref(false)
+
+/**
+ * 集中式 z-index：所有弹层从同一计数器领取层级。
+ * 散落写死 z-9999/99999 的经典事故：两个组件都认为自己层级最高，互相压错。
+ */
+let z = 1000
+function nextZ(): number {
+  z += 10
+  return z
+}
+const modalZ = ref(0)
+
+function open(): void {
+  modalZ.value = nextZ() // 后开的永远在上
+  show.value = true
+}
+</script>
+
+<template>
+  <!-- //! to="body"：弹层挂到 body——脱离父级 overflow:hidden / transform / filter 的 containing block 限制 -->
+  <Teleport to="body">
+    <div
+      v-if="show"
+      class="modal-mask"
+      :style="{ zIndex: modalZ }"
+      @click.self="show = false"
+    >
+      <div class="modal-card">
+        <slot />
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<style scoped>
+/* //! teleport 到 body 后 scoped 样式依然生效——Vue 会把父组件的 data-v 属性传给传送节点 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+}
+</style>
+
+<!--
+  disabled 切换：同一弹层在「挂 body」与「留原位」间切换（响应式弹窗里很实用）
+  <Teleport to="body" :disabled="isMobile">
+    <Dropdown />  <!-- 移动端留原位跟随滚动，桌面端挂 body 防裁剪 -->
+  </Teleport>
+
+  踩坑清单：
+  1. 同一时刻多个 Teleport to="body" 按源码顺序追加——需要控制顺序用 to 指定不同锚点元素
+  2. teleport 内容里如果有 position:fixed，挂 body 后相对视口；留原位且父级有
+     transform/filter 时会相对父级（containing block 变化）——布局会跳，注意测试
+  3. CSS 隔离：teleport 出去的节点不在原 DOM 子树里，:deep() 选不中——样式写在自身组件内
+-->
