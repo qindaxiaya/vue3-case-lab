@@ -1,0 +1,43 @@
+// ============================================================
+// ResizeObserver 容器尺寸监听教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { onMounted, onUnmounted, ref } from 'vue'
+
+const width = ref(0)
+const height = ref(0)
+let observer: ResizeObserver | null = null
+const el = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      //! contentRect：内容区尺寸（不含 padding/border）——最常用
+      width.value = Math.round(entry.contentRect.width)
+      height.value = Math.round(entry.contentRect.height)
+
+      //! borderBoxSize：边框盒尺寸（含 padding/border）——算外边距/占位时用
+      const bb = entry.borderBoxSize?.[0]
+      if (bb) {
+        console.log('边框盒：', bb.inlineSize, '×', bb.blockSize)
+      }
+    }
+  })
+
+  //! observe 的第二参 box 决定测量基准（默认 'content-box'）
+  if (el.value) observer.observe(el.value, { box: 'content-box' })
+})
+
+onUnmounted(() => {
+  observer?.disconnect()
+  observer = null
+})
+
+// ---------- 与 window.resize 的本质区别 ----------
+
+// 1. window.resize：只监听「视口」尺寸——容器因 flex/grid/父级变化导致的缩放完全无感知
+// 2. ResizeObserver：监听「任意元素」——侧边栏折叠、面板拖拽、字体变化引起的重排都能收到
+// 3. 回调在布局更新后异步触发（同 IO），不会造成重入死循环（布局无变化时不触发）
+//
+// 常见应用：图表随容器自适应重绘、拖拽面板、文本溢出检测（scrollWidth > clientWidth）
