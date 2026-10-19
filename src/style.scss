@@ -4,10 +4,10 @@
 // ============================================================
 
 // 设计 Token（CSS 变量 + Sass 变量），必须最先加载
-@use 'tokens';
+@use 'styles/tokens';
 
 // 基础样式（reset / 全局排版 / 可访问性）
-@use 'base';
+@use 'styles/base';
 
 // 自建组件类（btn / card / tag）
-@use 'components';
+@use 'styles/components';
