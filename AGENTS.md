@@ -38,15 +38,19 @@
 
 ## 当前进度
 
-- **阶段**：Task 1 进行中（脚手架）
+- **阶段**：Task 6 完成（第一个案例已可看）；Task 5（首页）未做
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`
 - 已完成：
   - ✅ 设计文档 + 实施计划
-  - ✅ GitHub 私有仓库建仓 + 关联 + 首推（Task 1 Step 7 提前完成）
-  - ✅ Vite 脚手架拷入 + 依赖安装 + 样式系统（_tokens/_base/_components）+ 类型空壳 + AGENTS.md + ESLint 配置（Task 1 Steps 1–4）
-- 待做：Task 1 Step 5（启动验证）→ Step 6（commit）→ Task 2–14
-- P0 八案例：均未开始（perf-observer / raf-loop / idle-schedule / lazy-image / virtual-list / watch-traps / async-suspense / reactive-inject）
+  - ✅ GitHub 私有仓库（qindaxiaya/vue3-case-lab 私有）
+  - ✅ Task 1 脚手架（Vite+Vue3+TS+Sass 样式系统+ESLint+AGENTS.md）
+  - ✅ Task 2 案例注册表（import.meta.glob 自动发现 + filterCases 搜索，vitest 11/11）
+  - ✅ Task 3 站点壳（路由/侧边栏/搜索/useTheme 暗色切换）
+  - ✅ Task 4 案例页三件套（CodeWorkbench 高亮+复制+双组tab / CaseNotes marked 渲染 / CasePage 组装）
+  - ✅ Task 6 perf-observer 案例（PerformanceObserver 面板：FP/FCP/LCP/TTFB/CLS + 制造偏移/长任务）
+- 待做：Task 5（首页）→ Task 7 raf-loop → Task 8 idle-schedule → Task 9 lazy-image → Task 10 virtual-list → Task 11 watch-traps → Task 12 async-suspense → Task 13 reactive-inject → Task 14 收尾走查（tag v0.1）
+- dev 地址：`http://localhost:5173/`，案例页 `/c/performance/perf-observer`
 
 ## 决策记录
 
