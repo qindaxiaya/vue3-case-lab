@@ -1,0 +1,135 @@
+// ============================================================
+// 自建组件类：btn-primary / btn-ghost / card / tag
+// 浅/暗双模式全部通过 CSS 变量自动适配，类本身不写死颜色
+// ============================================================
+
+// ---------- 按钮公共基础 ----------
+
+.btn {
+  // 尺寸
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.5em 1.1em;
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.5;
+
+  // 外观
+  border: 1px solid transparent;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  user-select: none;
+
+  // 动效：统一过渡时长
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
+    color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
+
+  // 禁用态：降透明 + 拦截点击
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  // 按下轻微下沉，增强点击反馈
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+// ---------- 按钮变体：主按钮（primary 实底） ----------
+
+.btn-primary {
+  @extend .btn;
+
+  background-color: var(--primary);
+  color: #fff; // 主色底上始终白字（浅暗主色均足够深/饱和）
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+  }
+}
+
+// ---------- 按钮变体：幽灵按钮（描边/透明底） ----------
+
+.btn-ghost {
+  @extend .btn;
+
+  background-color: transparent;
+  color: var(--text);
+  border-color: var(--border);
+
+  &:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: var(--primary-soft);
+  }
+}
+
+// ---------- 卡片 ----------
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+
+  // hover 提升：阴影加深 + 轻微上移（仅可点击卡片加 .card--interactive）
+  &--interactive {
+    transition:
+      box-shadow var(--transition),
+      transform var(--transition);
+
+    &:hover {
+      box-shadow: var(--shadow-soft-lg);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// ---------- 标签（pill 小标签） ----------
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.15em 0.7em;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  border-radius: var(--radius-tag);
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text-secondary);
+  white-space: nowrap; // 标签不折行
+
+  // 主色标签（用于分类/重点标记）
+  &--primary {
+    background-color: var(--primary-soft);
+    color: var(--primary-soft-text);
+    border-color: transparent;
+  }
+
+  // 难度语义色：beginner 绿 / intermediate 黄 / advanced 红
+  &--success {
+    background-color: var(--success-soft);
+    color: var(--success);
+    border-color: transparent;
+  }
+
+  &--warning {
+    background-color: var(--warning-soft);
+    color: var(--warning);
+    border-color: transparent;
+  }
+
+  &--danger {
+    background-color: var(--danger-soft);
+    color: var(--danger);
+    border-color: transparent;
+  }
+}

@@ -1,0 +1,87 @@
+// ============================================================
+// 设计 Token：主题变量与 Sass 基础变量
+// - 主题值（颜色/阴影/圆角）用 CSS 变量，运行时可切换（.dark 暗色）
+// - 静态值（断点/字体栈）用 Sass 变量，编译期常量
+// 配色来源：docs/superpowers/specs §7 Token 表
+// ============================================================
+
+// ---------- Sass 静态变量（编译期常量） ----------
+
+// 断点（桌面查阅为主，小屏布局不烂即可）
+$bp-md: 768px;
+$bp-lg: 1024px;
+
+// 字体栈：正文走系统 sans（含中文 Noto Sans SC），代码走系统 mono
+$font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+  'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+$font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
+  'Courier New', monospace;
+
+// ---------- CSS 变量：浅色主题（:root 默认） ----------
+
+:root {
+  // 基础色彩
+  --bg: #f9fafb; // 页面底（gray-50）
+  --surface: #ffffff; // 卡片/面板（white）
+  --text: #111827; // 正文（gray-900）
+  --text-secondary: #6b7280; // 次要文字（gray-500）
+  --primary: #4f46e5; // 品牌主色（indigo-600）
+  --primary-hover: #4338ca; // 主色 hover（indigo-700）
+  --primary-soft: #eef2ff; // 主色浅底（indigo-50）
+  --primary-soft-text: #4338ca; // 主色浅底上的文字
+  --border: #e5e7eb; // 边框/发丝线（gray-200）
+
+  // 语义色（状态提示：成功/危险/警告）
+  --success: #16a34a; // green-600
+  --success-soft: #f0fdf4; // green-50
+  --danger: #dc2626; // red-600
+  --danger-soft: #fef2f2; // red-50
+  --warning: #d97706; // amber-600
+  --warning-soft: #fffbeb; // amber-50
+
+  // 圆角
+  --radius-card: 1rem; // 卡片（2xl）
+  --radius-btn: 0.75rem; // 按钮（xl）
+  --radius-tag: 9999px; // 标签 pill
+  --radius-sm: 0.375rem; // 小元素（代码 inline 等）
+
+  // 阴影
+  --shadow-soft: 0 1px 3px rgb(0 0 0 / 0.08); // 卡片常态浅阴影
+  --shadow-soft-lg: 0 6px 16px rgb(0 0 0 / 0.1); // 卡片 hover 提升
+
+  // 过渡（统一动效时长，尊重 prefers-reduced-motion 在 base 中处理）
+  --transition: 0.25s ease-out;
+
+  // 字体
+  --font-sans: #{$font-sans};
+  --font-mono: #{$font-mono};
+
+  // 代码高亮主题变量（highlight.js 两主题切换时引用）
+  --code-bg: #f6f8fa; // 代码块底色
+}
+
+// ---------- CSS 变量：暗色主题（<html class="dark">） ----------
+// 注意：只覆盖主题相关变量，静态值不变
+.dark {
+  --bg: #111827; // 页面底（gray-900）
+  --surface: #1f2937; // 卡片/面板（gray-800）
+  --text: #f9fafb; // 正文
+  --text-secondary: #9ca3af; // 次要文字（gray-400）
+  --primary: #818cf8; // 主色提亮（indigo-400）
+  --primary-hover: #a5b4fc; // 主色 hover（indigo-300）
+  --primary-soft: #26264d; // 主色浅底（暗色下压暗的 indigo）
+  --primary-soft-text: #a5b4fc; // 主色浅底上的文字
+  --border: #374151; // 边框（gray-700）
+
+  --success: #4ade80; // green-400
+  --success-soft: #052e16;
+  --danger: #f87171; // red-400
+  --danger-soft: #450a0a;
+  --warning: #fbbf24; // amber-400
+  --warning-soft: #451a03;
+
+  --shadow-soft: 0 1px 3px rgb(0 0 0 / 0.4); // 暗色下阴影更深才可见
+  --shadow-soft-lg: 0 6px 16px rgb(0 0 0 / 0.5);
+
+  --code-bg: #161b22; // 代码块底色（github-dark 系）
+}
