@@ -147,6 +147,39 @@ function onMouseMove(e: MouseEvent): void {
   }
 }
 
+// ---------- 演示 tab 切换 ----------
+
+/** 当前演示 tab：track = 往返动画；throttle = 高频渲染合并 */
+const activeDemo = ref<'track' | 'throttle'>('track')
+
+/**
+ * 切换演示 tab：
+ * v-if 切走的区块不会触发组件卸载钩子——rAF 必须在切换时手动停，
+ * 否则循环在隐藏区块里继续空转（回调还引用着隐藏的 DOM 状态）
+ */
+function switchDemo(demo: 'track' | 'throttle'): void {
+  if (demo === activeDemo.value) return
+
+  // 停掉当前演示的循环
+  if (activeDemo.value === 'track') {
+    pause()
+  } else {
+    // 节流演示：取消待执行 rAF 并清合并标志
+    cancelAnimationFrame(throttleRafId)
+    renderPending = false
+    // 计数归零，切回时从头看对比效果
+    eventCount.value = 0
+    renderCount.value = 0
+  }
+
+  activeDemo.value = demo
+
+  // 往返演示切回来时恢复运行
+  if (demo === 'track') {
+    start()
+  }
+}
+
 // ---------- 生命周期 ----------
 
 onMounted(() => {
@@ -163,13 +196,42 @@ onUnmounted(() => {
 
 <template>
   <div class="raf-demo">
+    <!-- 演示切换 tab（两个演示互斥显示，切走即停 rAF） -->
+    <div
+      class="demo-tabs"
+      role="tablist"
+      aria-label="演示切换"
+    >
+      <button
+        class="demo-tab"
+        :class="{ 'demo-tab--active': activeDemo === 'track' }"
+        type="button"
+        role="tab"
+        :aria-selected="activeDemo === 'track'"
+        @click="switchDemo('track')"
+      >
+        往返动画
+      </button>
+      <button
+        class="demo-tab"
+        :class="{ 'demo-tab--active': activeDemo === 'throttle' }"
+        type="button"
+        role="tab"
+        :aria-selected="activeDemo === 'throttle'"
+        @click="switchDemo('throttle')"
+      >
+        高频渲染合并
+      </button>
+    </div>
+
     <!-- ============ 演示一：匀速往返动画 ============ -->
     <section
+      v-if="activeDemo === 'track'"
       class="demo-block"
       aria-label="演示一：匀速往返动画"
     >
       <h3 class="demo-title">
-        演示一：匀速往返（时间戳驱动 + 正弦缓动）
+        匀速往返（时间戳驱动 + 正弦缓动）
       </h3>
 
       <!-- 轨道 + 方块（transform 驱动，不动 left——不触发重排） -->
@@ -214,11 +276,12 @@ onUnmounted(() => {
 
     <!-- ============ 演示二：高频渲染合并 ============ -->
     <section
+      v-if="activeDemo === 'throttle'"
       class="demo-block"
       aria-label="演示二：高频渲染合并"
     >
       <h3 class="demo-title">
-        演示二：高频渲染合并（mousemove + rAF 节流）
+        高频渲染合并（mousemove + rAF 节流）
       </h3>
 
       <!-- 交互区：鼠标移入移动 -->
@@ -258,7 +321,41 @@ onUnmounted(() => {
 .raf-demo {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+}
+
+/* ---------- 演示切换 tab ---------- */
+
+.demo-tabs {
+  display: flex;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
+}
+
+.demo-tab {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.demo-tab:hover {
+  color: var(--text);
+  background-color: var(--bg);
+}
+
+.demo-tab--active {
+  color: var(--primary);
+  font-weight: 500;
+  background-color: var(--primary-soft);
 }
 
 /* 演示区块：轻边框分隔 */
