@@ -146,6 +146,15 @@ describe('真实 glob 收录链路（集成）', () => {
     expect(item!.codeTabs[0].lang).toBe('typescript')
   })
 
+  it('idle-schedule 被完整收录（组件/源码/代码片段/meta 齐全）', () => {
+    const item = getCase('performance', 'idle-schedule')
+    expect(item, 'getCase 应找到 idle-schedule').toBeDefined()
+    expect(item!.demoComponent).toBeTruthy()
+    expect(item!.demoSource).toContain('requestIdleCallback')
+    expect(item!.codeTabs.length).toBeGreaterThan(0)
+    expect(item!.codeTabs[0].lang).toBe('typescript')
+  })
+
   it('收录案例的 meta.id 与目录名全部一致（防止路由错乱）', () => {
     for (const item of allCases) {
       expect(item.meta.id, `${item.categoryId} 下 id 不匹配`).toMatch(

@@ -1,0 +1,61 @@
+// ============================================================
+// requestIdleCallback 空闲调度教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：基本配对（预约 / 取消必须成对） ---
+
+/** 空闲回调句柄（取消全靠它） */
+let idleHandle = 0
+
+function startIdleWork() {
+  //! 预约：浏览器在主线程空闲时调用回调；timeout 200ms = 最多等这么久必调（防饿死）
+  idleHandle = requestIdleCallback(onIdle, { timeout: 200 })
+}
+
+function cancelIdleWork() {
+  //! 取消：与 requestIdleCallback 成对；任务没做完就切页必须取消
+  cancelIdleCallback(idleHandle)
+}
+
+// --- 步骤二：deadline.timeRemaining() 分片推进 ---
+
+let processed = 0
+const TOTAL = 200
+
+function onIdle(deadline: IdleDeadline) {
+  const start = processed
+
+  //! 核心：预算内尽量多干，剩余 <2ms 就让出主线程等下次空闲
+  //! （didTimeout 为 true 表示这是 timeout 兜底强制触发，不是真·空闲）
+  while (processed < TOTAL && deadline.timeRemaining() > 2) {
+    doOneUnit(processed++)
+  }
+  console.log(`本片处理 ${processed - start} 条，剩余空闲 ${deadline.timeRemaining()}ms`)
+
+  //! 没做完 → 继续预约下一片（分片循环的续订，类似 rAF 的下一帧）
+  if (processed < TOTAL) {
+    idleHandle = requestIdleCallback(onIdle, { timeout: 200 })
+  }
+}
+
+function doOneUnit(_i: number) {
+  /* 单条工作单元：解析/计算等 */
+}
+
+// --- 步骤三：timeout 的语义（防饿死兜底） ---
+
+// timeout 不是「空闲预算」而是「等待上限」：
+// 主线程一直忙时，浏览器最多等 timeout 毫秒就强制调用回调（didTimeout=true），
+// 保证任务不会被无限期饿死——代价是这次回调可能几乎没有空闲时间。
+
+// --- 步骤四：Safari 降级（一行兜底） ---
+
+//! Safari 长期未支持 ric——降级 setTimeout 造「假 deadline」，代码路径保持一致
+const requestIdle: (cb: (d: IdleDeadline) => void, o?: { timeout: number }) => number =
+  window.requestIdleCallback?.bind(window) ??
+  ((cb) =>
+    window.setTimeout(
+      () => cb({ timeRemaining: () => 8, didTimeout: true } as IdleDeadline),
+      1,
+    ))

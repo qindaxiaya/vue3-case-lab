@@ -25,9 +25,13 @@
   ```
   src/examples/<category>/<case-id>/
   ├── Demo.vue        # 可交互演示（scoped SCSS、内部关键逻辑中文注释、不引用站点内部组件）
-  ├── meta.ts         # default export 满足 CaseMeta（notes 三段 Markdown）
-  └── code/*.txt      # 带逐行中文注释的教学代码，>60 行按步骤分段
+  ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary，无 notes）
+  └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
+- **框架与案例抽离（2026-10-19 用户拍板）**：
+  1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
+  2. 案例差异全部收在案例目录内自包含（Demo/meta/code）；框架只认通用约定
+  3. 多演示的通用约定：Demo emit `tabs` 上报集合 + prop `demoActive` 受控；code 文件 `<key>.*.txt` 与演示 key 对应，代码区按 key 过滤——新案例直接用约定，不改框架
 - 案例分类：`performance`（性能监控）、`observer`（观察者）、`virtual`（虚拟渲染）、`vue3`（Vue 3 API）
 - Commit：Conventional Commits + 中文描述；每任务收尾必 commit
 - **工作节奏（2026-10-19 用户拍板）**：
