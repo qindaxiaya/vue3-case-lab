@@ -44,19 +44,21 @@
 
 ## 当前进度
 
-- **阶段**：Task 6 完成（第一个案例已可看）；Task 5（首页）未做
+- **阶段**：Task 6 完成 + 信息架构二次精简（用户反馈整改）完成；Task 5（首页）已有 landing（收尾走查待做）
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`
 - 已完成：
   - ✅ 设计文档 + 实施计划
   - ✅ GitHub 私有仓库（qindaxiaya/vue3-case-lab 私有）
   - ✅ Task 1 脚手架（Vite+Vue3+TS+Sass 样式系统+ESLint+AGENTS.md）
-  - ✅ Task 2 案例注册表（import.meta.glob 自动发现 + filterCases 搜索，vitest 11/11）
-  - ✅ Task 3 站点壳（路由/侧边栏/搜索/useTheme 暗色切换）
-  - ✅ Task 4 案例页三件套（CodeWorkbench 高亮+复制+双组tab / CaseNotes marked 渲染 / CasePage 组装）
-  - ✅ Task 6 perf-observer 案例（PerformanceObserver 面板：FP/FCP/LCP/TTFB/CLS + 制造偏移/长任务）
-- 待做：Task 5（首页）→ Task 7 raf-loop → Task 8 idle-schedule → Task 9 lazy-image → Task 10 virtual-list → Task 11 watch-traps → Task 12 async-suspense → Task 13 reactive-inject → Task 14 收尾走查（tag v0.1）
-- dev 地址：`http://localhost:5173/`，案例页 `/c/performance/perf-observer`
+  - ✅ Task 2 案例注册表（import.meta.glob 自动发现 + filterCases 搜索，vitest 16/16 含真实 glob 集成）
+  - ✅ Task 3 站点壳（路由/顶栏导航/搜索/useTheme 暗色切换）
+  - ✅ Task 4 案例页三件套（CodeWorkbench 行号+`//!`重点高亮+复制 / CaseNotes callout 渲染 / CasePage 面包屑组装）
+  - ✅ Task 6 perf-observer 案例（实时面板：FPS/内存/Event Timing INP/sparkline + 卡顿滑块/偏移实验）
+  - ✅ landing 首页（hero + 特性网格 + CTA）
+  - ✅ 信息架构二次精简：删侧边栏（列表页全宽 + 分类筛选 chips）、删「招牌案例」入口、说明三行化、按钮 hover 修复
+- 待做：Task 7 raf-loop → Task 8 idle-schedule → Task 9 lazy-image → Task 10 virtual-list → Task 11 watch-traps → Task 12 async-suspense → Task 13 reactive-inject → Task 14 收尾走查（tag v0.1）
+- dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
 
@@ -70,3 +72,6 @@
 | 2026-10-19 | GitHub 仓库用 gh CLI 方式接入 | 仓库 qindaxiaya/vue3-case-lab（私有），中途修复过 token scope 问题（重新 gh auth login） |
 | 2026-10-19 | **工作节奏：每任务一停、给 dev 地址、分步 commit** | 用户拍板；做完等检查确认再继续，页面变化必须给地址，一个任务一个 commit |
 | 2026-10-19 | **完成前强制验证清单固化** | 用户发现"没有案例"暴露检查盲区（单测用内联数据绕过真实 glob、HTTP 200 ≠ 渲染正确）；清单见「约定」段，宣称完成前必跑 |
+| 2026-10-19 | **删侧边栏：列表页全宽 + 分类筛选 chips** | 用户反馈侧边栏不好看也不要了；顶栏加「案例」nav，详情页面包屑返回 |
+| 2026-10-19 | **案例说明三行化 + Demo 保留实时面板** | 用户反馈说明太长没兴趣看、看不到重点；notes 每段 ≤3 行，仅关键坑用 callout；Demo 日志/sparkline 保留（用户未要求删） |
+| 2026-10-19 | 按钮类必须显式覆盖全局 a 样式 | RouterLink 用作按钮时 `a:hover` 的下划线/链接色会覆盖按钮样式——`.btn-primary:hover` 须显式 `color:#fff; text-decoration:none` |
