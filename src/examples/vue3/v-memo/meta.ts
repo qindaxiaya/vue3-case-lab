@@ -1,0 +1,12 @@
+// ============================================================
+// 案例元数据：v-memo 渲染缓存
+// ============================================================
+import type { CaseMeta } from '../../../types/case'
+
+export default {
+  id: 'v-memo',
+  title: 'v-memo 渲染缓存',
+  difficulty: 'advanced',
+  tags: ['v-memo', '渲染优化', 'patch flag'],
+  summary: '依赖数组没变就跳过整棵子树 patch，无关更新零渲染，每行渲染计数实证',
+} satisfies CaseMeta
