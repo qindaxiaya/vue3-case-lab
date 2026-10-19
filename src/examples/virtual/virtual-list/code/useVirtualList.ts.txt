@@ -1,0 +1,65 @@
+// ============================================================
+// useVirtualList composable 教学片段（定高虚拟列表核心）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { computed, onUnmounted, ref } from 'vue'
+
+/**
+ * 定高虚拟列表 composable
+ * @param total   总行数
+ * @param rowH    行高 px（定高是简化前提）
+ * @param viewH   视口高 px
+ * @param buffer  上下缓冲行数
+ */
+export function useVirtualList(total: number, rowH: number, viewH: number, buffer = 5) {
+  /** 滚动位置（rAF 节流后的唯一写入点） */
+  const scrollTop = ref(0)
+
+  //! 核心公式一：起始行 = 向下取整(位置/行高) - 缓冲
+  const startIndex = computed(() =>
+    Math.max(0, Math.floor(scrollTop.value / rowH) - buffer),
+  )
+
+  //! 核心公式二：结束行 = 向下取整((位置+视口高)/行高) + 缓冲
+  const endIndex = computed(() =>
+    Math.min(total - 1, Math.floor((scrollTop.value + viewH) / rowH) + buffer),
+  )
+
+  //! 占位层：撑出 total * rowH 总高度 → 滚动条比例与真实列表一致
+  const spacerStyle = computed(() => ({ height: `${total * rowH}px` }))
+
+  //! 内容层：transform 定位到 startIndex 行的像素位置（合成层偏移，不触发重排）
+  const contentStyle = computed(() => ({
+    transform: `translateY(${startIndex.value * rowH}px)`,
+  }))
+
+  // ---------- rAF 节流：scroll 事件一帧最多处理一次 ----------
+
+  let rafId = 0
+  let pending = 0
+
+  function onScroll(e: Event): void {
+    pending = (e.target as HTMLElement).scrollTop
+    //! 已有待处理帧直接跳过——高频 scroll 事件合并成每帧一次索引计算
+    if (rafId) return
+    rafId = requestAnimationFrame(() => {
+      scrollTop.value = pending
+      rafId = 0
+    })
+  }
+
+  onUnmounted(() => {
+    if (rafId) cancelAnimationFrame(rafId)
+  })
+
+  return { startIndex, endIndex, spacerStyle, contentStyle, onScroll }
+}
+
+// ---------- 动态高度怎么办（进阶思路，本案例不做） ----------
+
+// 行高不固定时无法用公式直接算索引，常见方案：
+// 1. 预估高度渲染 → IntersectionObserver/ResizeObserver 测量真实高度
+// 2. 高度缓存表（行 index → height）+ 前缀和（position 前缀数组）
+// 3. 滚动时二分前缀和定位 startIndex；行高变化只更新后缀（O(log n) 查找）
+// 代表实现：tanstack/virtual、vue-virtual-scroller 的 dynamic 模式。

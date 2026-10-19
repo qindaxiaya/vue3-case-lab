@@ -1,0 +1,38 @@
+<!-- ============================================================
+     虚拟列表模板用法教学片段
+     重点行用 //! 标记——展示时高亮、复制时自动去标记
+     ============================================================ -->
+<script setup lang="ts">
+import { useVirtualList } from './useVirtualList'
+
+const props = defineProps<{ rows: { id: number; text: string }[] }>()
+
+const { startIndex, endIndex, spacerStyle, contentStyle, onScroll } =
+  useVirtualList(props.rows.length, 32, 400, 5)
+
+/** 只渲染视口 ± 缓冲的切片 */
+const rendered = computed(() => props.rows.slice(startIndex.value, endIndex.value + 1))
+</script>
+
+<template>
+  <!-- 视口：固定高度 + 监听 scroll -->
+  <div class="viewport" @scroll.passive="onScroll">
+    <!-- 占位层：撑出总高度 -->
+    <div class="spacer" :style="spacerStyle">
+      <!-- 内容层：transform 定位到起始行 -->
+      <div class="content" :style="contentStyle">
+        <!-- //! 只渲染切片：DOM 数量恒定，与总行数无关 -->
+        <div v-for="row in rendered" :key="row.id" class="row">
+          {{ row.text }}
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* 关键：absolute 定位的内容层 + transform 偏移 */
+.viewport { height: 400px; overflow-y: auto; }
+.spacer  { position: relative; }
+.content { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+</style>
