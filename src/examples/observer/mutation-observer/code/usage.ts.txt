@@ -1,0 +1,60 @@
+// ============================================================
+// MutationObserver DOM 变更监听教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { onMounted, onUnmounted, ref } from 'vue'
+
+const el = ref<HTMLElement | null>(null)
+let observer: MutationObserver | null = null
+
+onMounted(() => {
+  observer = new MutationObserver((records) => {
+    for (const r of records) {
+      //! records 是「批量」的——一次宏任务内的所有变更合并成数组派发（防洪泛）
+      r.addedNodes.forEach((n) => console.log('新增：', n))
+      r.removedNodes.forEach((n) => console.log('删除：', n))
+      if (r.type === 'attributes') {
+        console.log('属性：', r.attributeName, (r.target as HTMLElement).getAttribute(r.attributeName!))
+      }
+      if (r.type === 'characterData') {
+        console.log('文本：', r.target.nodeValue)
+      }
+    }
+  })
+
+  //! observe 四开关：childList 子节点增删 / attributes 属性 / characterData 文本
+  //! subtree = true 深度监听所有后代（不加只看该元素直接相关）
+  if (el.value) {
+    observer.observe(el.value, {
+      childList: true,
+      attributes: true,
+      characterData: true,
+      subtree: true,
+    })
+  }
+})
+
+// ---------- takeRecords：立即冲刷未派发的记录 ----------
+
+/** 清空面板前调用——丢弃积压记录，防止一次性灌爆日志/状态 */
+function clearPanel(): void {
+  //! takeRecords() 返回未派发的记录并停止本次派发——「静默清场」的标准手段
+  const pending = observer?.takeRecords() ?? []
+  console.log(`丢弃 ${pending.length} 条未派发记录`)
+  if (el.value) el.value.innerHTML = ''
+}
+
+onUnmounted(() => {
+  observer?.disconnect()
+  observer = null
+})
+
+// ---------- 三个常见应用 ----------
+
+// 1. 第三方脚本注入检测：监听 body 的 childList，发现外链 script 就拦截
+// 2. 富文本编辑器：监听内容区变更同步数据（替代轮询）
+// 3. 懒加载兜底：动态插入的 <img> 不会被老 IntersectionObserver 覆盖，
+//    用 MutationObserver 发现新节点后补 observe
+// 注意：MutationObserver 回调在微任务前派发——高频 DOM 操作（拖拽排序）时
+//       记录会积压，用 takeRecords 主动冲刷可控。
