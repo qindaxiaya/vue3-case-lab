@@ -1,0 +1,52 @@
+// ============================================================
+// 响应式依赖注入教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { computed, inject, provide, readonly, ref, type InjectionKey, type Ref } from 'vue'
+
+// --- 步骤一：Symbol key + InjectionKey 类型（防污染 + 有类型提示） ---
+
+//! 字符串 key 易撞车（组件库与业务同名 'theme'）；Symbol 全局唯一
+//! InjectionKey<T> 让 inject 拿到正确类型，不用再 as
+const THEME_KEY: InjectionKey<Ref<string>> = Symbol('theme')
+const USER_KEY: InjectionKey<Readonly<{ name: string }>> = Symbol('user')
+
+// --- 步骤二：顶层 provide（必须在 setup 同步阶段执行） ---
+
+export function useProvideTheme() {
+  const theme = ref('light')
+
+  //! 传 ref 本体 → 底层 inject 后改，顶层也同步（响应式链路完整）
+  provide(THEME_KEY, theme)
+
+  //! 只读边界一：computed——底层拿到只有 getter，赋值静默无效
+  const count = ref(0)
+  provide(
+    'maxCount',
+    computed(() => 10),
+  )
+
+  //! 只读边界二：readonly——写操作在开发模式打警告 + 不生效（更友好）
+  const user = readonly({ name: 'admin' })
+  provide(USER_KEY, user)
+
+  return { theme }
+}
+
+// --- 步骤三：任意深层 inject ---
+
+export function useTheme() {
+  //! 默认值兜底：provide 缺失时用它（不会 undefined 崩溃）
+  const theme = inject(THEME_KEY, ref('auto'))
+  const user = inject(USER_KEY)
+  return { theme, user }
+}
+
+// --- 步骤四：三条铁律 ---
+
+// 1. 响应式保证：provide ref/computed/readonly 本体，**不要解构**
+//    const { theme } = ... 解构后丢掉响应式（拿到的是普通 string 快照）
+// 2. provide 在父组件 setup 同步执行——放到异步回调里，子组件 inject 时机已过
+// 3. 适用场景：组件库底层（表单校验/弹窗队列）、主题/多语言/当前用户跨层传递；
+//    对比 prop 逐层透传（prop drilling），provide/inject 是树内「无线直连」
