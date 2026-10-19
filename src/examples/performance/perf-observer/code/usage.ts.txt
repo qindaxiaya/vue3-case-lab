@@ -1,0 +1,100 @@
+// ============================================================
+// PerformanceObserver 教学片段（提炼版，变量名与 Demo.vue 一致）
+// 演示：观察者注册模式、buffered 回放、四类 entry 关键字段
+// ============================================================
+
+// --- 步骤一：观察者注册（统一 try/catch 兼容不支持的类型） ---
+
+// 观察器实例列表：组件卸载时统一 disconnect，防止回调泄漏
+const observers: PerformanceObserver[] = []
+
+/**
+ * 注册一个性能观察器
+ * @param type     entry 类型：paint / layout-shift / longtask ...
+ * @param callback 收到新 entry 时的回调（批量传入）
+ * @param buffered 是否回放历史缓冲 entry（默认 true）
+ */
+function observe(
+  type: string,
+  callback: (entries: PerformanceEntry[]) => void,
+  buffered = true,
+) {
+  try {
+    const po = new PerformanceObserver((list) => {
+      // getEntries() 取本批推送的全部 entry
+      callback(list.getEntries())
+    })
+    // 关键：observe({ type, buffered }) ——
+    // type 指定订阅的指标类型；buffered: true 让浏览器先回放
+    // 页面生命周期内已缓冲的历史 entry（进页面立刻有 FP/FCP/TTFB）
+    po.observe({ type, buffered })
+    observers.push(po)
+  } catch {
+    // 浏览器不支持该 type 时 observe 抛 TypeError：
+    // 优雅降级记录，不阻断其他指标的订阅
+    console.warn(`当前浏览器不支持 ${type} 指标`)
+  }
+}
+
+// --- 步骤二：订阅 paint（FP / FCP） ---
+
+// entry.name 区分首次绘制与首次内容绘制；startTime 即毫秒时间戳
+observe('paint', (entries) => {
+  for (const entry of entries) {
+    if (entry.name === 'first-paint') {
+      console.log('FP =', entry.startTime) // First Paint
+    }
+    if (entry.name === 'first-contentful-paint') {
+      console.log('FCP =', entry.startTime) // First Contentful Paint
+    }
+  }
+})
+
+// --- 步骤三：订阅 LCP（最大内容绘制） ---
+
+// LCP 在渲染过程中持续更新：每批 entry 取最后一条即当前最新值
+// （首次滚动/点击后 LCP 冻结，之后不再产生新 entry）
+observe('largest-contentful-paint', (entries) => {
+  const last = entries[entries.length - 1]
+  if (last) {
+    console.log('LCP =', last.startTime)
+  }
+})
+
+// --- 步骤四：订阅 CLS（累计布局偏移） ---
+
+// CLS 无单位：逐条累加 value；但必须排除「近期输入引发的偏移」
+// （规范：用户 500ms 内点击/输入引发的 shift 不计入 CLS）
+observe('layout-shift', (entries) => {
+  for (const entry of entries) {
+    // layout-shift entry 特有字段：value（偏移量）、hadRecentInput（是否输入引发）
+    const shift = entry as unknown as { value: number; hadRecentInput: boolean }
+    if (!shift.hadRecentInput) {
+      console.log('CLS +=', shift.value)
+    }
+  }
+})
+
+// --- 步骤五：订阅 longtask（长任务，仅演示日志） ---
+
+// longtask 只关注「未来」产生的任务，不需要 buffered（传 false 减少无关回调）
+observe(
+  'longtask',
+  (entries) => {
+    for (const entry of entries) {
+      // duration = 主线程阻塞时长（超过 50ms 才会产生 longtask entry）
+      console.log(`长任务 ${entry.duration}ms`)
+    }
+  },
+  false,
+)
+
+// --- 步骤六：卸载清理（防内存泄漏） ---
+
+// disconnect 后浏览器停止推送，回调不再触发
+function cleanup() {
+  for (const po of observers) {
+    po.disconnect()
+  }
+  observers.length = 0
+}
