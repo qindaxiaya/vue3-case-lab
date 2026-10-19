@@ -1,18 +1,17 @@
 // ============================================================
 // PerformanceObserver 教学片段（提炼版，变量名与 Demo.vue 一致）
-// 演示：观察者注册模式、buffered 回放、四类 entry 关键字段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
 // ============================================================
 
-// --- 步骤一：观察者注册（统一 try/catch 兼容不支持的类型） ---
+// --- 步骤一：统一注册入口（try/catch 兼容不支持的类型） ---
 
-// 观察器实例列表：组件卸载时统一 disconnect，防止回调泄漏
 const observers: PerformanceObserver[] = []
 
 /**
  * 注册一个性能观察器
- * @param type     entry 类型：paint / layout-shift / longtask ...
- * @param callback 收到新 entry 时的回调（批量传入）
- * @param buffered 是否回放历史缓冲 entry（默认 true）
+ * @param type     entry 类型：paint / layout-shift / event / longtask ...
+ * @param callback 新 entry 到达时的回调（批量）
+ * @param buffered 是否先回放历史缓冲 entry（默认 true）
  */
 function observe(
   type: string,
@@ -21,80 +20,105 @@ function observe(
 ) {
   try {
     const po = new PerformanceObserver((list) => {
-      // getEntries() 取本批推送的全部 entry
       callback(list.getEntries())
     })
-    // 关键：observe({ type, buffered }) ——
-    // type 指定订阅的指标类型；buffered: true 让浏览器先回放
-    // 页面生命周期内已缓冲的历史 entry（进页面立刻有 FP/FCP/TTFB）
+    //! 关键调用：type 指定订阅类型；buffered 让浏览器先回放历史 entry
     po.observe({ type, buffered })
     observers.push(po)
   } catch {
-    // 浏览器不支持该 type 时 observe 抛 TypeError：
-    // 优雅降级记录，不阻断其他指标的订阅
-    console.warn(`当前浏览器不支持 ${type} 指标`)
+    // 浏览器不支持该 type 时 observe 抛 TypeError——优雅降级不阻断其他指标
+    console.warn(`当前浏览器不支持 ${type}`)
   }
 }
 
-// --- 步骤二：订阅 paint（FP / FCP） ---
+// --- 步骤二：paint（FP / FCP） ---
 
 // entry.name 区分首次绘制与首次内容绘制；startTime 即毫秒时间戳
 observe('paint', (entries) => {
   for (const entry of entries) {
-    if (entry.name === 'first-paint') {
-      console.log('FP =', entry.startTime) // First Paint
-    }
-    if (entry.name === 'first-contentful-paint') {
-      console.log('FCP =', entry.startTime) // First Contentful Paint
-    }
+    if (entry.name === 'first-paint') console.log('FP =', entry.startTime)
+    if (entry.name === 'first-contentful-paint')
+      console.log('FCP =', entry.startTime)
   }
 })
 
-// --- 步骤三：订阅 LCP（最大内容绘制） ---
+// --- 步骤三：largest-contentful-paint（LCP） ---
 
-// LCP 在渲染过程中持续更新：每批 entry 取最后一条即当前最新值
-// （首次滚动/点击后 LCP 冻结，之后不再产生新 entry）
+// LCP 渲染中持续更新：每批取最后一条即当前最新值（用户交互后冻结）
 observe('largest-contentful-paint', (entries) => {
   const last = entries[entries.length - 1]
-  if (last) {
-    console.log('LCP =', last.startTime)
-  }
+  if (last) console.log('LCP =', last.startTime)
 })
 
-// --- 步骤四：订阅 CLS（累计布局偏移） ---
+// --- 步骤四：layout-shift（CLS） ---
 
-// CLS 无单位：逐条累加 value；但必须排除「近期输入引发的偏移」
-// （规范：用户 500ms 内点击/输入引发的 shift 不计入 CLS）
 observe('layout-shift', (entries) => {
   for (const entry of entries) {
-    // layout-shift entry 特有字段：value（偏移量）、hadRecentInput（是否输入引发）
+    // layout-shift entry 特有字段：value（偏移量）/ hadRecentInput（是否输入引发）
     const shift = entry as unknown as { value: number; hadRecentInput: boolean }
+    //! CLS 计算的关键：跳过「近期输入引发的偏移」（规范要求）
     if (!shift.hadRecentInput) {
       console.log('CLS +=', shift.value)
     }
   }
 })
 
-// --- 步骤五：订阅 longtask（长任务，仅演示日志） ---
+// --- 步骤五：event（交互延迟，INP 的原始数据） ---
 
-// longtask 只关注「未来」产生的任务，不需要 buffered（传 false 减少无关回调）
+// durationThreshold：只观察超过 16ms 的交互（INP 规范建议阈值）
+observe(
+  'event',
+  (entries) => {
+    for (const entry of entries) {
+      const evt = entry as unknown as {
+        name: string
+        duration: number
+        interactionId: number
+      }
+      // duration = 从用户输入到下一帧渲染完成的完整耗时
+      if (evt.name === 'click' && evt.interactionId) {
+        console.log('点击交互耗时', evt.duration)
+      }
+    }
+  },
+  false,
+)
+
+// --- 步骤六：longtask（长任务日志） ---
+
+// longtask 只关注未来产生的任务，不需要 buffered
 observe(
   'longtask',
   (entries) => {
     for (const entry of entries) {
-      // duration = 主线程阻塞时长（超过 50ms 才会产生 longtask entry）
+      // duration = 主线程阻塞时长（超过 50ms 才产生 longtask entry）
       console.log(`长任务 ${entry.duration}ms`)
     }
   },
   false,
 )
 
-// --- 步骤六：卸载清理（防内存泄漏） ---
+// --- 步骤七：实时 FPS（rAF 采样——不是 PerformanceObserver） ---
 
-// disconnect 后浏览器停止推送，回调不再触发
-function cleanup() {
-  for (const po of observers) {
-    po.disconnect()
+let frameCount = 0
+let windowStart = performance.now()
+
+function fpsLoop(now: number) {
+  frameCount++
+  //! 整秒窗口结算：帧数 × 1000 / 窗口时长 = FPS
+  if (now - windowStart >= 1000) {
+    console.log('FPS =', Math.round((frameCount * 1000) / (now - windowStart)))
+    frameCount = 0
+    windowStart = now
   }
+  requestAnimationFrame(fpsLoop)
+}
+requestAnimationFrame(fpsLoop)
+
+// --- 步骤八：卸载清理（防内存泄漏） ---
+
+//! disconnect 后浏览器停止推送、回调不再触发；rAF/定时器也要一并清理
+function cleanup() {
+  for (const po of observers) po.disconnect()
   observers.length = 0
 }

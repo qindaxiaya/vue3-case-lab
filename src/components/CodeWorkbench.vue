@@ -1,44 +1,40 @@
 // ============================================================
-// 代码工作台：tab 切换 + highlight.js 高亮 + 复制按钮
-// tab 分两组：
-//   「核心代码」= code/*.txt 教学片段
-//   「完整源码」= Demo.vue 全文（只读下钻）
+// 代码工作台（2026-10-19 重设计：重点行高亮 + 行号）
+// - 重点行标记：code/*.txt 中行首 `//! ` 前缀的行会被高亮展示
+//   （渲染时去掉前缀，整行加主色浅背景 + 左侧色条——参照 VitePress line highlighting）
+// - 行号列固定显示（说明中提「第 N 行」可对照）
+// - tab 分组：「核心代码」（code/*.txt）+「完整源码」（Demo.vue 全文）
 // ============================================================
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import hljs from 'highlight.js/lib/core'
 import typescript from 'highlight.js/lib/languages/typescript'
 import javascript from 'highlight.js/lib/languages/javascript'
 import xml from 'highlight.js/lib/languages/xml'
 import css from 'highlight.js/lib/languages/css'
 import json from 'highlight.js/lib/languages/json'
-// 浅色主题默认加载；暗色主题按需动态注入（watch isDark 控制 link 启停）
 import 'highlight.js/styles/github.css'
 import { useTheme } from '../composables/useTheme'
 import type { CodeTab } from '../examples/registry'
 
-// 注册需要的语言（按需，避免全量语言包体积）
+// 按需注册语言（控制体积）
 hljs.registerLanguage('typescript', typescript)
 hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('xml', xml) // html/vue 走 xml 规则
+hljs.registerLanguage('xml', xml)
 hljs.registerLanguage('css', css)
 hljs.registerLanguage('json', json)
 
 const props = defineProps<{
   /** 核心代码片段 tabs */
   tabs: CodeTab[]
-  /** Demo.vue 完整源码文本 */
+  /** Demo.vue 完整源码（「完整源码」tab） */
   demoSource: string
 }>()
 
 const { isDark } = useTheme()
 
-// ---------- 暗色代码主题 ----------
-// github-dark.css 与 github.css 的选择器同为 .hljs，静态双导入会互相覆盖；
-// 因此浅色用静态导入，暗色用动态 <link> 按需注入并启停
+// ---------- 暗色代码主题（动态 link 启停，避免双主题样式表互相覆盖） ----------
 let darkLink: HTMLLinkElement | null = null
-
-// 首次导入暗色主题 CSS（?url 拿到静态资源地址，Vite 构建期处理）
 const darkCssUrl = import.meta.glob(
   '../../../node_modules/highlight.js/styles/github-dark.css',
   { query: '?url', import: 'default', eager: true },
@@ -50,16 +46,13 @@ watch(
   (dark) => {
     if (dark && darkHref) {
       if (!darkLink) {
-        // 创建并缓存 link 节点（仅创建一次）
         darkLink = document.createElement('link')
         darkLink.rel = 'stylesheet'
         darkLink.href = darkHref
         document.head.appendChild(darkLink)
       }
-      // 启用暗色主题（后加载的样式表覆盖浅色）
       darkLink.disabled = false
     } else if (darkLink) {
-      // 浅色时禁用暗色样式表（disabled 后浅色 github.css 重新生效）
       darkLink.disabled = true
     }
   },
@@ -67,33 +60,28 @@ watch(
 )
 
 // ---------- tab 状态 ----------
-// 当前选中的 tab key：'core:<name>' 或 'source:Demo.vue'
 const activeKey = ref('')
 
-// 全部 tab 合并列表：核心代码在前，完整源码殿后
+/** 全部 tab：核心代码 + 完整源码 */
 const allTabs = computed(() => [
   ...props.tabs.map((t) => ({
     key: `core:${t.name}`,
     label: t.name,
     lang: t.lang,
     content: t.content,
-    isSource: false,
   })),
   {
     key: 'source:Demo.vue',
     label: 'Demo.vue（完整源码）',
-    lang: 'vue', // vue 走 xml/html 高亮规则
+    lang: 'vue',
     content: props.demoSource,
-    isSource: true,
   },
 ])
 
-// 当前激活 tab 的数据
 const activeTab = computed(
   () => allTabs.value.find((t) => t.key === activeKey.value) ?? allTabs.value[0],
 )
 
-// tabs 变化（路由切换案例）时重置到第一个 tab
 watch(
   allTabs,
   (tabs) => {
@@ -104,36 +92,69 @@ watch(
   { immediate: true },
 )
 
-// ---------- 高亮 ----------
-// 每次切换 tab 后对 <pre><code> 重新执行高亮
-const codeEl = ref<HTMLElement | null>(null)
+// ---------- 行级渲染（行号 + 重点行标记 + 逐行高亮） ----------
 
-watch(activeKey, async () => {
-  // 等 DOM 更新完成后再高亮（否则拿到的是旧节点）
-  await nextTick()
-  if (codeEl.value) {
-    // 清掉旧高亮 class 后重新应用（highlight.js 幂等）
-    codeEl.value.removeAttribute('data-highlighted')
-    hljs.highlightElement(codeEl.value)
-  }
-})
-
-// vue 语言映射到 xml 注册名
-function hlLang(lang: string): string {
-  return lang === 'vue' || lang === 'html' ? 'xml' : lang
+/** 渲染后的行结构 */
+interface CodeLine {
+  /** 行号（1 起） */
+  no: number
+  /** 高亮后的 HTML（已转义） */
+  html: string
+  /** 是否重点行（//! 标记） */
+  highlight: boolean
 }
 
-// ---------- 复制 ----------
-/** 复制按钮反馈状态（null=默认文案，'done'=已复制） */
+/**
+ * 把原始代码文本渲染为行数组：
+ * 1. 行首 `//! ` 前缀 → 去掉前缀并标记为重点行
+ * 2. 逐行 hljs 高亮（教学代码行短，逐行高亮足够；避免跨行 token 拆分问题）
+ */
+const renderedLines = computed<CodeLine[]>(() => {
+  const tab = activeTab.value
+  if (!tab) return []
+  const lang = tab.lang === 'vue' || tab.lang === 'html' ? 'xml' : tab.lang
+
+  return tab.content.split('\n').map((rawLine, i) => {
+    // 重点行标记：行首 //! + 空格（渲染时去掉标记符号，保留注释文字）
+    const isHighlight = /^\s*\/\/!\s?/.test(rawLine)
+    const line = isHighlight ? rawLine.replace(/^(\s*)\/\/!\s?/, '$1') : rawLine
+
+    let html: string
+    try {
+      // 逐行高亮；空行跳过（hljs 对空串无意义）
+      html = line
+        ? hljs.highlight(line, { language: lang, ignoreIllegals: true }).value
+        : ''
+    } catch {
+      // 语言解析失败时降级为纯文本（已转义）
+      html = line
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
+    return { no: i + 1, html, highlight: isHighlight }
+  })
+})
+
+/** 当前 tab 是否有重点行（tab 标签旁的 ★ 提示） */
+function tabHasHighlight(tab: { content: string }): boolean {
+  return tab.content.split('\n').some((l) => /^\s*\/\/!\s?/.test(l))
+}
+
+// ---------- 复制（复制原始文本，含 //! 标记——方便对照源文件） ----------
 const copied = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 复制当前 tab 代码到剪贴板，按钮短暂显示「已复制」 */
 async function copyCode(): Promise<void> {
   if (!activeTab.value) return
-  await navigator.clipboard.writeText(activeTab.value.content)
+  // 复制时去掉 //! 前缀（给用户的应该是可直接使用的代码）
+  const cleaned = activeTab.value.content
+    .split('\n')
+    .map((l) => l.replace(/^(\s*)\/\/!\s?/, '$1'))
+    .join('\n')
+  await navigator.clipboard.writeText(cleaned)
   copied.value = true
-  // 1.5s 后恢复默认文案（防定时器叠加）
   if (copiedTimer) clearTimeout(copiedTimer)
   copiedTimer = setTimeout(() => {
     copied.value = false
@@ -162,6 +183,12 @@ async function copyCode(): Promise<void> {
           :aria-selected="tab.key === activeKey"
           @click="activeKey = tab.key"
         >
+          <!-- 含重点行的 tab 加 ★ 提示 -->
+          <span
+            v-if="tabHasHighlight(tab)"
+            class="tab-star"
+            aria-hidden="true"
+          >★</span>
           {{ tab.label }}
         </button>
       </div>
@@ -175,17 +202,37 @@ async function copyCode(): Promise<void> {
       </button>
     </div>
 
-    <!-- 代码展示区（横向可滚动） -->
-    <pre class="code-block"><code
-      ref="codeEl"
-      :class="`language-${hlLang(activeTab?.lang ?? 'plaintext')}`"
-    >{{ activeTab?.content }}</code></pre>
+    <!-- 代码区：行号 + 逐行渲染 -->
+    <div class="code-scroll">
+      <table class="code-table">
+        <tbody>
+          <tr
+            v-for="line in renderedLines"
+            :key="line.no"
+            :class="{ 'line--highlight': line.highlight }"
+          >
+            <!-- 行号列（固定宽度，不可选中） -->
+            <td
+              class="line-no"
+              aria-hidden="true"
+            >
+              {{ line.no }}
+            </td>
+            <!-- 代码列（逐行高亮 HTML） -->
+            <td class="line-code">
+              <!-- eslint-disable-next-line vue/no-v-html —— hljs 输出为转义后的安全 HTML -->
+              <code v-html="line.html || '&nbsp;'" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .code-workbench {
-  overflow: hidden; /* 让内部代码区裁剪圆角 */
+  overflow: hidden;
 }
 
 .workbench-bar {
@@ -193,23 +240,26 @@ async function copyCode(): Promise<void> {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border-bottom: 1px solid var(--border);
 }
 
 .tab-list {
   display: flex;
-  gap: 0.25rem;
-  overflow-x: auto; /* tab 多时横向滚动 */
+  gap: 0.15rem;
+  overflow-x: auto;
 }
 
 .tab-btn {
-  padding: 0.3rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
   font-size: 0.8rem;
   font-family: var(--font-mono);
   color: var(--text-secondary);
   background: none;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
   white-space: nowrap;
@@ -224,9 +274,14 @@ async function copyCode(): Promise<void> {
 }
 
 .tab-btn--active {
-  color: var(--primary-soft-text);
-  background-color: var(--primary-soft);
+  color: var(--primary);
   font-weight: 500;
+}
+
+/* 含重点行的 tab 星标 */
+.tab-star {
+  color: var(--warning);
+  font-size: 0.7rem;
 }
 
 .copy-btn {
@@ -235,28 +290,55 @@ async function copyCode(): Promise<void> {
   flex-shrink: 0;
 }
 
-.code-block {
-  margin: 0;
-  padding: 1rem 1.25rem;
-  /* 代码块底色随主题（highlight.js 主题类作用于 code 内部 token，
-     块底色用我们自己的变量，浅色 github / 暗色 github-dark 对应） */
-  background-color: var(--code-bg) !important;
+.code-scroll {
   overflow-x: auto;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  line-height: 1.6;
+  background-color: var(--code-bg);
 }
 
-.code-block code {
-  /* 重置全局行内 code 样式（此处是块级代码展示） */
+.code-table {
+  /* 表格布局：行号列 + 代码列，宽度随内容 */
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.825rem;
+  line-height: 1.7;
+  min-width: 100%;
+}
+
+.line-no {
+  /* 行号列：固定宽度、右对齐、不可选中、弱化颜色 */
+  width: 2.5rem;
+  padding: 0 0.75rem 0 1rem;
+  text-align: right;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  user-select: none;
+  vertical-align: top;
+}
+
+.line-code {
+  padding: 0 1.5rem 0 0.25rem;
+  white-space: pre; /* 保留缩进与换行语义 */
+  vertical-align: top;
+}
+
+.line-code code {
+  /* 重置全局行内 code 样式 */
   background: none;
   border: none;
   padding: 0;
   font-size: inherit;
 }
 
-/* 暗色下 GitHub Dark 主题需要覆盖 hljs 默认背景 */
-:global(.dark) .code-block :deep(.hljs) {
-  background: transparent;
+/* 重点行：主色浅背景 + 左侧色条（VitePress line highlighting 惯例） */
+.line--highlight {
+  background-color: var(--primary-soft);
+
+  .line-no {
+    opacity: 1;
+    color: var(--primary-soft-text);
+    font-weight: 600;
+    /* 左侧色条（用行号列左边框表现） */
+    box-shadow: inset 3px 0 0 var(--primary);
+  }
 }
 </style>
