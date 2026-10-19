@@ -1,0 +1,65 @@
+// ============================================================
+// 异步组件与重试教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { defineAsyncComponent, h, ref } from 'vue'
+
+// --- 步骤一：defineAsyncComponent 标准工厂 ---
+
+/**
+ * 真实项目完整写法（loading/error 用独立小 SFC）：
+ * loader    —— 动态 import，webpack/vite 自动切割 chunk
+ * delay     —— 加载快于 delay ms 不显示 loading（防骨架屏闪一下）
+ * timeout   —— 超时视为失败 → errorComponent（防网络挂起永远转圈）
+ */
+// const AsyncChart = defineAsyncComponent({
+//   loader: () => import('./HeavyChart.vue'),
+//   loadingComponent: () => import('./ChartSkeleton.vue'),
+//   errorComponent: () => import('./ChartError.vue'),
+//   delay: 200,
+//   timeout: 8000,
+// })
+
+// 最简形态：一行就够（只有 loader）
+const AsyncChart = defineAsyncComponent(() => import('./HeavyChart.vue'))
+
+// --- 步骤二：失败重试的标准姿势（换 key 重建） ---
+
+const attempt = ref(0)
+
+//! 重试不靠 retry() API（defineAsyncComponent 没有）——换 :key 强制销毁重建，
+//! 新实例重新走一遍 loader。这是社区统一做法。
+function retry(): void {
+  attempt.value++
+}
+
+// 模板：<AsyncChart :key="attempt" @error="onErr" />
+
+// --- 步骤三：Suspense 包裹多个异步子组件（统一 fallback） ---
+
+// <Suspense> 会等内部所有异步依赖（含 async setup 的组件）就绪后才一次性渲染：
+//
+// <template>
+//   <Suspense>
+//     <template #default>
+//       <AsyncPage />   <!-- async setup 内 await 数据 -->
+//     </template>
+//     <template #fallback>
+//       <Skeleton />
+//     </template>
+//   </Suspense>
+// </template>
+//
+//! 注意：Vue 3 中 Suspense 仍标 experimental——生产慎用，API 可能变动；
+//! 嵌套 Suspense 时内层 <Suspense suspensible> 可让子树也独立挂起。
+
+// --- 步骤四：整体状态机一图流 ---
+
+// loader 执行中 ──delay 到──▶ 显示 loadingComponent
+//     │
+//     ├── resolve ──▶ 渲染真正组件（卸载 loading）
+//     │
+//     ├── reject  ──▶ 显示 errorComponent（onErrorCaptured 也会收到）
+//     │
+//     └── timeout ──▶ 同 reject（超时按失败处理）
