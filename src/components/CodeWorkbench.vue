@@ -290,6 +290,8 @@ async function copyCode(): Promise<void> {
 
 <style scoped>
 .code-workbench {
+  /* 显式占满父列：切「可复制源码」时长行不得撑宽页面 */
+  width: 100%;
   overflow: hidden;
 }
 
@@ -349,6 +351,10 @@ async function copyCode(): Promise<void> {
 }
 
 .code-scroll {
+  /* max-width + min-width 双保险：
+     长源码行只在本容器内部横向滚动，表格再宽也不撑祖先 */
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   background-color: var(--code-bg);
 }

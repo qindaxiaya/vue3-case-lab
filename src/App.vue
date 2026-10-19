@@ -28,5 +28,7 @@ provide('searchQuery', searchQuery)
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* 兜底：任何子内容（如超宽代码表）溢出都不产生页面级横向滚动 */
+  overflow-x: clip;
 }
 </style>
