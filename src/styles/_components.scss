@@ -22,6 +22,11 @@
   cursor: pointer;
   user-select: none;
 
+  // 按钮用作 <a>（RouterLink）时必须压过全局 a 样式：
+  // 无下划线、无链接色（各变体自带文字色）
+  text-decoration: none;
+  color: inherit;
+
   // 动效：统一过渡时长
   transition:
     background-color var(--transition),
@@ -48,10 +53,14 @@
   @extend .btn;
 
   background-color: var(--primary);
-  color: #fff; // 主色底上始终白字（浅暗主色均足够深/饱和）
+  // 主色底上始终白字（浅暗主色均足够深/饱和）
+  color: #fff;
 
+  // hover 文字保持白色——压过全局 a:hover 的主色文字（否则白字变蓝底蓝字看不见）
   &:hover:not(:disabled) {
     background-color: var(--primary-hover);
+    color: #fff;
+    text-decoration: none;
   }
 }
 
@@ -68,6 +77,7 @@
     border-color: var(--primary);
     color: var(--primary);
     background-color: var(--primary-soft);
+    text-decoration: none;
   }
 }
 
