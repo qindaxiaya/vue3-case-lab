@@ -48,22 +48,17 @@
 
 ## 当前进度
 
-- **阶段**：Task 8（idle-schedule）完成；框架/案例抽离约束已固化
+- **阶段**：P0 八案例 + P1 七案例全部完成（共 15 案例，5 分类）；框架/案例抽离约束已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
-- 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`
+- 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 已完成：
-  - ✅ 设计文档 + 实施计划
-  - ✅ GitHub 私有仓库（qindaxiaya/vue3-case-lab 私有）
-  - ✅ Task 1 脚手架（Vite+Vue3+TS+Sass 样式系统+ESLint+AGENTS.md）
-  - ✅ Task 2 案例注册表（import.meta.glob 自动发现 + filterCases 搜索，vitest 18/18 含真实 glob 集成）
-  - ✅ Task 3 站点壳（路由/顶栏导航/搜索/useTheme 暗色切换）
-  - ✅ Task 4 案例页双 tab 工作台（展示代码 //! 重点高亮 / 可复制源码，均语法高亮，vue 分段语言）
-  - ✅ Task 6 perf-observer 案例（实时面板：FPS/内存/Event Timing INP/sparkline + 卡顿滑块/偏移实验）
-  - ✅ landing 首页（hero + 特性网格 + CTA）+ 信息架构二次精简（删侧边栏/招牌入口/说明区）
-  - ✅ Task 7 raf-loop 案例（多演示标签框架约定：emit tabs + demoActive + code key 过滤；正弦往返 + 高频渲染合并）
-  - ✅ Task 8 idle-schedule 案例（同步阻塞 vs 空闲分片对比、卡顿指示灯、timeout 兜底、Safari 降级）
-  - ✅ 页面宽度根因修复（flex 下 auto margin 禁用 stretch → fit-content 漂移，显式 width:100%）
-- 待做：Task 9 lazy-image → Task 10 virtual-list → Task 11 watch-traps → Task 12 async-suspense → Task 13 reactive-inject → Task 14 收尾走查（tag v0.1）
+  - ✅ 设计文档 + 实施计划 + GitHub 私有仓库（qindaxiaya/vue3-case-lab）
+  - ✅ Task 1~4 脚手架/注册表/站点壳/案例页双 tab 工作台
+  - ✅ P0 八案例：perf-observer / raf-loop / idle-schedule / lazy-image / virtual-list / watch-traps / async-suspense / reactive-inject
+  - ✅ P1 七案例：infinite-scroll / resize-observer / mutation-observer / shallow-markraw / v-memo / teleport-layer / use-event-listener
+  - ✅ 分类扩展 composables；registry 排序复用 categories.ts（新增分类只改一处）
+  - ✅ landing 首页 + 信息架构精简（无侧边栏）+ 页面宽度根因修复
+- 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
