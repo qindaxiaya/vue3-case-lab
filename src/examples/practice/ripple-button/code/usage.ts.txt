@@ -1,0 +1,58 @@
+// ============================================================
+// 水波纹按钮教学片段（Web Animations API）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：取点击点相对按钮的坐标 ---
+
+function spawnRipple(e: MouseEvent): void {
+  const btn = e.currentTarget as HTMLElement
+  const rect = btn.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  //! 半径取「到最远角」的距离——波纹必须能覆盖整个按钮才自然
+  const radius = Math.max(
+    Math.hypot(x, y),
+    Math.hypot(rect.width - x, y),
+    Math.hypot(x, rect.height - y),
+    Math.hypot(rect.width - x, rect.height - y),
+  )
+
+  // --- 步骤二：创建一个绝对定位的圆 ---
+
+  const ripple = document.createElement('span')
+  ripple.style.cssText = `
+    position: absolute; border-radius: 50%; pointer-events: none;
+    width: ${radius * 2}px; height: ${radius * 2}px;
+    left: ${x - radius}px; top: ${y - radius}px;
+    background: currentColor; opacity: 0;
+  `
+  btn.appendChild(ripple)
+
+  // --- 步骤三：WAAPI 动画（比写 CSS keyframes 更灵活：时长可动态传参） ---
+
+  //! element.animate(keyframes, options)——浏览器原生动画引擎，走合成层不占主线程
+  const anim = ripple.animate(
+    [
+      { transform: 'scale(0)', opacity: 0.45 },
+      { transform: 'scale(1)', opacity: 0 },
+    ],
+    { duration: 600, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)', fill: 'forwards' },
+  )
+
+  //! onfinish 自动清理 DOM——连点几十次也不残留节点
+  anim.onfinish = () => ripple.remove()
+}
+
+// --- CSS 必须配合的两条 ---
+
+// .btn { position: relative; overflow: hidden; }  /* 波纹定位基准 + 裁掉溢出 */
+// .ripple-ink { z-index: -1; }                     /* 保证文字在波纹之上 */
+
+// --- 变体踩坑 ---
+
+// 1. 按钮文字色与波纹色：用 currentcolor 自动跟随（白字→白波纹）
+// 2. 深色背景半透明波纹比纯白更耐看：opacity 0.3~0.45
+// 3. 禁用态记得提前 return——不给 disabled 按钮加波纹
+// 4. 想要 Material 的「按压缩放 + 波纹」组合，再加 :active { transform: scale(0.98) }
