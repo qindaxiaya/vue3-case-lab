@@ -1,18 +1,12 @@
 // ============================================================
 // 案例列表页（/cases，全宽）
-// - 侧边栏已删除：分类筛选改为顶部 chips，与顶栏搜索联动过滤
+// - 顶栏搜索改为全局弹窗，本页只负责分类筛选
 // - 分类分组的案例卡片：标题 / 摘要 / 难度 / 标签，点击进详情
 // ============================================================
 <script setup lang="ts">
-import { computed, inject, ref, watch, type Ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { categories } from '../examples/categories'
-import { allCases, filterCases } from '../examples/registry'
-
-// 与顶栏搜索共享的关键词（App.vue provide）
-const searchQuery = inject<Ref<string>>('searchQuery')
-
-/** 当前搜索词（无注入时为空串） */
-const query = computed(() => searchQuery?.value ?? '')
+import { allCases } from '../examples/registry'
 
 /** 分类筛选持久化键：从详情页返回时保留用户选中的分类 */
 const FILTER_KEY = 'moyu-cases-filter'
@@ -30,38 +24,16 @@ watch(activeCategory, (value) => {
   sessionStorage.setItem(FILTER_KEY, value)
 })
 
-/** 搜索命中的全部案例（先过搜索，再过分组展示） */
-const searched = computed(() => filterCases(allCases, query.value))
-
-/**
- * 搜索词变化后校正选中分类
- * 例如先选「虚拟渲染」再搜索一个该分类无结果的词：chips 里不再有该分类，
- * 但 activeCategory 仍指向它，会显示空列表且没有选中项。此时自动回退「全部」。
- */
-watch(
-  searched,
-  (list) => {
-    if (
-      activeCategory.value &&
-      !list.some((c) => c.categoryId === activeCategory.value)
-    ) {
-      activeCategory.value = ''
-    }
-  },
-  // 首次进入也要校正：搜索词是跨页保留的，恢复的分类可能已无命中
-  { immediate: true },
-)
-
 /**
  * 分类筛选 chips 数据
- * 只列「当前搜索下有案例」的分类（空分类不显示，避免点了空页面）
+ * 只列「有案例」的分类（空分类不显示，避免点了空页面）
  */
 const chips = computed(() => [
-  { id: '', name: '全部', count: searched.value.length },
+  { id: '', name: '全部', count: allCases.length },
   ...categories
     .map((cat) => ({
       ...cat,
-      count: searched.value.filter((c) => c.categoryId === cat.id).length,
+      count: allCases.filter((c) => c.categoryId === cat.id).length,
     }))
     .filter((cat) => cat.count > 0),
 ])
@@ -69,8 +41,8 @@ const chips = computed(() => [
 /** 当前分类过滤后的案例（chips 与分组列表共用） */
 const visibleCases = computed(() =>
   activeCategory.value
-    ? searched.value.filter((c) => c.categoryId === activeCategory.value)
-    : searched.value,
+    ? allCases.filter((c) => c.categoryId === activeCategory.value)
+    : allCases,
 )
 
 /**
@@ -117,7 +89,7 @@ function difficultyLabel(difficulty: string): string {
         案例库
       </h1>
       <p class="page-desc">
-        点分类筛选，或用顶栏搜索（支持标题 / 标签 / 摘要）
+        点分类筛选，或点顶栏搜索（支持标题 / 标签 / 摘要）
       </p>
     </header>
 
@@ -142,17 +114,12 @@ function difficultyLabel(difficulty: string): string {
       </button>
     </div>
 
-    <!-- 搜索/筛选空结果 -->
+    <!-- 分类无案例时的空结果 -->
     <div
       v-if="totalHits === 0"
       class="empty-state"
     >
-      <p v-if="query">
-        没有匹配「{{ query }}」的案例
-      </p>
-      <p v-else>
-        该分类暂无案例
-      </p>
+      <p>该分类暂无案例</p>
     </div>
 
     <!-- 分类分组卡片 -->

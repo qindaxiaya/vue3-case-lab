@@ -1,72 +1,95 @@
 // ============================================================
-// 搜索框：输入即触发过滤回调，父组件联动侧边栏/列表
+// 搜索入口：外观像输入框的按钮，点击由父组件打开搜索弹窗
+// （真正的输入与结果展示在 SearchModal 中）
 // ============================================================
 <script setup lang="ts">
-// 定义 props + emits 契约（defineModel 需要 modelValue 双向绑定）
-const model = defineModel<string>({ default: '' })
+defineEmits<{
+  /** 请求打开搜索弹窗 */
+  (e: 'open'): void
+}>()
 </script>
 
 <template>
-  <div class="search-box">
-    <!-- 语义化 label 仅供读屏，视觉隐藏 -->
-    <label
-      class="sr-only"
-      for="case-search"
-    >搜索案例</label>
-    <input
-      id="case-search"
-      v-model="model"
-      class="search-input"
-      type="search"
-      placeholder="搜索案例、标签……"
-      autocomplete="off"
-    >
-    <!-- 装饰性图标，读屏忽略 -->
+  <button
+    class="search-trigger"
+    type="button"
+    aria-label="打开搜索"
+    @click="$emit('open')"
+  >
     <span
       class="search-icon"
       aria-hidden="true"
     >🔍</span>
-  </div>
+    <span class="search-placeholder">搜索案例、标签……</span>
+    <kbd class="search-kbd">Ctrl K</kbd>
+  </button>
 </template>
 
 <style scoped>
-.search-box {
-  position: relative;
+.search-trigger {
   flex: 1;
-  /* 允许收缩到 0：否则 input 的固有宽度会顶破 375px 顶栏 */
+  /* 允许收缩到 0：否则固有宽度会顶破 375px 顶栏 */
   min-width: 0;
   max-width: 20rem;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.45em 0.9em 0.45em 2.2em; /* 左侧留出图标位 */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45em 0.7em 0.45em 0.9em;
   font-family: inherit;
   font-size: 0.9rem;
-  color: var(--text);
+  text-align: left;
+  color: var(--text-secondary);
   background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
-  transition: border-color var(--transition);
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background-color var(--transition),
+    color var(--transition);
 }
 
-.search-input::placeholder {
-  color: var(--text-secondary);
+.search-trigger:hover {
+  color: var(--text);
+  border-color: var(--primary);
+  background-color: var(--surface);
 }
 
-.search-input:focus {
-  outline: none; /* 焦点环由外框统一表现 */
+.search-trigger:focus-visible {
+  outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .search-icon {
-  position: absolute;
-  left: 0.7em;
-  top: 50%;
-  transform: translateY(-50%);
   font-size: 0.8rem;
-  pointer-events: none; /* 不拦截点击 */
   opacity: 0.6;
+}
+
+/* 占位文案：窄屏优先保留，超出省略 */
+.search-placeholder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 快捷键提示：窄屏隐藏，给输入框让位 */
+.search-kbd {
+  flex-shrink: 0;
+  padding: 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+}
+
+@media (max-width: 560px) {
+  .search-kbd {
+    display: none;
+  }
 }
 </style>

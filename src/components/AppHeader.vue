@@ -1,28 +1,34 @@
 // ============================================================
 // 全站顶栏（VitePress 规格：64px 高 + 底部 1px 分隔线）
-// 左：站点名（回首页）+「案例」导航；右：搜索框 + 暗色切换
+// 左：站点名（回首页）+「案例」导航；右：搜索入口 + 暗色切换
+// 搜索为全局弹窗：点击入口或按 Ctrl / Cmd + K 打开
 // ============================================================
 <script setup lang="ts">
-import { watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import SearchBox from './SearchBox.vue'
+import SearchModal from './SearchModal.vue'
 import ThemeToggle from './ThemeToggle.vue'
 
-// 搜索词双向绑定（App.vue 持有并 provide 给案例列表页过滤）
-const searchQuery = defineModel<string>('query', { default: '' })
-
-const route = useRoute()
-const router = useRouter()
+/** 搜索弹窗开关（本组件持有，弹窗与入口都受控） */
+const searchOpen = ref(false)
 
 /**
- * 在非列表页输入搜索词时自动回到列表页：
- * 用户当前在首页/详情页，输入后页面不变会以为搜索没生效。
- * 已在 /cases 时不重复 push，避免破坏输入焦点与历史记录。
+ * 全局快捷键：Ctrl + K（macOS 为 Cmd + K）打开搜索
+ * 输入框内也允许触发，与主流文档站一致
  */
-watch(searchQuery, (value) => {
-  if (value.trim() && route.path !== '/cases') {
-    void router.push('/cases')
+function onGlobalKeydown(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    searchOpen.value = true
   }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onGlobalKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
 })
 </script>
 
@@ -56,10 +62,16 @@ watch(searchQuery, (value) => {
 
       <!-- 右侧工具区 -->
       <div class="header-tools">
-        <SearchBox v-model="searchQuery" />
+        <SearchBox @open="searchOpen = true" />
         <ThemeToggle />
       </div>
     </div>
+
+    <!-- 搜索弹窗：Teleport 到 body，不受顶栏层叠上下文影响 -->
+    <SearchModal
+      :open="searchOpen"
+      @close="searchOpen = false"
+    />
   </header>
 </template>
 
