@@ -1,7 +1,7 @@
 // ============================================================
 // 案例详情页（/cases/:categoryId/:caseId）
-// 结构：面包屑 → 页头（标题+难度+标签）→ 演示区 → 代码区
-// 代码区两个 tab：展示代码（重点行高亮）+ 可复制源码（复制即用）
+// 结构：面包屑 → 页头（标题+难度+标签）→ 演示区 → 说明/源码 tab
+// 说明与源码共用一个 tab 组：默认说明，源码按需切换查看
 // ============================================================
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -34,7 +34,7 @@ const item = computed(() =>
 )
 
 /**
- * 路由切换时重置演示 tab 状态
+ * 路由切换时重置演示 tab 与内容 tab 状态
  * CasePage 在同一路由记录内复用（只换 params），组件不会重建；
  * 若不重置，上一个案例的 demoKey 会残留，代码区按旧 key 过滤后可能只剩「可复制源码」。
  * watch 默认 pre-flush：先清空，再由新 Demo 挂载时 emit('tabs') 重新上报。
@@ -44,6 +44,7 @@ watch(
   () => {
     demoTabs.value = []
     activeDemoKey.value = ''
+    activeTab.value = 'explain'
   },
 )
 
@@ -122,8 +123,12 @@ const keyPoints = computed<string[]>(() => {
   return points.slice(0, 8)
 })
 
-/** 源码默认关闭：先看演示与说明，需要时再展开 */
-const showCode = ref(false)
+// ============================================================
+// 说明 / 源码 tab
+// ============================================================
+
+/** 默认展示说明：先看演示与讲解，源码不占首屏 */
+const activeTab = ref<'explain' | 'code'>('explain')
 
 // ============================================================
 // SBAC 说明：场景 / 背景 / 做法 / 结论
@@ -257,85 +262,109 @@ const explainBlocks = computed(() => {
         </div>
       </section>
 
-      <!-- ② 案例说明：先讲清楚「为什么看、看什么」，源码按需展开 -->
-      <section aria-label="案例说明">
-        <h2 class="section-title">
-          说明
-        </h2>
+      <!-- ② 说明 / 源码：共用一个 tab 组，默认说明，源码按需切换 -->
+      <section aria-label="案例说明与源码">
+        <div
+          class="content-tabs"
+          role="tablist"
+          aria-label="说明与源码切换"
+        >
+          <button
+            id="tab-explain"
+            class="content-tab"
+            :class="{ 'content-tab--active': activeTab === 'explain' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'explain'"
+            aria-controls="panel-explain"
+            @click="activeTab = 'explain'"
+          >
+            说明
+          </button>
+          <button
+            id="tab-code"
+            class="content-tab"
+            :class="{ 'content-tab--active': activeTab === 'code' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === 'code'"
+            aria-controls="panel-code"
+            @click="activeTab = 'code'"
+          >
+            源码
+          </button>
+        </div>
 
-        <div class="card note-card">
-          <!-- 已补齐 SBAC：场景 / 背景 / 做法 / 结论，按新手能懂的方式讲 -->
-          <template v-if="explain">
-            <p class="note-lead">
-              {{ item.meta.sell }}
-            </p>
-
-            <ol class="sbac-list">
-              <li
-                v-for="block in explainBlocks"
-                :key="block.key"
-                class="sbac-row"
-              >
-                <span
-                  class="sbac-badge"
-                  :class="`sbac-${block.key.toLowerCase()}`"
-                  aria-hidden="true"
-                >{{ block.key }}</span>
-                <div class="sbac-body">
-                  <h3 class="sbac-label">
-                    {{ block.label }}
-                  </h3>
-                  <p class="sbac-text">
-                    {{ block.text }}
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </template>
-
-          <!-- 未补齐说明：回退到卖点 + 教学代码的重点行 -->
-          <template v-else>
-            <div class="note-sell">
-              <span class="note-sell-label">为什么看</span>
-              <p class="note-sell-text">
+        <!-- 面板一：案例说明（SBAC 四段；未补齐时回退到卖点 + 代码要点） -->
+        <div
+          v-show="activeTab === 'explain'"
+          id="panel-explain"
+          role="tabpanel"
+          aria-labelledby="tab-explain"
+        >
+          <div class="card note-card">
+            <template v-if="explain">
+              <p class="note-lead">
                 {{ item.meta.sell }}
               </p>
-            </div>
 
-            <ul
-              v-if="keyPoints.length"
-              class="note-points"
-            >
-              <li
-                v-for="point in keyPoints"
-                :key="point"
+              <ol class="sbac-list">
+                <li
+                  v-for="block in explainBlocks"
+                  :key="block.key"
+                  class="sbac-row"
+                >
+                  <span
+                    class="sbac-badge"
+                    :class="`sbac-${block.key.toLowerCase()}`"
+                    aria-hidden="true"
+                  >{{ block.key }}</span>
+                  <div class="sbac-body">
+                    <h3 class="sbac-label">
+                      {{ block.label }}
+                    </h3>
+                    <p class="sbac-text">
+                      {{ block.text }}
+                    </p>
+                  </div>
+                </li>
+              </ol>
+            </template>
+
+            <template v-else>
+              <div class="note-sell">
+                <span class="note-sell-label">为什么看</span>
+                <p class="note-sell-text">
+                  {{ item.meta.sell }}
+                </p>
+              </div>
+
+              <ul
+                v-if="keyPoints.length"
+                class="note-points"
               >
-                {{ point }}
-              </li>
-            </ul>
-          </template>
+                <li
+                  v-for="point in keyPoints"
+                  :key="point"
+                >
+                  {{ point }}
+                </li>
+              </ul>
+            </template>
 
-          <p class="note-foot">
-            共 {{ item.codeTabs.length }} 段教学代码 · 难度 {{ difficultyLabel }} · 分类 {{ categoryName }}
-          </p>
+            <p class="note-foot">
+              共 {{ item.codeTabs.length }} 段教学代码 · 难度 {{ difficultyLabel }} · 分类 {{ categoryName }}
+            </p>
+          </div>
         </div>
-      </section>
 
-      <!-- ③ 源码区：默认收起，避免一进来就是大段代码 -->
-      <section aria-label="源码">
-        <h2 class="section-title">
-          源码
-          <button
-            class="code-toggle"
-            type="button"
-            :aria-expanded="showCode"
-            @click="showCode = !showCode"
-          >
-            {{ showCode ? '收起源码' : '展开源码' }}
-          </button>
-        </h2>
-
-        <div v-show="showCode">
+        <!-- 面板二：源码工作台（展示代码 / 可复制源码 两个子 tab） -->
+        <div
+          v-show="activeTab === 'code'"
+          id="panel-code"
+          role="tabpanel"
+          aria-labelledby="tab-code"
+        >
           <CodeWorkbench
             :tabs="item.codeTabs"
             :demo-source="item.demoSource"
@@ -473,26 +502,46 @@ const explainBlocks = computed(() => {
   margin-bottom: 1.1rem;
 }
 
-/* 源码展开/收起按钮 */
-.code-toggle {
-  margin-left: auto;
-  padding: 0.28rem 0.8rem;
-  font-size: 0.8rem;
+/* 源码展开/收起按钮（已由 tab 组替代，样式保留移除） */
+
+/* ---------- 说明 / 源码 tab 组 ---------- */
+
+.content-tabs {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  margin-bottom: 1.1rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.content-tab {
+  padding: 0.34rem 1.15rem;
+  font-size: 0.86rem;
   font-family: inherit;
-  font-weight: 500;
-  color: var(--primary);
-  background-color: var(--primary-soft);
-  border: 1px solid transparent;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
   border-radius: 999px;
   cursor: pointer;
   transition:
     color var(--transition),
     background-color var(--transition);
+}
 
-  &:hover {
-    color: #fff;
-    background-color: var(--primary);
-  }
+.content-tab:hover {
+  color: var(--text);
+}
+
+.content-tab--active {
+  color: #fff;
+  font-weight: 500;
+  background-color: var(--primary);
+}
+
+.content-tab--active:hover {
+  color: #fff;
 }
 
 /* ---------- 演示 tab（标题行内） ---------- */
@@ -718,6 +767,17 @@ const explainBlocks = computed(() => {
   .case-page {
     padding: 1.5rem 1.25rem 3rem;
     gap: 1.5rem;
+  }
+
+  /* 移动端 tab 组铺满一行，方便点按 */
+  .content-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .content-tab {
+    flex: 1;
+    padding: 0.45rem 1rem;
   }
 
   .demo-card {
