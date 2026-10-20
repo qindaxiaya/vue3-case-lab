@@ -1,53 +1,10 @@
 // ============================================================
-// 案例：requestAnimationFrame 渲染循环（raf-loop）
-// 两个演示（同页对照）：
-//   演示一：匀速往返动画——时间戳驱动 + 正弦缓动（端点速度归零不生硬）
-//   演示二：高频渲染合并——mousemove 高频事件用 rAF 节流为每帧一次渲染
+// 案例：逐帧动画（requestAnimationFrame）
+// 时间戳驱动 + 正弦缓动往返，实时展示帧率 / 帧间隔 / 累计帧数
 // 通用要点：停止必须 cancelAnimationFrame；onUnmounted 兜底清理
 // ============================================================
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
-
-// ============================================================
-// 演示 tab（受控）：tab UI 在案例页「演示」标题行，状态由 CasePage 持有
-// 本组件只做两件事：上报可用 tab 集合 + 响应 key 变化停/启对应演示
-// ============================================================
-
-const props = defineProps<{
-  /** 当前演示 key（CasePage 持有并传回） */
-  demoActive?: string
-}>()
-
-const emit = defineEmits<{
-  /** 上报本案例可用的演示 tab（CasePage 渲染到标题行） */
-  (e: 'tabs', tabs: { key: string; label: string }[], initial: string): void
-}>()
-
-/**
- * 响应演示切换：
- * v-if 切走的区块不会触发组件卸载钩子——rAF 必须手动停，
- * 否则循环在隐藏区块里继续空转（回调还引用着隐藏的 DOM 状态）
- */
-watch(
-  () => props.demoActive,
-  (_next, prev) => {
-    // 停上一个演示（切走即停，防隐藏区块空转）
-    if (prev === 'track') {
-      pause()
-    } else if (prev === 'throttle') {
-      cancelAnimationFrame(throttleRafId)
-      renderPending = false
-      // 计数归零，切回时从头看对比效果
-      eventCount.value = 0
-      renderCount.value = 0
-    }
-    // 切回不自动启动：一律默认暂停，由用户点「启动」触发
-  },
-)
-
-// ============================================================
-// 演示一：匀速往返动画（时间戳驱动 + 正弦缓动）
-// ============================================================
+import { onUnmounted, ref } from 'vue'
 
 /** 循环是否在跑（按钮文案与循环续停都看它） */
 const running = ref(false)
@@ -67,15 +24,15 @@ const TRACK_TRAVEL = 320
 /** 往返周期秒（一个完整来回的时长） */
 const PERIOD = 3.2
 
-// ---------- rAF 循环核心 ----------
+// ---------- 逐帧循环核心 ----------
 
-/** rAF 返回的句柄：取消循环全靠它（必须成对） */
+/** requestAnimationFrame 返回的句柄：取消循环全靠它（必须成对） */
 let rafId = 0
 /** 本段循环的起始时间戳（暂停恢复时平移，避免瞬间跳变） */
 let startTs = 0
 /** 上一帧时间戳（算帧间隔用） */
 let lastTs = 0
-/** FPS 滑动窗口：保留最近 60 帧的时间戳 */
+/** 帧率滑动窗口：保留最近 60 帧的时间戳 */
 const fpsWindow: number[] = []
 
 /**
@@ -90,7 +47,7 @@ function loop(now: number): void {
   lastTs = now
   frameCount.value++
 
-  // ② FPS 滑动窗口：入列并丢最旧，保留最近 60 帧
+  // ② 帧率滑动窗口：入列并丢最旧，保留最近 60 帧
   fpsWindow.push(now)
   if (fpsWindow.length > 60) fpsWindow.shift()
   if (fpsWindow.length >= 2) {
@@ -140,163 +97,52 @@ function toggle(): void {
   }
 }
 
-// ============================================================
-// 演示二：高频渲染合并（mousemove 事件 + rAF 节流）
-// ============================================================
-
-/** 最新鼠标 x/y（事件里只记录，渲染只在 rAF 回调里做） */
-const cursorX = ref(0)
-const cursorY = ref(0)
-/** 事件计数（mousemove 触发次数，可达每秒数百） */
-const eventCount = ref(0)
-/** 渲染计数（rAF 回调执行次数，上限≈帧率） */
-const renderCount = ref(0)
-
-/** 是否已有待执行的 rAF 回调（合并标志：一帧只渲一次） */
-let renderPending = false
-/** 待执行的 rAF 句柄（卸载时取消） */
-let throttleRafId = 0
-/** 事件里暂存的最新坐标（rAF 回调时才写进响应式状态） */
-let latestX = 0
-let latestY = 0
-
-/**
- * rAF 节流渲染模式：
- * 事件高频触发时「只记最新值 + 挂一个 rAF」，一帧内后续事件全部合并——
- * 渲染次数从「事件数」降到「帧率」，避免高频 setState 重复渲染
- */
-function onMouseMove(e: MouseEvent): void {
-  eventCount.value++
-  // 记录最新坐标（非响应式暂存，避免每事件都触发响应式更新）
-  latestX = e.offsetX
-  latestY = e.offsetY
-
-  // 已有待执行回调则不再重复挂（合并的关键判断）
-  if (!renderPending) {
-    renderPending = true
-    // 只在「即将重绘」前执行一次：本帧所有 move 事件共享这次渲染
-    throttleRafId = requestAnimationFrame(() => {
-      renderPending = false
-      cursorX.value = latestX
-      cursorY.value = latestY
-      renderCount.value++
-    })
-  }
-}
-
-// ---------- 生命周期 ----------
-
-onMounted(() => {
-  // 上报 tab 集合（key 与 code/<key>.*.txt 文件名前缀一致，代码区按此联动）
-  emit(
-    'tabs',
-    [
-      { key: 'track', label: '往返动画' },
-      { key: 'throttle', label: '高频渲染合并' },
-    ],
-    'track',
-  )
-})
-
+// 组件销毁（路由离开）时取消循环，防止后台空转
 onUnmounted(() => {
-  // 兜底清理：组件销毁（路由离开）时取消两个循环，防止后台空转
   cancelAnimationFrame(rafId)
-  cancelAnimationFrame(throttleRafId)
 })
 </script>
 
 <template>
   <div class="raf-demo">
-    <!-- ============ 演示一：匀速往返动画 ============ -->
-    <section
-      v-if="demoActive === 'track'"
-      class="demo-block"
-      aria-label="演示：匀速往返动画"
+    <!-- 轨道 + 方块（transform 驱动，不动 left——不触发重排） -->
+    <div
+      class="track"
+      aria-label="动画轨道"
     >
-      <h3 class="demo-title">
-        匀速往返（时间戳驱动 + 正弦缓动）
-      </h3>
-
-      <!-- 轨道 + 方块（transform 驱动，不动 left——不触发重排） -->
       <div
-        class="track"
-        aria-label="动画轨道"
+        class="track-box"
+        :style="{ transform: `translateX(${boxX}px)` }"
+      />
+    </div>
+
+    <!-- 控制行：启动/暂停 + 实时指标 -->
+    <div class="controls">
+      <button
+        class="btn-primary"
+        type="button"
+        @click="toggle"
       >
-        <div
-          class="track-box"
-          :style="{ transform: `translateX(${boxX}px)` }"
-        />
+        {{ running ? '暂停' : '启动' }}
+      </button>
+
+      <div class="stat">
+        <span class="stat-name">帧率</span>
+        <span class="stat-value">{{ fps }}</span>
       </div>
-
-      <!-- 控制行：启动/暂停 + 实时指标 -->
-      <div class="controls">
-        <button
-          class="btn-primary"
-          type="button"
-          @click="toggle"
-        >
-          {{ running ? '暂停' : '启动' }}
-        </button>
-
-        <div class="stat">
-          <span class="stat-name">帧率 FPS</span>
-          <span class="stat-value">{{ fps }}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-name">帧间隔</span>
-          <span class="stat-value">{{ frameGap.toFixed(1) }} ms</span>
-        </div>
-        <div class="stat">
-          <span class="stat-name">累计帧数</span>
-          <span class="stat-value">{{ frameCount }}</span>
-        </div>
+      <div class="stat">
+        <span class="stat-name">帧间隔</span>
+        <span class="stat-value">{{ frameGap.toFixed(1) }} ms</span>
       </div>
-
-      <p class="hint">
-        位置 = 正弦波 × 轨道长：两端速度自然归零，折返不生硬（对比线性折返的瞬间突变）
-      </p>
-    </section>
-
-    <!-- ============ 演示二：高频渲染合并 ============ -->
-    <section
-      v-if="demoActive === 'throttle'"
-      class="demo-block"
-      aria-label="演示：高频渲染合并"
-    >
-      <h3 class="demo-title">
-        高频渲染合并（mousemove + rAF 节流）
-      </h3>
-
-      <!-- 交互区：鼠标移入移动 -->
-      <div
-        class="move-zone"
-        aria-label="鼠标移动区域"
-        @mousemove="onMouseMove"
-      >
-        <!-- 跟随光标的小圆点（只在 rAF 回调里更新位置） -->
-        <div
-          class="cursor-dot"
-          :style="{ transform: `translate(${cursorX}px, ${cursorY}px)` }"
-        />
-        <span class="zone-tip">↑ 在这里移动鼠标</span>
+      <div class="stat">
+        <span class="stat-name">累计帧数</span>
+        <span class="stat-value">{{ frameCount }}</span>
       </div>
+    </div>
 
-      <!-- 对比指标：事件数 vs 渲染数 -->
-      <div class="controls">
-        <div class="stat">
-          <span class="stat-name">事件数</span>
-          <span class="stat-value">{{ eventCount }}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-name">渲染帧数</span>
-          <span class="stat-value">{{ renderCount }}</span>
-        </div>
-      </div>
-
-      <p class="hint">
-        移动鼠标看两个数字：事件数每秒可达数百，渲染帧数被 rAF 合并到≈帧率——这就是节流渲染
-      </p>
-    </section>
+    <p class="hint">
+      位置 = 正弦波 × 轨道长：两端速度自然归零，折返不生硬（对比线性折返的瞬间突变）
+    </p>
   </div>
 </template>
 
@@ -306,22 +152,6 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 1rem;
 }
-
-/* 演示区块：轻边框分隔 */
-.demo-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.demo-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-}
-
-/* ---------- 轨道（演示一） ---------- */
 
 /* 轨道：宽度与 TRACK_TRAVEL + 方块宽对应（320 + 48） */
 .track {
@@ -346,46 +176,6 @@ onUnmounted(() => {
   /* transform 是唯一动画手段——每帧只改它，无 CSS animation */
   will-change: transform;
 }
-
-/* ---------- 鼠标交互区（演示二） ---------- */
-
-.move-zone {
-  position: relative;
-  width: 368px;
-  max-width: 100%;
-  height: 120px;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-btn);
-  background-color: var(--bg);
-  /* 十字光标提示可交互 */
-  cursor: crosshair;
-  overflow: hidden;
-}
-
-/* 跟随点：绝对定位 + transform（与演示一同一渲染手段） */
-.cursor-dot {
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: var(--primary);
-  pointer-events: none;
-}
-
-.zone-tip {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-/* ---------- 控制行与指标 ---------- */
 
 .controls {
   display: flex;

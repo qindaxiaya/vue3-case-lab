@@ -33,7 +33,7 @@
 - **框架与案例抽离（2026-10-19 用户拍板）**：
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
   2. 案例差异全部收在案例目录内自包含（Demo/meta/code）；框架只认通用约定
-  3. 多演示的通用约定：Demo emit `tabs` 上报集合 + prop `demoActive` 受控；code 文件 `<key>.*.txt` 与演示 key 对应，代码区按 key 过滤——新案例直接用约定，不改框架
+  3. **一个案例一个演示**（2026-10-20 用户拍板）：原先「多演示 tab」的案例已拆分（raf-loop → raf-loop + raf-throttle），新案例遇到两套对照场景直接建两个案例；框架仍保留 Demo emit `tabs` + prop `demoActive` 的兼容机制，但不再作为新案例的推荐写法
 - **不造轮子（2026-10-19 用户拍板）**：
   1. 工程实践类案例优先用现成库/原生 API（VueUse、fuse.js 等），**不手写已解决的通用工具**（debounce/throttle/深拷贝等）——案例代码应贴近真实项目写法
   2. 原生浏览器 API（canvas/Worker/Clipboard/EyeDropper/Observer 系）不算造轮子，直接演示
@@ -55,7 +55,7 @@
 
 ## 当前进度
 
-- **阶段**：共 54 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 9 · vue3 16 · practice 22）；「不造轮子」「框架案例抽离」约定已固化
+- **阶段**：共 55 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 10 · vue3 16 · practice 22）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -80,7 +80,8 @@
 - ✅ 2026-10-20 质量批次 4：修正 pinia（重复 store 名）/ history-guard（allowed、二次 popstate）/ route-rbac（user、computed）/ route-transition（direction）/ keep-alive-lru（ref）教学代码
 - ✅ 2026-10-20 质量批次 5：4 个新案例 notes 五段 + 实测（time-slicing 切片/全量、virtual-variable DOM 9/2000、chat-scroll 未读/吸底、pull-refresh 刷新/加载）+ 375px 与刷新验收
 - ✅ 2026-10-20 质量批次 6：其余 50 个存量案例 notes.md 五段补齐（54/54 全覆盖）；全部含现象/SBAC 式原理/关键代码/实测或行为指标/追问边界；脚本校验 54 篇均含 1~5 段；vitest 18/18、type-check、lint、build 通过
-- 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
+- ✅ 2026-10-20 说明区改为「说明 / 源码」tab 组，默认说明，源码默认隐藏；raf-loop 拆为逐帧动画 + 逐帧合并高频渲染（共 55 案例）
+- 待做：质量批次 7（说明/源码 tab 走查 + 新增 raf-throttle 验收）→ Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -112,3 +113,5 @@
 | 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；54 个存量 meta 一次补齐 |
 | 2026-10-20 | **案例说明统一 SBAC 四段** | 场景（新手真实遇到）/ 背景（大白话讲原理）/ 做法（案例怎么解决）/ 结论（记住什么、何时用）；写在 meta.explain，每段 1–3 句、少术语多类比；54 个案例全部补齐，未填时回退到 sell + 代码要点 |
 | 2026-10-20 | **详情页源码默认收起** | 先看演示与 SBAC 说明，需要时再展开；避免一进页就被几百行代码劝退 |
+| 2026-10-20 | **说明与源码合并为 tab 组，默认说明** | 两个标签同一 tab 组（role=tablist/tabpanel）切换，替代「展开源码」按钮；切换案例时重置回说明 |
+| 2026-10-20 | **一案例一演示：多演示拆成独立案例** | raf-loop 拆为 raf-loop（逐帧动画）+ raf-throttle（逐帧合并高频渲染），代码文件随案例拆分；框架保留 emit `tabs` 兼容机制，新案例不再使用 |
