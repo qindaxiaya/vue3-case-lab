@@ -1,0 +1,38 @@
+// ============================================================
+// 乐观更新：先改界面，失败再回滚
+// 适用：点赞、收藏、勾选、简单编辑；不适用：支付、扣库存
+// ============================================================
+
+interface Post {
+  id: number
+  likes: number
+  liked: boolean
+}
+
+const posts = ref<Post[]>([])
+const pending = ref<number[]>([])
+
+async function toggleLike(id: number): Promise<void> {
+  if (pending.value.includes(id)) return
+  const post = posts.value.find((item) => item.id === id)
+  if (!post) return
+
+  //! 1. 提交前保存旧值，失败时按它逐字段恢复
+  const snapshot = { liked: post.liked, likes: post.likes }
+
+  pending.value.push(id)
+  //! 2. 立刻按“成功”的样子改界面，用户不用等网络
+  post.liked = !post.liked
+  post.likes += post.liked ? 1 : -1
+
+  try {
+    await api.like(id, post.liked)
+  } catch (error) {
+    //! 3. 失败回滚：只恢复本次改动，不碰期间的其他更新
+    post.liked = snapshot.liked
+    post.likes = snapshot.likes
+    toast.error('点赞失败，已撤回')
+  } finally {
+    pending.value = pending.value.filter((item) => item !== id)
+  }
+}

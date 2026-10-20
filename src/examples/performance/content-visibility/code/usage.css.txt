@@ -1,0 +1,25 @@
+/* ============================================================
+   content-visibility：跳过屏幕外内容的渲染
+   重点：必须配合 contain-intrinsic-size 给预估高度
+   ============================================================ */
+
+.list {
+  height: 360px;
+  overflow-y: auto;
+}
+
+.list--cv .item {
+  //! /* 1. auto：屏幕外先不渲染，接近视口时浏览器自动补上 */
+  content-visibility: auto;
+
+  //! /* 2. 预估高度 = 每项真实高度，否则滚动条会跳、scrollHeight 不准 */
+  contain-intrinsic-size: auto 64px;
+
+  /* 可选的布局/绘制隔离，减少重排影响范围 */
+  contain: layout style paint;
+}
+
+/* 不适合的场景：
+   1. 需要精确读取屏外元素尺寸（getBoundingClientRect 会强制渲染）
+   2. 锚点定位 / 打印 / 截图需要一次性完整排版
+   3. 内容高度变化频繁，预估高度总是不准 */

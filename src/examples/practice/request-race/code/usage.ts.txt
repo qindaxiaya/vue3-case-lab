@@ -1,0 +1,43 @@
+// ============================================================
+// 请求竞态：只让最后一次请求生效
+// 方案 A：AbortController 取消旧请求（推荐）
+// 方案 B：请求编号，晚到的旧响应直接丢弃
+// ============================================================
+
+let controller: AbortController | null = null
+
+async function search(keyword: string): Promise<Result[]> {
+  //! 1. 发新请求前先取消上一条：旧请求的 fetch 会以 AbortError 结束
+  controller?.abort()
+  controller = new AbortController()
+
+  const response = await fetch(`/api/search?q=${encodeURIComponent(keyword)}`, {
+    signal: controller.signal,
+  })
+  return response.json() as Promise<Result[]>
+}
+
+// 组件里使用：每次输入都调用
+async function onInput(keyword: string): Promise<void> {
+  try {
+    const items = await search(keyword)
+    //! 2. 只处理“当前仍是最新输入”的结果，双保险防串台
+    if (keyword !== currentKeyword) return
+    results.value = items
+  } catch (error) {
+    // 主动取消不是错误，不要弹提示
+    if (error instanceof DOMException && error.name === 'AbortError') return
+    throw error
+  }
+}
+
+// 方案 B：没有取消能力时（比如接口不支持 signal），用递增编号
+let requestId = 0
+
+async function searchWithToken(keyword: string): Promise<void> {
+  const id = ++requestId
+  const items = await fetchResults(keyword)
+  //! 3. 回来时编号已经变了，说明它是旧请求，直接丢弃
+  if (id !== requestId) return
+  results.value = items
+}
