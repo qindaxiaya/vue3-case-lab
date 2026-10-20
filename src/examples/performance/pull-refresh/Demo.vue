@@ -193,7 +193,7 @@ function reset(): void {
 }
 
 .pr-stat {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -203,7 +203,7 @@ function reset(): void {
 }
 
 .pr-state {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   &.active {
@@ -213,12 +213,12 @@ function reset(): void {
 
 .btn-reset {
   margin-left: auto;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -239,7 +239,7 @@ function reset(): void {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--primary);
   transition: height 0.15s ease-out;
   position: absolute;
@@ -265,12 +265,12 @@ function reset(): void {
 
 .pr-idx {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.875rem;
   color: var(--primary);
 }
 
 .pr-txt {
-  font-size: 0.74rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -278,19 +278,19 @@ function reset(): void {
   margin: 0;
   padding: 0.7rem 0;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
 .pr-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.875rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

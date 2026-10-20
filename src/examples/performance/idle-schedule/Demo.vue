@@ -259,7 +259,7 @@ onUnmounted(() => {
 
 .done-text {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   min-width: 4.5rem;
 }
@@ -267,7 +267,7 @@ onUnmounted(() => {
 /* 阻塞时长：执行完固定显示，mono 数字 */
 .block-text {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin-left: 0.5rem;
 }
@@ -282,14 +282,14 @@ onUnmounted(() => {
 }
 
 .log-title {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
 }
 
 .log-empty {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -299,7 +299,7 @@ onUnmounted(() => {
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.8;
 }
 </style>

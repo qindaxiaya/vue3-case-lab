@@ -132,7 +132,7 @@ onUnmounted(() => {
 .stats {
   display: flex;
   gap: 1.1rem;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -173,7 +173,7 @@ onUnmounted(() => {
 }
 
 .box-label {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -190,14 +190,14 @@ onUnmounted(() => {
 
 .log-title {
   margin: 0 0 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .log-empty {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -206,7 +206,7 @@ onUnmounted(() => {
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   line-height: 1.9;
   color: var(--text-secondary);
 }

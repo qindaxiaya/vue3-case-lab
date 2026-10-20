@@ -240,7 +240,7 @@ const statusText: Record<Status, string> = {
   gap: 0.3rem;
   padding: 0.16rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   background-color: var(--code-bg);
   color: var(--text-secondary);
 
@@ -277,7 +277,7 @@ const statusText: Record<Status, string> = {
 }
 
 .sse-stat {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -288,9 +288,9 @@ const statusText: Record<Status, string> = {
 
 .btn-act,
 .btn-ghost {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
+  font-size: 0.875rem;
   cursor: pointer;
   border: 1px solid var(--primary);
   background-color: transparent;
@@ -339,7 +339,7 @@ const statusText: Record<Status, string> = {
 .sse-bubble {
   padding: 0.5rem 0.65rem;
   border-radius: var(--radius-btn);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   line-height: 1.7;
 
   &.user {
@@ -370,7 +370,7 @@ const statusText: Record<Status, string> = {
 
 .sse-empty {
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.875rem;
 }
 
 /* ---------- 日志 ---------- */
@@ -385,7 +385,7 @@ const statusText: Record<Status, string> = {
 
 .sse-events-title {
   padding: 0.3rem 0.55rem;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   background-color: var(--code-bg);
@@ -401,7 +401,7 @@ const statusText: Record<Status, string> = {
 
 .sse-event {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -414,13 +414,13 @@ const statusText: Record<Status, string> = {
 
 .sse-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.875rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

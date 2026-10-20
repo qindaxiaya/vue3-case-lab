@@ -240,7 +240,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   color: var(--text);
   cursor: pointer;
 
@@ -250,7 +250,7 @@ onUnmounted(() => {
 }
 
 .stat {
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -287,7 +287,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text);
   /* 背景色由内联样式切换（加载前 --bg，加载后随机色） */
@@ -311,14 +311,14 @@ onUnmounted(() => {
 }
 
 .log-title {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
 }
 
 .log-empty {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -337,7 +337,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   padding: 0.25rem 0.45rem;
   border-radius: var(--radius-sm);
   animation: log-in 0.25s ease-out;
@@ -374,7 +374,7 @@ onUnmounted(() => {
 /* 事件类型标签（滚入/显示/滚出） */
 .log-tag {
   flex-shrink: 0;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;

@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
   border: none;
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &.active {
@@ -244,9 +244,9 @@ onBeforeUnmount(() => {
 
 .btn-act,
 .btn-ghost {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
+  font-size: 0.875rem;
   cursor: pointer;
   border: 1px solid var(--primary);
   background-color: transparent;
@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -305,7 +305,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
   background-color: var(--bg);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   line-height: 1.75;
   color: var(--text);
 }
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
 
 .tw-placeholder {
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.875rem;
 }
 
 .tw-progress {
@@ -352,7 +352,7 @@ onBeforeUnmount(() => {
 
 .tw-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

@@ -288,7 +288,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text);
   cursor: pointer;
 
@@ -298,7 +298,7 @@ onUnmounted(() => {
 }
 
 .stat {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -328,12 +328,12 @@ onUnmounted(() => {
 }
 
 .btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -343,12 +343,12 @@ onUnmounted(() => {
 }
 
 .btn-reset {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -378,7 +378,7 @@ onUnmounted(() => {
 
 .mo-item {
   padding: 0.35rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -397,14 +397,14 @@ onUnmounted(() => {
 
 .log-title {
   margin: 0 0 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .log-empty {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -422,7 +422,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.4rem;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   padding: 0.2rem 0.4rem;
   border-radius: var(--radius-sm);
 }
@@ -450,7 +450,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
   background-color: var(--bg);
