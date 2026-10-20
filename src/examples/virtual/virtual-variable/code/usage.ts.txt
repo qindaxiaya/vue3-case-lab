@@ -1,0 +1,71 @@
+// ============================================================
+// 虚拟列表（不定行高）教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 为什么定高公式失效 ---
+
+// 定高：start = Math.floor(scrollTop / rowHeight)
+//! 不定高：每行高度不同，只能靠「前缀和 + 二分」定位
+
+// --- 2. 前缀和：offsets[i] = 前 i 行总高度 ---
+
+const rows: Msg[] = [
+  { height: 44 },
+  { height: 92 },
+  { height: 60 },
+]
+
+const offsets: number[] = [0]
+for (const row of rows) {
+  //! offsets[i] 就是第 i 行的顶部位置
+  offsets.push(offsets[offsets.length - 1] + row.height)
+}
+
+// --- 3. 二分查找起始行 ---
+
+function findStart(scrollTop: number): number {
+  let lo = 0
+  let hi = rows.length - 1
+
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    //! offsets[mid + 1] 是第 mid 行的底边；底边 <= scrollTop 说明整行在视口上方
+    if (offsets[mid + 1] <= scrollTop) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+// --- 4. 渲染窗口 + 占位撑高 ---
+
+const start = Math.max(0, findStart(scrollTop.value) - OVERSCAN)
+const end = /* 从 start 往后数，直到 offsets[i] >= scrollTop + viewportH，再加 overscan */
+
+// 模板结构：
+// <div class="scroller" @scroll="onScroll">
+//!   <div :style="{ height: totalHeight + 'px' }">          <!-- 撑出滚动条 -->
+//!     <div :style="{ transform: `translateY(${offsets[start]}px)` }">
+//        <Row v-for="row in visibleRows" :key="row.id" />
+//      </div>
+//   </div>
+// </div>
+
+// --- 5. 真实项目：高度要靠测量 ---
+
+//! 数据里没有 height 时，先渲染后用 ResizeObserver / getBoundingClientRect 测，
+//! 再回填高度缓存 + 重算 offsets（否则会跳动）。
+//! 高度未知前给一个估算值，滚动到未测量区域时会出现「滚动条跳动」，需要锚点补偿。
+
+// --- 6. 现成方案 ---
+
+// vue-virtual-scroller、@tanstack/vue-virtual、virtua
+// 需要动态高度 + 反向无限滚动 + 吸底时，优先用成熟库（自己写坑很多）
+
+// --- 踩坑清单 ---
+
+//! 1. 忘记给容器 overflow-y: auto → 永远不滚动
+//! 2. 行高变化（字体加载/图片）要重算 offsets
+//! 3. overscan 太小会白屏，太大失去虚拟化意义（3~8 行为宜）
+//! 4. 用 transform 定位不要改 top（避免每帧重排）
+//! 5. 滚动事件要节流？不需要——只更新 scrollTop，用 rAF 批量更稳

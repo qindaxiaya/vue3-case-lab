@@ -1,0 +1,80 @@
+// ============================================================
+// 流式打字机教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 消费 SSE：边读边解析 ---
+
+async function consumeSSE(url: string): Promise<void> {
+  const res = await fetch(url, { signal: controller.signal })
+  const reader = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+
+    //! SSE 以空行分隔事件；最后一段可能不完整，留在 buffer 里等下一块
+    const parts = buffer.split('\n\n')
+    buffer = parts.pop() ?? ''
+
+    for (const part of parts) {
+      for (const line of part.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        //! data 后面的第一个空格是格式要求，要去掉
+        const text = line.slice(5).trimStart()
+        received.value += text // 进缓冲区，不直接上屏
+        backlog.value += text.length
+      }
+    }
+  }
+}
+
+// --- 2. rAF 匀速消费 ---
+
+function startConsumer(): void {
+  const tick = (): void => {
+    if (backlog.value > 0) {
+      //! 每帧固定预算：到达再快，屏幕推进速度稳定
+      const take = Math.min(3, backlog.value)
+      shownLen.value += take
+      backlog.value -= take
+    }
+    rafId = requestAnimationFrame(tick)
+  }
+  rafId = requestAnimationFrame(tick)
+}
+
+// --- 3. 更聪明的自适应消费 ---
+
+//! 积压多时每帧多输出一点（追帧），积压少时保持 1 字
+//! 但别无限追：屏幕刷太快人眼也读不过来，且 markdown 重渲染会卡
+const take = Math.min(
+  backlog.value,
+  Math.max(1, Math.ceil(backlog.value / 6)), // 最多「六分之一库存」
+  6,
+)
+
+// --- 4. Markdown / 代码块的特殊问题 ---
+
+//! 1. 半截的 **加粗** 会闪烁：用「最后一个完整行」再渲染，或延迟到标点
+//! 2. 代码块 ``` 未闭合时高亮解析器可能报错：先补上闭合再高亮
+//! 3. 每个 token 都跑一遍 markdown 解析很贵：按行/按段落节流
+//! 4. 光标要跟着最后一行走，滚动区自动吸底
+//! 5. 用户点「停止」后要把缓冲区剩余内容一次性输出（否则丢字）
+
+// --- 5. 不用 rAF 的简化版 ---
+
+// 如果只想要「逐字」，setInterval 15ms 加 1 字也行；
+//! 但 rAF 与屏幕刷新同步，不会在后台标签页空转，动画更顺
+
+// --- 踩坑清单 ---
+
+//! 1. TextDecoder 必须用 { stream: true }，否则多字节中文会被截断成乱码
+//! 2. 不要每收到一个 token 就 setState 一次（React）/ 赋值一次（Vue），批量更好
+//! 3. 「已接收」和「已显示」用两个变量，别用同一个
+//! 4. 停止时 abort fetch，同时取消 rAF
+//! 5. 积压可能无限增长：网络比消费快时要限制上限或加速消费

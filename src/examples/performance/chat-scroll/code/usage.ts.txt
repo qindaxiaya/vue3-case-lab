@@ -1,0 +1,66 @@
+// ============================================================
+// 聊天流吸底教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 判底：距离小于阈值才算「在底部」 ---
+
+function isNearBottom(el: HTMLElement): boolean {
+  //! 不要用 === 0：像素小数、滚动惯性都会差几像素
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+}
+
+function onScroll(): void {
+  stickToBottom.value = isNearBottom(scroller.value!)
+  //! 滑回底部要清未读
+  if (stickToBottom.value) unread.value = 0
+}
+
+// --- 2. 追加消息：底部跟随 / 上翻不打扰 ---
+
+async function append(msg: Msg): Promise<void> {
+  messages.value.push(msg)
+  await nextTick() // 等 DOM 高度更新
+
+  if (stickToBottom.value) {
+    scroller.value!.scrollTop = scroller.value!.scrollHeight
+  } else {
+    //! 上翻时千万别改 scrollTop，否则用户正在看的内容被拽走
+    unread.value++
+  }
+}
+
+// --- 3. 内容高度变化也要吸底 ---
+
+// 图片加载、折叠展开、字体切换都会改变 scrollHeight
+//! 用 ResizeObserver 观察内容容器，而不是只监听消息数组变化
+const ro = new ResizeObserver(() => {
+  if (stickToBottom.value) scroller.value!.scrollTop = scroller.value!.scrollHeight
+})
+ro.observe(contentEl.value!)
+
+// --- 4. 上翻加载历史：保持视线位置 ---
+
+async function loadHistory(): Promise<void> {
+  const el = scroller.value!
+  const prevHeight = el.scrollHeight
+
+  messages.value.unshift(...olderMessages)
+  await nextTick()
+
+  //! 前插后补差：scrollTop += 新增高度，视觉上停在原处
+  el.scrollTop += el.scrollHeight - prevHeight
+}
+
+// --- 5. 移动端细节 ---
+
+//! 1. iOS 键盘弹出会改变可视高度：用 visualViewport 监听并重新吸底
+//! 2. 输入框聚焦时不要自动滚动到最底（会打断输入）
+//! 3. 平滑滚动用 scrollTo({ behavior: 'smooth' })，但连续追加时会互相打断
+//! 4. 消息很多时配合虚拟列表；吸底与虚拟滚动的锚点要一起处理
+//! 5. 未读提示按钮放右下，避免遮挡输入框
+
+// --- 6. 现成方案 ---
+
+// 复杂 IM 场景（虚拟列表 + 吸底 + 历史 + 图片）建议用成熟组件或自研时参考
+// vue-virtual-scroller 的 chat 场景 / vue-advanced-chat

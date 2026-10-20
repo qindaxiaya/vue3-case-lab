@@ -1,0 +1,74 @@
+// ============================================================
+// 长列表时间切片教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 一次性全量：长任务 ---
+
+async function renderFull(): Promise<void> {
+  const t0 = performance.now()
+  rows.value = makeRows(10000) //! 一次创建 1 万个 vnode
+  await nextTick() // 等 DOM 真正挂载完
+  console.log('总耗时', performance.now() - t0)
+}
+
+// --- 2. 每帧一批：把长任务切碎 ---
+
+function renderSlice(): void {
+  const t0 = performance.now()
+  let produced = 0
+  const BATCH = 300
+
+  const step = (): void => {
+    rows.value.push(...makeRows(BATCH, produced))
+    produced += BATCH
+
+    //! 只处理一批就交还主线程：浏览器有机会渲染、响应点击
+    if (produced < 10000) requestAnimationFrame(step)
+    else console.log('总耗时', performance.now() - t0)
+  }
+
+  //! 从 rAF 开始，保证第一批也落在下一帧
+  requestAnimationFrame(step)
+}
+
+// --- 3. requestIdleCallback：更省主线程，但时机不可控 ---
+
+function renderIdle(): void {
+  let produced = 0
+  const BATCH = 200
+
+  const step = (deadline: IdleDeadline): void => {
+    //! 剩余空闲时间小于 4ms 就收工，别硬撑
+    while (produced < 10000 && deadline.timeRemaining() > 4) {
+      rows.value.push(...makeRows(BATCH, produced))
+      produced += BATCH
+    }
+    if (produced < 10000) requestIdleCallback(step)
+  }
+
+  requestIdleCallback(step, { timeout: 500 }) // timeout 兜底，避免长期不执行
+}
+
+// --- 4. 首屏优先：先渲染一屏，再后台补 ---
+
+//! 真实长列表：首屏只有几十条，根本不需要渲染 1 万条
+//! 优先用虚拟列表；切片适用于「必须一次性展示/导出/统计」的场景
+
+// --- 5. 怎么测量「卡不卡」 ---
+
+// PerformanceObserver 监听 longtask（>50ms 的任务）
+new PerformanceObserver((list) => {
+  for (const entry of list.getEntries()) {
+    console.log('长任务', entry.duration, 'ms')
+  }
+}).observe({ type: 'longtask', buffered: true })
+
+// --- 踩坑清单 ---
+
+//! 1. 切片后「总耗时」通常更久，但用户感知更好——指标看交互延迟，不看总耗时
+//! 2. 每批数量要试：太小帧数多、太大又卡（一般 100~500 条 / 帧）
+//! 3. 切片过程中用户可以滚动/点击，要处理并发状态（禁用按钮或版本号校验）
+//! 4. 卸载组件时 cancelAnimationFrame，否则回调还在跑
+//! 5. Vue 的 nextTick 只在微任务，切片用宏任务/rAF 才能真正让出主线程
+//! 6. 数据量超过几万条时，DOM 数量本身就是问题——该上虚拟列表而不是切片

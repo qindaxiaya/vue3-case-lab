@@ -1,0 +1,62 @@
+// ============================================================
+// 下拉刷新 + 触底加载教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 只在顶部允许下拉 ---
+
+function onPointerDown(e: PointerEvent): void {
+  //! 列表已经滚下去了就别再接管手势，否则用户滚不动
+  if (scroller.value!.scrollTop > 0) return
+  startY = e.clientY
+  dragging.value = true
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) // 手指移出元素也能收到事件
+}
+
+// --- 2. 阻尼：位移永远小于手指 ---
+
+function onPointerMove(e: PointerEvent): void {
+  if (!dragging.value) return
+  const dy = e.clientY - startY
+  //! dy * 0.45：手指拉 100px，内容只下移 45px；上限 110px 防止越拉越远
+  pull.value = Math.max(0, Math.min(110, dy * 0.45))
+}
+
+// --- 3. 松手：超过阈值才刷新 ---
+
+async function onPointerUp(): Promise<void> {
+  dragging.value = false
+  if (pull.value >= THRESHOLD) {
+    refreshing.value = true
+    pull.value = THRESHOLD // 停在阈值处显示 loading，别弹回去
+    await fetchData()
+    refreshing.value = false
+  }
+  //! 未达阈值：pull 归零，CSS transition 自动回弹
+  pull.value = 0
+}
+
+// --- 4. 触底加载：用「距底距离」判定 ---
+
+function onScroll(): void {
+  const el = scroller.value!
+  //! scrollHeight - scrollTop - clientHeight 才是距底距离（不要用 scrollTop 直接比）
+  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48
+  if (nearBottom && !loading.value && !finished.value) loadMore()
+}
+
+// --- 5. 真实项目用现成库 ---
+
+//! 移动端手势 + 回弹 + 惯性 + 嵌套滚动，自己写很难做顺
+// vant 的 PullRefresh / List，VueUse 的 useScroll / useInfiniteScroll
+// 触底加载还可以直接用 IntersectionObserver 观察底部哨兵元素
+
+// --- 踩坑清单 ---
+
+//! 1. 忘记 setPointerCapture → 手指滑出元素就丢失 pointerup，页面卡在「拖拽中」
+//! 2. 没有「刷新中/加载中」互斥 → 连续触发重复请求
+//! 3. 用 touchstart/move 时忘了 passive: false，无法 preventDefault
+//! 4. iOS Safari 整页橡皮筋回弹会和下拉手势冲突：overscroll-behavior: contain
+//! 5. 刷新后要重置「已加载完」标记，否则永远拉不出新数据
+//! 6. 数据量大时列表配合虚拟滚动，否则 DOM 越来越多
+//! 7. 下拉区高度用 transition 过渡，不要每帧写 style（会抖）
