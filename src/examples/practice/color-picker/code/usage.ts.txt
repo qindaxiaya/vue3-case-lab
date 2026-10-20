@@ -1,0 +1,64 @@
+// ============================================================
+// 取色器教学片段（HSV 面板 + 原生能力）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：选 HSV 而不是 RGB 建模 ---
+
+// //! UI 面板天然对应 HSV：色相条 = h、面板 x = s、面板 y = v
+// //! 用 RGB 建模会陷入「改亮度要三通道联动」的泥潭
+const h = ref(238) // 色相 0~360
+const s = ref(72) // 饱和度 0~100
+const v = ref(88) // 亮度 0~100
+
+// --- 步骤二：二维面板用 CSS 三层渐变（零 canvas 重绘） ---
+
+// 底层：内联 style 的当前色相纯色 —— background-color: hsl(${h}, 100%, 50%)
+// 上层两层叠加：
+// .sv-panel {
+//   background-image:
+//     linear-gradient(to top, #000, transparent),      /* 下黑上透 → 亮度轴 */
+//     linear-gradient(to right, #fff, transparent);    /* 左白右透 → 饱和度轴 */
+// }
+//
+// //! 命中坐标换算：s = x / width * 100；v = (1 - y / height) * 100
+
+function updateFromPanel(e: PointerEvent, rect: DOMRect): void {
+  s.value = Math.round(((e.clientX - rect.left) / rect.width) * 100)
+  v.value = Math.round((1 - (e.clientY - rect.top) / rect.height) * 100)
+}
+
+// --- 步骤三：HSV → HEX 转换（面板显示要 hex） ---
+
+function hsvToRgb(hh: number, ss: number, vv: number): { r: number; g: number; b: number } {
+  const c = (vv / 100) * (ss / 100)
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
+  const m = vv / 100 - c
+  const [r, g, b] =
+    hh < 60 ? [c, x, 0]
+    : hh < 120 ? [x, c, 0]
+    : hh < 180 ? [0, c, x]
+    : hh < 240 ? [0, x, c]
+    : hh < 300 ? [x, 0, c]
+    : [c, 0, x]
+  return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) }
+}
+
+// --- 步骤四：原生吸管（屏幕任意位置取色） ---
+
+// //! EyeDropper API：Chrome/Edge 支持——一行拿到屏幕像素色
+// if ('EyeDropper' in window) {
+//   const { sRGBHex } = await new window.EyeDropper().open() // 用户按 Esc 会 reject
+//   applyHex(sRGBHex) // 转回 HSV 回填面板
+// }
+
+// --- 步骤五：复制与最近色板 ---
+
+// navigator.clipboard.writeText(hex)         // HEX/RGB/HSL 三格式随意复制
+// recent.value = [hex, ...recent.value.filter(c => c !== hex)].slice(0, 8) // 去重色板
+
+// --- 生产建议 ---
+
+// 需要色域管理（sRGB/P3）/色板预设/无障碍对比度检测时用现成库：
+// vanilla-picker、iro.js、vue-accessible-color-picker
+// 自建适合：确认视觉风格统一 + 只要基础取色（本例约 40 行纯逻辑）
