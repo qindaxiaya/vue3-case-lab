@@ -8,8 +8,8 @@ export default {
   title: 'PDF 预览',
   difficulty: 'intermediate',
   tags: ['PDF', 'Blob URL', 'iframe', 'pdfjs'],
-  summary: '纯前端生成 3 页 PDF，对比三种嵌入方式、翻页与缩放参数，附选型建议',
-  sell: '手写 PDF + 三种嵌入方式，选型不再靠猜',
+  summary: '纯前端生成三页 PDF，对比三种嵌入方式与翻页缩放参数，给出选型建议',
+  sell: 'PDF 预览方案挑花眼：手写样例加三种嵌入对比',
   explain: {
     situation:
       '合同、发票要在线预览 PDF 文件。你用 iframe 一嵌，有的浏览器直接弹下载，有的显示空白；想默认翻到第 3 页，也不知道从哪下手。',

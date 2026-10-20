@@ -8,8 +8,8 @@ export default {
   title: 'KeepAlive + LRU 页面缓存',
   difficulty: 'advanced',
   tags: ['KeepAlive', 'LRU', 'onActivated', '页面缓存'],
-  summary: '真实组件缓存：输入内容切走保留，最多 2 个，最久未访问的自动淘汰',
-  sell: '最多缓存 2 个，超了自动淘汰，生命周期可见',
+  summary: '真实组件缓存：切走再回来输入还在，最多留两个，最久没访问的自动淘汰',
+  sell: '页面切走状态就没了：缓存最近两个，超出自动淘汰',
   explain: {
     situation:
       '列表翻到第 3 页，点进详情再返回，列表又回到第一页、筛选条件也没了，用户得重新找一遍。',

@@ -8,8 +8,8 @@ export default {
   title: 'useEventListener / useRafFn 封装范式',
   difficulty: 'intermediate',
   tags: ['组合式函数', '自动清理', 'useRafFn'],
-  summary: '把添加事件监听和逐帧回调的清理收进组合式函数——调用方不用手动清理',
-  sell: '清理收进 composable，组件卸载零泄漏',
+  summary: '把事件监听与逐帧回调封装成函数，挂载时注册、卸载时自动清理，不用每处手写收尾',
+  sell: '事件监听易忘清理：封装后挂载注册、卸载自动移除',
   explain: {
     situation:
       '你给页面加了鼠标移入、窗口滚动这类监听，组件切走以后事件还在触发，甚至报「找不到元素」；鼠标移动时每次都改页面，动一下就卡。',

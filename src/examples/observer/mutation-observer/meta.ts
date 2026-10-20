@@ -8,8 +8,8 @@ export default {
   title: 'MutationObserver DOM 变更监听',
   difficulty: 'intermediate',
   tags: ['MutationObserver', 'childList', 'takeRecords'],
-  summary: '三个开关分别监听子节点、属性、文字变化，批量通知避免回调刷屏',
-  sell: '三开关监听页面变化，批量通知防刷屏',
+  summary: '监听页面子节点、属性与文字的变化，批量回调避免刷屏，适合第三方内容注入场景',
+  sell: '外部脚本改页面难感知：变更批量通知，回调不刷屏',
   explain: {
     situation:
       '第三方脚本会往页面里插广告、改按钮样式，你想知道它什么时候动的手；用定时器每隔几百毫秒检查一次，既费性能又抓不准。',

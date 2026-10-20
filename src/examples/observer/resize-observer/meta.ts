@@ -8,8 +8,8 @@ export default {
   title: 'ResizeObserver 容器尺寸监听',
   difficulty: 'beginner',
   tags: ['ResizeObserver', '响应式布局', 'content-box'],
-  summary: '监听任意容器尺寸变化，内容区与含边框两种测量模式对比',
-  sell: '容器尺寸变化不用轮询，两种测量模式一次讲清',
+  summary: '监听容器尺寸变化替代轮询，对比内容区与含边框两种测量模式，按需选精确值',
+  sell: '轮询尺寸浪费性能：尺寸一变就回调，两种测量可选',
   explain: {
     situation:
       '侧边栏一折叠，图表容器变窄了，但图表还是原来的宽度；你监听窗口大小变化，可容器变了、窗口没变，回调根本不触发。',

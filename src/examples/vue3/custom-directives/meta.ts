@@ -8,8 +8,8 @@ export default {
   title: '自定义指令三件套',
   difficulty: 'intermediate',
   tags: ['directive', '权限', '懒加载', 'click-outside', 'IntersectionObserver'],
-  summary: '权限控制、观察器懒加载、点外关闭三个指令，含完整清理逻辑',
-  sell: '权限、懒加载、点外关闭，三个指令带走',
+  summary: '用三个自定义指令实现权限控制、观察器懒加载与点击外部关闭，含完整清理',
+  sell: '权限与点击外部逻辑到处复制：抽成指令复用',
   explain: {
     situation:
       '按钮级权限每个页面都写一遍判断角色的代码；图片懒加载、点外部关闭菜单，也在不同组件里各写一套，越抄越乱。',

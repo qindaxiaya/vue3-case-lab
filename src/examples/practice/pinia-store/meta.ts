@@ -8,8 +8,8 @@ export default {
   title: '状态管理：Pinia 范式 + 持久化',
   difficulty: 'intermediate',
   tags: ['Pinia', 'store', '持久化', 'localStorage'],
-  summary: '20 行等价实现讲透状态仓库：跨组件共享 + 深度侦听持久化，附真实 Pinia 写法对照',
-  sell: '20 行还原状态仓库，持久化与拆分讲透',
+  summary: '二十行实现跨组件共享仓库，配合深度侦听做持久化，并附真实 Pinia 写法对照',
+  sell: '状态散落各组件难同步：集中仓库加持久化',
   explain: {
     situation:
       '两个互不相干的组件都要用「当前用户」和「购物车」，你一层层往下传参数，改一次要动五个文件；刷新页面数据又全没了。',

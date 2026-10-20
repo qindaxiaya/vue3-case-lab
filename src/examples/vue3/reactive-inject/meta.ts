@@ -8,8 +8,8 @@ export default {
   title: '响应式依赖注入',
   difficulty: 'intermediate',
   tags: ['provide', 'inject', 'readonly', 'Symbol'],
-  summary: '三层跨层传响应式数据全局同步，唯一值防止 key 冲突，两种只读边界',
-  sell: '跨层传响应式数据不丢，唯一值防冲突',
+  summary: '跨三层传递响应式数据并保持同步，用唯一值避免键冲突，演示两种只读边界',
+  sell: '跨层传数据要一层层转手：依赖注入直达且同步',
   explain: {
     situation:
       '主题色要从顶层传到第五层组件，参数一层层传太丑。你换成「提供与注入」，结果子组件改了值，顶层没反应。',

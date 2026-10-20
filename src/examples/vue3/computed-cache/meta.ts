@@ -8,8 +8,8 @@ export default {
   title: 'computed 缓存 vs 方法 vs watch',
   difficulty: 'intermediate',
   tags: ['computed', 'watch', '缓存', '渲染'],
-  summary: '改无关状态时，计算属性不重算、方法每次都跑、侦听器不触发——用计数看清三者边界',
-  sell: '计数看清计算属性、方法、侦听器的边界',
+  summary: '改无关状态时计算属性不重算、方法每次执行、侦听器不触发，用计数看清边界',
+  sell: '计算属性与方法何时该用：计数对比缓存与重算',
   explain: {
     situation:
       '模板里用方法算总价，改一个无关状态它也重算一遍；换成计算属性后，又搞不清它到底什么时候会重新计算。',

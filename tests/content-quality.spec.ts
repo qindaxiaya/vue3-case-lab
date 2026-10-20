@@ -41,12 +41,12 @@ describe('案例内容质量', () => {
     }
   })
 
-  it('卖点不超过 30 字，摘要不超过 60 字', () => {
+  it('卖点不超过 30 字，摘要不超过 40 字', () => {
     for (const item of allCases) {
       const name = `${item.categoryId}/${item.meta.id}`
       expect(item.meta.sell.trim(), `${name} 缺少 sell`).not.toBe('')
       expect(item.meta.sell.length, `${name} 的 sell 过长`).toBeLessThanOrEqual(30)
-      expect(item.meta.summary.length, `${name} 的 summary 过长`).toBeLessThanOrEqual(60)
+      expect(item.meta.summary.length, `${name} 的 summary 过长`).toBeLessThanOrEqual(40)
     }
   })
 

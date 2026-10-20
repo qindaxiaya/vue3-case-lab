@@ -8,8 +8,8 @@ export default {
   title: 'shallowRef / markRaw 性能边界',
   difficulty: 'advanced',
   tags: ['shallowRef', 'markRaw', 'triggerRef'],
-  summary: '深代理、浅代理、永不代理三档对比，手动触发更新，大数据状态首选浅层',
-  sell: '三档代理开销实测，大数据状态选对方式',
+  summary: '对比深代理、浅代理与永不代理三档开销，大数据只改引用时手动触发更新',
+  sell: '大对象深层响应式太慢：按需降级，实测三档开销',
   explain: {
     situation:
       '一万条数据的表格，用 reactive 包起来后初始化要好几秒，滚动也卡。你听说浅层响应式能优化，但不知道什么时候该用、用了为什么数据不更新。',

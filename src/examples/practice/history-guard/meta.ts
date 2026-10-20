@@ -8,8 +8,8 @@ export default {
   title: 'History 拦截返回',
   difficulty: 'advanced',
   tags: ['history', 'popstate', '路由守卫', 'beforeunload'],
-  summary: '有未保存内容时拦截返回：确认/取消状态机 + 日志，附路由守卫与返回事件真实方案',
-  sell: '未保存就拦截返回，确认/取消状态机可复用',
+  summary: '有未保存内容时拦下返回，弹确认框并记录状态变化，附路由守卫真实方案',
+  sell: '改到一半误点返回就丢失：拦截并弹确认',
   explain: {
     situation:
       '用户填了半页表单，手一滑点了浏览器返回，内容全没了。你想弹窗问「确定离开吗」，可浏览器自带的确认框又丑又拦不住。',

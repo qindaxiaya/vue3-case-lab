@@ -8,8 +8,8 @@ export default {
   title: 'watch/watchEffect 三大陷阱',
   difficulty: 'advanced',
   tags: ['watch', 'watchEffect', 'deep', 'flush'],
-  summary: '浅监听盲区、异步清理、三种执行时机读页面元素的差异',
-  sell: '深度监听、异步清理、执行时机三个坑一次避开',
+  summary: '拆解浅监听看不到嵌套、异步清理时机、三种执行时机读不到元素三类陷阱',
+  sell: '侦听器该看到的变化没看到：三个坑逐个避开',
   explain: {
     situation:
       '你侦听一个响应式对象，改里面的属性回调不触发；异步请求回来顺序乱了，旧数据覆盖新数据；想在侦听回调里读页面，拿到的还是旧值。',

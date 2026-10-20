@@ -8,8 +8,8 @@ export default {
   title: '主题切换无闪烁',
   difficulty: 'beginner',
   tags: ['CSS 变量', '暗色模式', 'matchMedia', 'localStorage'],
-  summary: '亮/暗/跟随系统三态切换，局部变量预览 + 首屏内联脚本方案，讲清闪白根因',
-  sell: '三态主题 + 内联脚本，首帧不闪白',
+  summary: '亮色、暗色、跟随系统三态切换，配合首屏内联脚本，讲清刷新闪白的根因',
+  sell: '刷新瞬间闪白刺眼：内联脚本先定主题再渲染',
   explain: {
     situation:
       '暗色模式上线后，用户每次刷新页面都先白一下再变黑，夜里特别刺眼，投诉说「像闪光弹」。',

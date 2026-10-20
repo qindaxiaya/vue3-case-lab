@@ -8,8 +8,8 @@ export default {
   title: 'v-memo 渲染缓存',
   difficulty: 'advanced',
   tags: ['v-memo', '渲染优化', 'patch flag'],
-  summary: '依赖数组没变就跳过整棵子树更新，无关更新零渲染，每行渲染计数实证',
-  sell: '依赖没变就跳过更新，渲染次数实测',
+  summary: '依赖数组没变化就跳过整棵子树的更新，无关状态变化零渲染，逐行计数验证',
+  sell: '列表无关更新也重渲染：依赖不变就跳过',
   explain: {
     situation:
       '一个长列表，父组件每秒更新一次时间，结果 100 行全部重新渲染。明明每行的数据一点没变，页面却越来越卡。',

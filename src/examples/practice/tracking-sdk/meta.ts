@@ -8,8 +8,8 @@ export default {
   title: '埋点 SDK（点击 + 曝光）',
   difficulty: 'advanced',
   tags: ['埋点', '事件委托', 'IntersectionObserver', 'sendBeacon'],
-  summary: 'data-track 事件委托收点击、观察器收曝光（去重）、满 5 条或 2 秒批量上报',
-  sell: '点击与曝光自动采集，批量上报不丢事件',
+  summary: '用事件委托收点击、观察器收曝光并去重，满五条或两秒批量上报，减少请求',
+  sell: '埋点逐条上报浪费请求：点击曝光批量收集',
   explain: {
     situation:
       '产品要统计哪些按钮被点了、哪些商品曝光了。你给每个元素单独绑点击事件，代码里遍地埋点，漏一个就少一份数据。',

@@ -8,8 +8,8 @@ export default {
   title: 'IntersectionObserver 图片懒加载',
   difficulty: 'intermediate',
   tags: ['IntersectionObserver', '懒加载', '曝光'],
-  summary: '三种观察参数对比，进入可视区域才加载，加载后立即停止观察',
-  sell: '三参数调好懒加载，进视口才下载，用完即释放',
+  summary: '用观察器判断图片是否进入视口，进入才下载，加载完立即停止观察，三种参数对比',
+  sell: '首屏图片全下载太慢：进视口才加载，加载完即释放',
   explain: {
     situation:
       '商品列表一页 100 张图，打开页面所有图片一起下载，转圈半天，流量一下跑掉几十兆；改成监听滚动判断，页面又变得很卡。',

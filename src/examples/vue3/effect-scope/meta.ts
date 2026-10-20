@@ -8,8 +8,8 @@ export default {
   title: 'effectScope 批量停止副作用',
   difficulty: 'advanced',
   tags: ['effectScope', 'onScopeDispose', '内存泄漏', 'watch'],
-  summary: '反复挂载卸载时，用副作用作用域一次性收口侦听器与定时器，把「看不见的泄漏」变成数字',
-  sell: '副作用作用域一次收口，泄漏看得见、停得掉',
+  summary: '反复挂载卸载时用副作用作用域统一停止侦听器与定时器，把隐式泄漏变成数字',
+  sell: '组件反复开关后内存涨：一次性收口所有副作用',
   explain: {
     situation:
       '弹窗里随手创建了 3 个侦听器和 1 个定时器，关掉弹窗后请求还在发、日志还在打；找了一下午才发现是「没人停」。',

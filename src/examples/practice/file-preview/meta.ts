@@ -8,8 +8,8 @@ export default {
   title: '多格式文件预览',
   difficulty: 'intermediate',
   tags: ['File', 'Blob URL', 'MIME', '拖拽'],
-  summary: '按文件类型分流图片/文本/PDF/音视频，内置示例文件全部本地生成',
-  sell: '按文件类型分流预览，示例文件全部本地生成',
+  summary: '按文件类型分流到图片、文本、PDF、音视频预览，示例文件全部本地生成',
+  sell: '不同文件格式各写一套预览：按类型分流一次搞定',
   explain: {
     situation:
       '用户上传了图片、PDF、Markdown、MP4，你要分别预览，结果全塞进 iframe：图片打不开、视频没控件、文本变成乱码。',

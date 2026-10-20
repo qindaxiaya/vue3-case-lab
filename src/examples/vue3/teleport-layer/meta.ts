@@ -8,8 +8,8 @@ export default {
   title: 'Teleport 弹层管理',
   difficulty: 'intermediate',
   tags: ['Teleport', 'z-index', '弹层'],
-  summary: '弹层挂到页面根部脱离裁剪，集中式层级计数器防冲突',
-  sell: '弹层挂到页面根部不被裁剪，层级统一管理',
+  summary: '把弹层挂到页面根部脱离父级裁剪，用集中式层级计数避免多个弹层互相压住',
+  sell: '弹层被父级裁切或压住：挂到根部并统一层级',
   explain: {
     situation:
       '弹窗写在卡片组件里，一打开就被父级的 overflow: hidden 裁掉一半；页面上多个弹层，层级值各写各的，后打开的反而被盖住。',

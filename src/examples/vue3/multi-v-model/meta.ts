@@ -8,8 +8,8 @@ export default {
   title: '多 v-model 参数与修饰符',
   difficulty: 'intermediate',
   tags: ['defineModel', 'v-model', '修饰符', 'trim'],
-  summary: '一个组件同时绑定标题/姓名/是否显示三个模型，写入时自动去空格，父子双向可见',
-  sell: '一个组件三个双向绑定，修饰符也能自定义',
+  summary: '一个组件同时绑定标题、姓名与显示状态三个模型，写入自动去空格，父子同步',
+  sell: '一个组件要绑多个值：多模型写法，修饰符可定制',
   explain: {
     situation:
       '一个表单组件要同时编辑标题、姓名、是否显示。你写了一堆参数和事件，父级还要配三个更新处理函数，改个字段名要动两处。',

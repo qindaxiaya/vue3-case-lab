@@ -8,8 +8,8 @@ export default {
   title: '异步组件加载与重试',
   difficulty: 'intermediate',
   tags: ['defineAsyncComponent', '代码分割', 'Suspense'],
-  summary: '加载函数、延迟、超时、加载中、错误五种配置，失败换 key 重试的标准姿势',
-  sell: '异步组件全家桶，加载、超时、错误、重试',
+  summary: '异步组件的加载、延迟、超时、加载中与错误五项配置，演示换 key 重试',
+  sell: '异步组件加载失败只能刷新：超时兜底，换 key 重试',
   explain: {
     situation:
       '路由懒加载的组件，网慢时页面一片空白；加载失败只在控制台报错，用户完全不知道发生了什么。',

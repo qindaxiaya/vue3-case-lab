@@ -8,8 +8,8 @@ export default {
   title: '防抖节流波形对比',
   difficulty: 'beginner',
   tags: ['VueUse', 'debounce', 'throttle'],
-  summary: '防抖与节流函数一行接入，脉冲波形直观对比原始事件与实际执行频率',
-  sell: '波形对比防抖节流，一行接入工具库',
+  summary: '并排对比防抖与节流：脉冲波形显示原始事件与真实执行次数，一行接入现成库',
+  sell: '搜索框每敲一下都请求：防抖节流一行接入',
   explain: {
     situation:
       '搜索框每敲一个字就发一次请求，输入 vue 发了三次；滚动监听里算位置，页面越滚越卡。',

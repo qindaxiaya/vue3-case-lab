@@ -9,8 +9,8 @@ export default {
   title: '逐帧动画',
   difficulty: 'intermediate',
   tags: ['requestAnimationFrame', '动画', '渲染循环'],
-  summary: '时间戳驱动正弦往返，方块两端减速折返；实时显示帧率、帧间隔与累计帧数',
-  sell: '动画跟着屏幕刷新走，掉帧不变慢，后台自动停',
+  summary: '每帧按时间戳推进动画，掉帧也不变慢，帧率与帧间隔实时可见',
+  sell: '定时器做动画会抖：交给屏幕刷新节奏，掉帧不变慢',
   explain: {
     situation:
       '你用定时器每隔十几毫秒改一次位置做动画，画面还是感觉一顿一顿；把浏览器切到后台，定时器照旧跑，笔记本风扇开始转。',

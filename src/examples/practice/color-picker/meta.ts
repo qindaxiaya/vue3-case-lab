@@ -8,8 +8,8 @@ export default {
   title: '取色器 Color Picker',
   difficulty: 'intermediate',
   tags: ['HSV', 'EyeDropper', 'Clipboard'],
-  summary: '两层样式渐变叠出色板，三种颜色格式一键复制，支持屏幕吸管',
-  sell: '纯样式画色板，三格式复制 + 屏幕吸管',
+  summary: '用两层样式渐变叠出色板，取色后以三种格式复制，并支持屏幕吸管取色',
+  sell: '自己画取色器太麻烦：样式叠色板，三种格式即取即用',
   explain: {
     situation:
       '要做主题色选择器：能拖着选颜色，显示十六进制、红绿蓝、色相饱和度三种格式，最好还能直接吸屏幕上的颜色。你准备上画布，发现还要自己画渐变。',

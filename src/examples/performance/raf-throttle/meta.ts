@@ -9,8 +9,8 @@ export default {
   title: '逐帧合并高频渲染',
   difficulty: 'intermediate',
   tags: ['requestAnimationFrame', '节流', '高频事件'],
-  summary: '鼠标每秒触发数百次，逐帧合并后只渲染约 60 次，两个计数直接对比差异',
-  sell: '事件再密也只画一次，高频交互不再拖慢页面',
+  summary: '鼠标每秒触发数百次，合并到每帧只渲染一次，两个计数直接对比优化前后',
+  sell: '高频事件拖慢渲染：每帧只画一次，交互依然跟手',
   explain: {
     situation:
       '做一个跟随鼠标的光标特效，代码里在鼠标移动事件中直接改位置。鼠标一动，事件每秒触发几百次，页面开始发烫、动画发涩。',

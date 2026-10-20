@@ -8,8 +8,8 @@ export default {
   title: 'Toast 通知队列',
   difficulty: 'intermediate',
   tags: ['队列', 'animationend', '通知组件'],
-  summary: '屏幕上最多 3 条，超出排队补位，动画结束驱动消失，悬停真正暂停倒计时',
-  sell: '最多 3 条排队补位，animationend 精确回收',
+  summary: '屏幕上最多同时三条，超出排队补位，动画结束精确回收，悬停暂停倒计时',
+  sell: '提示一多就刷屏：限三条排队，悬停暂停消失',
   explain: {
     situation:
       '页面上同时弹了 10 条提示，内容全被遮住。你设 3 秒自动关闭，可鼠标移上去暂停了，3 秒一到它还是消失了。',

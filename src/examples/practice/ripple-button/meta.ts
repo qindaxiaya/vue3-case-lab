@@ -8,8 +8,8 @@ export default {
   title: '水波纹按钮',
   difficulty: 'beginner',
   tags: ['Web Animations API', '波纹', '交互细节'],
-  summary: '点击点为圆心扩散，浏览器动画驱动、结束自动回收节点，狂点零残留',
-  sell: '浏览器动画接口，结束即回收，狂点无残留',
+  summary: '点击位置为圆心扩散水波纹，用浏览器动画接口驱动，结束后自动移除节点',
+  sell: '按钮点击没反馈：水波纹扩散，狂点也不残留节点',
   explain: {
     situation:
       '按钮点下去没反馈，你想加个从点击位置扩散的水波纹。结果连点几次，按钮上留下一堆 div 元素，颜色越来越深。',

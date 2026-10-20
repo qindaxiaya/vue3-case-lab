@@ -8,8 +8,8 @@ export default {
   title: '命令面板 Command Palette',
   difficulty: 'intermediate',
   tags: ['fuse.js', '快捷键', '模糊搜索'],
-  summary: 'Ctrl+K 唤起，模糊匹配 + 命中高亮，纯键盘导航的命令入口',
-  sell: 'Ctrl+K 唤起，模糊搜索 + 纯键盘操作',
+  summary: 'Ctrl+K 唤起命令面板，输入即时模糊匹配并高亮命中，全程可用键盘操作',
+  sell: '功能入口藏得深：一个快捷键搜索，键盘直达',
   explain: {
     situation:
       '想给站点加个「按 Ctrl+K 搜索一切」的入口，像代码编辑器、效率工具那样，敲几个字母就能找到命令，但自己写模糊匹配越写越乱。',

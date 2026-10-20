@@ -8,8 +8,8 @@ export default {
   title: 'requestIdleCallback 空闲调度',
   difficulty: 'intermediate',
   tags: ['requestIdleCallback', '空闲调度', '分片'],
-  summary: '同步阻塞与空闲分片对比：剩余时间预算内干活，超时兜底防饿死',
-  sell: '重活拆进空闲帧，预算内干活、超时兜底',
+  summary: '把重活拆进浏览器空闲时段，剩余时间预算内执行，超时兜底避免任务饿死',
+  sell: '重活卡住交互：拆进空闲帧，预算内做、超时让路',
   explain: {
     situation:
       '页面打开后要预解析一批数据、算统计，不着急但要花几百毫秒。你直接同步跑，用户点按钮没反应，以为页面卡死了。',

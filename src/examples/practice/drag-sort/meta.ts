@@ -8,8 +8,8 @@ export default {
   title: '指针拖拽排序',
   difficulty: 'advanced',
   tags: ['Pointer 事件', 'FLIP', 'WAAPI', '排序'],
-  summary: '指针拖拽 + 目标位高亮 + 松手移动；其余行从旧位置平滑滑入',
-  sell: '指针拖拽 + 位置动画，换位不生硬',
+  summary: '指针按下拖动列表项，经过目标位置时让位高亮，松手落位并保留平滑动画',
+  sell: '拖拽排序生硬难对齐：指针拖动加位置过渡',
   explain: {
     situation:
       '要做可拖拽排序的列表。你写完发现拖动时其他行「啪」地跳过去，很生硬；手机上长按还根本拖不动。',

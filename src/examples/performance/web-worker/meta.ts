@@ -8,8 +8,8 @@ export default {
   title: 'Web Worker 主线程解冻',
   difficulty: 'intermediate',
   tags: ['Worker', 'Blob URL', '多线程'],
-  summary: '同一份重计算两条路径：主线程跑页面冻死，后台线程跑界面照常——心跳实测对比',
-  sell: '重计算搬进后台线程，主线程心跳不再停',
+  summary: '同一份重计算分别放主线程与后台线程，用心跳对比界面冻结与照常响应',
+  sell: '重计算让页面假死：搬到后台线程，界面照常响应',
   explain: {
     situation:
       '页面要解析 20MB 日志、做复杂计算。点了按钮整个页面冻住十秒，加载动画都停了，用户以为死机。',

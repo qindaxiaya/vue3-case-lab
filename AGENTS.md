@@ -46,7 +46,7 @@
   3. git 分步提交：一个任务/一个逻辑单元一个 commit，不攒大提交
 - **完成前强制验证清单（2026-10-19 教训固化，每个任务/案例收尾必跑）**：
   1. 按 `docs/case-definition-of-done.md` 逐条验收（Demo 稳定性 / 对比开关 / 实测数据 / notes 五段 / meta.sell / 375px）
-  2. `npx vitest run`（含真实 glob 收录链路 + 内容质量门禁：SBAC 四段齐全 / 卖点≤30 字、摘要≤60 字 / 说明区禁未解释缩写 / notes 五段 / 标题可被搜索命中——新增案例自动扩展校验）
+  2. `npx vitest run`（含真实 glob 收录链路 + 内容质量门禁：SBAC 四段齐全 / 卖点≤30 字、摘要≤40 字 / 说明区禁未解释缩写 / notes 五段 / 标题可被搜索命中——新增案例自动扩展校验）
   3. `npm run type-check`、`npm run lint`、`npm run build`
   4. dev 页面实测：案例页可交互、刷新无控制台告警、路由往返状态正确
   5. 有页面交互变化时，dev 地址交用户人工走查（机器验证不能替代）
@@ -87,6 +87,7 @@
 - ✅ 2026-10-20 全站动效统一：`--ease-out` 快出慢收曲线；路由切换淡入淡出；卡片/筛选 chips/主题图标/搜索弹窗/面板切换补齐过渡；源码段数徽章仅多段时显示
 - ✅ 2026-10-20 Task 14 机器走查：55/55 案例直连 + 375px 双视口无横向溢出；说明/源码默认态与切换、搜索弹窗（点击 / Ctrl+K / ↑↓ / 回车 / Esc）、分类筛选与返回保留、主题持久化、无效路由全部通过；首页 CTA / 特性卡、代码区核心与 demo 源码切换、复制（剪贴板无 `//!` 标记）、浏览器前进后退、减少动态下滚动恢复均通过；发现并修复返回列表滚动位置被旧页面高度截断（`scrollBehavior` 改读 history.state.scroll + 等新页高度足够再 instant 恢复）
 - ✅ 2026-10-20 结项：用户人工走查通过（375px / 暗色 / 键盘 / 搜索弹窗 / 返回列表）；55 案例 / 6 分类全部完成，tag v0.1
+- ✅ 2026-10-20 CI 门禁：`.github/workflows/ci.yml` 在 push main / PR / 手动触发时跑 `npm ci` + type-check + lint + vitest + build；Node 22 LTS + npm 缓存，同分支并发自动取消旧任务
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -115,7 +116,7 @@
 | 2026-10-20 | **禁止用 PowerShell Set-Content 写源码** | 默认 ANSI 会吞换行/毁中文（本会话踩过，靠 git checkout 恢复）；统一用 write/edit 工具 |
 | 2026-10-20 | **案例完成标准 DoD 固化** | 7 类标准写入 `docs/case-definition-of-done.md`：Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程；新案例严格执行、存量渐进；豁免写 notes 第 5 段 |
 | 2026-10-20 | **notes.md 五段式，且不接入页面** | 现象/场景 → 原理 → 关键代码（标 3 处为什么）→ 数据对比（实测+方法）→ 追问与边界；作为案例资料存放在案例目录，不参与 registry；非性能案例第 4 段允许行为指标替代 |
-| 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；54 个存量 meta 一次补齐 |
+| 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；`summary` 一句话 ≤40 字，要有具体场景与做法（能直接当面试答案）；55 个存量 meta 全部按此标准重写 |
 | 2026-10-20 | **案例说明统一 SBAC 四段** | 场景（新手真实遇到）/ 背景（大白话讲原理）/ 做法（案例怎么解决）/ 结论（记住什么、何时用）；写在 meta.explain，每段 1–3 句、少术语多类比；54 个案例全部补齐，未填时回退到 sell + 代码要点 |
 | 2026-10-20 | **详情页源码默认收起** | 先看演示与 SBAC 说明，需要时再展开；避免一进页就被几百行代码劝退 |
 | 2026-10-20 | **说明与源码合并为 tab 组，默认说明** | 两个标签同一 tab 组（role=tablist/tabpanel）切换，替代「展开源码」按钮；切换案例时重置回说明 |
@@ -125,3 +126,4 @@
 | 2026-10-20 | **全站动效统一** | 新增 `--ease-out`（快出慢收）替代统一 ease-out；路由切换只做淡入淡出（不加位移，保护吸顶与固定按钮）；按钮/卡片/chips/主题图标/搜索弹窗/面板切换全部补齐过渡，尊重 reduced-motion |
 | 2026-10-20 | **回到顶部自绘缓动滚动** | 不用 `behavior: 'smooth'`（系统「减少动态」或环境差异会退化为瞬间跳转）；改用 requestAnimationFrame + 缓入缓出插值，滚动期间临时关闭 CSS scroll-behavior，用户滚轮/触屏时立即让出控制权 |
 | 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
+| 2026-10-20 | **CI 门禁用单 job 顺序跑四项检查** | GitHub Actions Ubuntu + Node 22 LTS；push main / PR / 手动触发，`npm ci` 后依次 type-check、lint、vitest、build；不拆多 job 以免重复安装依赖，保持配置简单 |

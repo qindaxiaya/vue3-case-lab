@@ -8,8 +8,8 @@ export default {
   title: 'Teleport 弹层工程化',
   difficulty: 'intermediate',
   tags: ['Teleport', '焦点陷阱', '滚动锁', '无障碍'],
-  summary: '挂到页面根部只是起点：滚动锁、Esc 关闭、Tab 焦点循环、焦点归还一次补齐',
-  sell: '滚动锁、Esc、焦点循环，弹窗工程化补齐',
+  summary: '弹窗挂到根部之后，还要锁滚动、Esc 关闭、Tab 焦点循环与关闭后归还焦点',
+  sell: '弹窗能开不能用：焦点、滚动与 Esc 一次补齐',
   explain: {
     situation:
       '自己写的弹窗挂到 body 后：背景还能滚，按 Esc 没反应，一直按 Tab 焦点跑到弹窗后面去了，无障碍扫描一堆错。',

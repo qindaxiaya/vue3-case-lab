@@ -9,8 +9,8 @@ export default {
   title: 'PerformanceObserver 性能监控面板',
   difficulty: 'advanced',
   tags: ['PerformanceObserver', 'LCP', 'CLS', 'INP'],
-  summary: '实时性能面板：帧率、内存与加载体验指标，附交互实验台',
-  sell: '一张面板看清帧率、内存与加载体验指标',
+  summary: '用性能观察器采集帧率、内存与加载体验指标，实时面板加可交互实验台',
+  sell: '卡顿说不清来源：一张面板看帧率、内存与加载',
   explain: {
     situation:
       '用户反馈「页面有点卡」，你不知道卡在哪：是动画掉帧、内存涨了，还是点了半天才响应？打开开发者工具的性能面板又看不懂。',

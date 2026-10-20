@@ -8,8 +8,8 @@ export default {
   title: 'defineModel 组件双向绑定',
   difficulty: 'intermediate',
   tags: ['defineModel', 'v-model', 'props', 'emit'],
-  summary: '参数加事件旧写法与新写法并排对比，父级改写与子级输入双向验证',
-  sell: '旧写法与新写法并排，迁移一眼懂',
+  summary: '同一个输入框用旧写法与新写法并排实现双向绑定，父级改写与子级输入都验证',
+  sell: '双向绑定样板代码太多：新写法省掉参数与事件',
   explain: {
     situation:
       '写一个输入框组件给父级用双向绑定。子组件里参数加更新事件写一大串，每次都要翻模板确认名字。',
