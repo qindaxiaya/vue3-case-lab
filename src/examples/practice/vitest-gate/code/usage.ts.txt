@@ -1,0 +1,97 @@
+// ============================================================
+// 测试门禁教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. scripts：本地和 CI 跑同一套 ---
+
+// package.json
+// {
+//   "scripts": {
+//     "dev": "vite",
+//     "test": "vitest run",
+//     "type-check": "vue-tsc --noEmit",
+//     "lint": "eslint . --max-warnings 0",
+//     "build": "vue-tsc -b && vite build"
+//   }
+// }
+
+//! 本地能跑的，CI 必须跑同一命令；别在 CI 里另写一份「近似」配置
+
+// --- 2. vitest.config.ts ---
+
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    //! 覆盖率门禁：低于阈值直接失败
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 70,
+      },
+      //! 只统计 src 下的业务代码，别把配置/类型文件算进去
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/*.d.ts', 'src/examples/**'],
+    },
+  },
+})
+
+// --- 3. GitHub Actions ---
+
+// .github/workflows/ci.yml
+// name: CI
+// on: [push, pull_request]
+// jobs:
+//   verify:
+//     runs-on: ubuntu-latest
+//     steps:
+//       - uses: actions/checkout@v4
+//       - uses: actions/setup-node@v4
+//         with:
+//           node-version: 20
+//           cache: npm
+//       - run: npm ci            #! 用 ci 不用 install：严格按锁文件
+//       - run: npm run lint
+//       - run: npm run type-check
+//       - run: npx vitest run --coverage
+//       - run: npm run build
+//       - uses: actions/upload-artifact@v4
+//         if: always()
+//         with:
+//           name: coverage
+//           path: coverage/
+
+// --- 4. 分支保护：门禁才算数 ---
+
+//! 光有 CI 不够，要在仓库设置里把 verify 设为 required check
+//! 否则红灯也能 merge，门禁形同虚设
+
+// --- 5. pre-commit 与 CI 的分工 ---
+
+//! pre-commit（husky + lint-staged）：只跑改动文件的 lint/format，快
+//! pre-push：可选跑 type-check
+//! CI：全量 lint + 类型 + 测试 + 构建，慢但完整
+//! 别把全量测试塞进 pre-commit，开发者会绕过（--no-verify）
+
+// --- 6. 测试要测真实链路 ---
+
+//! 本项目踩过的坑：单测用内联假数据，绕过了「glob 收录案例」的真实逻辑，
+//! 结果页面一个案例都没有，测试却全绿。
+//! 修法：集成测试直接调用真实 registry（describe.each 遍历真实的 glob 结果），
+//! 断言「每个案例 meta/Demo/code 都存在」。
+
+// --- 踩坑清单 ---
+
+//! 1. 本地 Windows、CI Linux：文件名大小写不一致会挂
+//! 2. 锁文件没提交 / 用了 npm install：依赖版本漂移
+//! 3. 覆盖率阈值定太高没人维护，定太低没意义；先跑一遍看基线再定
+//! 4. 快照测试跨平台换行符差异：配置 snapshotFormat 或统一 LF
+//! 5. 只跑测试不跑构建：类型错误（vue-tsc -b）会漏到线上
+//! 6. CI 里忘了设置环境变量：测试访问不到接口，随机失败
+//! 7. 用 --max-warnings 0：警告也要当错误，否则会越积越多

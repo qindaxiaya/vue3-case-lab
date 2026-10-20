@@ -1,0 +1,74 @@
+// ============================================================
+// Vite 代码分割教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 先诊断，再动手 ---
+
+//! npx vite build --mode production
+//! 看输出的 chunk 列表：哪个 chunk 超过 500KB，先查它
+//! 可视化：rollup-plugin-visualizer 生成 treemap，一眼看到大头
+
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default defineConfig({
+  plugins: [vue(), visualizer({ gzipSize: true, open: true })],
+})
+
+// --- 2. 路由懒加载：最有效的一刀 ---
+
+const routes = [
+  //! () => import() 让这个组件独立成 chunk，不进首屏
+  { path: '/cases', component: () => import('./views/CasesView.vue') },
+  { path: '/cases/:category/:id', component: () => import('./views/CasePage.vue') },
+]
+
+// --- 3. vendor 拆分：缓存友好 ---
+
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        //! 手动分组：升级业务代码时，vue 的 chunk hash 不变，用户不用重下
+        manualChunks: {
+          vue: ['vue', 'vue-router'],
+          markdown: ['marked', 'highlight.js'],
+        },
+      },
+    },
+  },
+})
+
+// --- 4. 按需引入：别整包 import ---
+
+//! 错误：import hljs from 'highlight.js'  // 全量语言包，1MB+
+import hljs from 'highlight.js/lib/core'
+import typescript from 'highlight.js/lib/languages/typescript'
+import xml from 'highlight.js/lib/languages/xml'
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('xml', xml)
+
+// --- 5. 组件库按需（如果用了） ---
+
+//! 现在主流组件库都提供 resolver，自动按需引入：
+// unplugin-vue-components/vite + 对应 resolver
+
+// --- 6. preload / prefetch ---
+
+//! 首屏关键 chunk 用 modulepreload，点击率高但还没进的页面用 prefetch
+//! Vite 对动态 import 默认会注入 preload 依赖，一般不用手写
+
+// --- 7. 什么时候别拆 ---
+
+//! 1. chunk 太小（<10KB）：多一个请求反而更慢，HTTP/2 也有开销
+//! 2. 首屏马上要用：拆出去还得立刻加载，没意义
+//! 3. 拆得太碎：瀑布请求链变长，弱网更慢
+//! 4. 只拆 JS 不管 CSS：样式也会跟着 chunk 走，注意 FOUC
+
+// --- 踩坑清单 ---
+
+//! 1. manualChunks 写死包名，库改名后就失效：用函数按 node_modules 路径分组更稳
+//! 2. 拆 vendor 后循环依赖可能报警告：检查 chunk 之间的引用关系
+//! 3. CDN 外置要配 external + 全局变量，还要处理 SSR/本地开发
+//! 4. gzip / brotli 是服务端能力：构建产物大不等于传输大，看压缩后体积
+//! 5. 别只看总体积：首屏关键路径（critical path）才是用户感知

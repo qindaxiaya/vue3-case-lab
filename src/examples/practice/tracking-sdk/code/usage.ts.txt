@@ -1,0 +1,103 @@
+// ============================================================
+// 埋点 SDK 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 点击：事件委托，一个监听器管全站 ---
+
+document.addEventListener(
+  'click',
+  (e) => {
+    //! closest 向上找最近的 data-track，不用给每个元素单独绑定
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-track]')
+    if (!el) return
+    track('click', {
+      name: el.dataset.track,
+      ...parseExtra(el.dataset.extra), // "position=top&source=feed"
+    })
+  },
+  //! 捕获阶段：避免业务代码 stopPropagation 把埋点拦掉
+  true,
+)
+
+// --- 2. 曝光：IntersectionObserver + 去重 ---
+
+const exposed = new WeakSet<Element>()
+
+const io = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      const el = entry.target as HTMLElement
+
+      //! 同一个元素反复进出视口只算一次，否则数据会爆炸
+      if (exposed.has(el)) continue
+      exposed.add(el)
+
+      track('exposure', { name: el.dataset.track })
+      io.unobserve(el)
+    }
+  },
+  {
+    threshold: 0.6, //! 露出 60% 才算曝光
+    // rootMargin: '0px 0px -10% 0px',  // 提前/延后触发
+  },
+)
+
+// --- 3. 批量队列 ---
+
+const queue: TrackEvent[] = []
+const BATCH_SIZE = 5
+const FLUSH_MS = 2000
+
+function track(type: string, data: Record<string, unknown>): void {
+  queue.push({ type, ...data, ts: Date.now() })
+  if (queue.length >= BATCH_SIZE) flush()
+}
+
+setInterval(() => queue.length && flush(), FLUSH_MS)
+
+// --- 4. 上报：sendBeacon 优先 ---
+
+function flush(): void {
+  if (!queue.length) return
+  const events = queue.splice(0)
+  const body = new Blob([JSON.stringify({ events })], { type: 'application/json' })
+
+  //! sendBeacon：页面关闭/跳转时也能发出，不阻塞导航
+  const ok = navigator.sendBeacon('/collect', body)
+  if (!ok) {
+    // 发送失败（队列满/网络问题）：退化为 fetch keepalive
+    void fetch('/collect', {
+      method: 'POST',
+      body,
+      keepalive: true, //! 让请求在页面卸载后继续
+    }).catch(() => {
+      //! 最终失败：写 localStorage，下次启动补传
+      queue.unshift(...events)
+    })
+  }
+}
+
+// --- 5. 自动化采集（不写死每个按钮） ---
+
+//! 1. 全局 pv：路由变化时记录 path + referrer + 停留时长
+//! 2. 错误：window.onerror / unhandledrejection
+//! 3. 性能：PerformanceObserver（LCP/CLS/INP）
+//! 4. 资源：resource timing 找慢图片/慢接口
+//! 5. 元素指纹：无 data-track 时用「标签+文本+层级」生成稳定 key
+
+// --- 6. 采样与体积 ---
+
+//! 高流量站点按 userId 取模采样（如 10%），曝光类尤其要控量
+//! 事件字段别塞整个对象：只传 id + 必要维度，服务端再关联
+
+// --- 踩坑清单 ---
+
+//! 1. 埋点代码抛错会连累业务：track 内部必须 try/catch 吞掉异常
+//! 2. 别在上报里带敏感信息（手机号、身份证、token）
+//! 3. 队列无限增长：断网时要有上限（如 200 条）和本地缓存策略
+//! 4. 曝光阈值：0 会让「刚出现 1px」就算曝光，数据虚高
+//! 5. SPA 路由切换要手动补 pv，浏览器不会自动触发
+//! 6. 重复上报：刷新/重试要带事件 id，服务端去重
+//! 7. 开发环境要能开关（localStorage 或 URL 参数），别污染线上数据

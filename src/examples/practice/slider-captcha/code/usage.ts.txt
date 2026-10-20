@@ -1,0 +1,77 @@
+// ============================================================
+// 滑块验证教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 画布要按 DPR 放大 ---
+
+const dpr = window.devicePixelRatio || 1
+canvas.width = CSS_W * dpr
+canvas.height = CSS_H * dpr
+canvas.style.width = `${CSS_W}px`
+canvas.style.height = `${CSS_H}px`
+//! 逻辑坐标仍用 CSS 像素，绘制前统一缩放
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+// --- 2. 先画完整背景，再抠缺口和拼图 ---
+
+const off = document.createElement('canvas') // 离屏：保留完整背景
+drawScene(off.getContext('2d')!)
+
+// 主图 = 完整背景 + 压暗的缺口
+ctx.drawImage(off, 0, 0)
+ctx.fillStyle = 'rgba(2, 6, 23, 0.55)'
+ctx.fillRect(targetX, pieceY, PIECE, PIECE)
+
+// 拼图 = 从同一张离屏图裁剪
+pieceCtx.drawImage(off, targetX, pieceY, PIECE, PIECE, 0, 0, PIECE, PIECE)
+
+//! 拼图必须和缺口来自同一张图，否则纹理对不上，一眼假
+
+// --- 3. 拖动：Pointer + 指针捕获 ---
+
+function onPointerDown(e: PointerEvent): void {
+  startClientX = e.clientX
+  startOffset = offset.value
+  startTime = performance.now()
+  //! 捕获后鼠标移出按钮也能继续拖
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+function onPointerMove(e: PointerEvent): void {
+  const dx = e.clientX - startClientX
+  //! 必须夹紧上下界，否则能把拼图拖出轨道
+  offset.value = clamp(startOffset + dx, 0, trackWidth - PIECE)
+  track.push({ x: offset.value, t: performance.now() - startTime })
+}
+
+// --- 4. 校验：前端只是「提高成本」 ---
+
+const passed = Math.abs(offset.value - targetX) <= 5
+
+//! 千万不要只在前端判断通过与否——把 targetX 写进 JS 里等于公开答案
+//! 正确做法：服务端保存缺口位置，前端只提交「拖到哪 + 轨迹」，
+//! 服务端比对误差、耗时、轨迹特征，再发 token
+
+// --- 5. 轨迹特征（风控用） ---
+
+//! 1. 方向变化次数：人类来回微调，脚本通常直线匀速
+//! 2. 耗时：低于 300ms 基本是机器
+//! 3. 轨迹点密度：人类采样不规则，脚本可能只有起点终点
+//! 4. 加速度曲线：人类先快后慢，脚本是常量速度
+//! 5. 设备指纹 / IP / 历史行为一起看，单一特征都能伪造
+
+// --- 6. 失败与刷新 ---
+
+//! 失败后立刻换题（重新生成缺口位置），防止暴力试错
+//! 同时限制尝试次数（3~5 次），超过就走短信/行为验证
+
+// --- 踩坑清单 ---
+
+//! 1. 忘记按 DPR 缩放 → 高分屏拼图和缺口都发虚
+//! 2. 缺口和拼图用两张不同的随机图 → 纹理对不上
+//! 3. 没设 touch-action: none → 移动端拖动变成页面滚动
+//! 4. 拼图块没加 pointer-events: none → 挡住 pointermove
+//! 5. 只比对 x 不比对 y → 缺口 y 必须由服务端固定，否则无效
+//! 6. canvas 内容能被脚本读取 → 别把答案画在用户可访问的 canvas 上
+//! 7. 无障碍：纯图形验证对读屏用户不友好，要提供替代验证方式

@@ -1,0 +1,76 @@
+// ============================================================
+// 指针拖拽排序教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 记录起点 + 捕获指针 ---
+
+function onPointerDown(e: PointerEvent, index: number): void {
+  if (e.button !== 0) return
+  dragIndex.value = index
+  startY = e.clientY
+  //! 捕获后手指/鼠标移出元素也能继续收到 move/up
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+// --- 2. 目标位置：位移除以行高 ---
+
+function onPointerMove(e: PointerEvent): void {
+  dragY.value = e.clientY - startY
+  //! 四舍五入：拖过半行才换位，避免来回抖
+  const target = dragIndex.value + Math.round(dragY.value / ROW_HEIGHT)
+  overIndex.value = clamp(target, 0, items.length - 1)
+}
+
+// --- 3. FLIP：记录 → 改数据 → 反向 → 播放 ---
+
+async function onPointerUp(): Promise<void> {
+  // First：记录移动前所有行的位置
+  const prev = new Map<number, DOMRect>()
+  rows().forEach((el) => prev.set(Number(el.dataset.id), el.getBoundingClientRect()))
+
+  // Last：真正改数据（Vue 会重排 DOM）
+  const [item] = items.splice(from, 1)
+  items.splice(to, 0, item)
+  await nextTick()
+
+  // Invert + Play：反向位移后 animate 回 0
+  rows().forEach((el) => {
+    const before = prev.get(Number(el.dataset.id))
+    if (!before) return
+    const after = el.getBoundingClientRect()
+    const dx = before.left - after.left
+    const dy = before.top - after.top
+    if (!dx && !dy) return
+
+    //! 用 WAAPI：不写 CSS keyframes，也不需要 requestAnimationFrame 循环
+    el.animate(
+      [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+      { duration: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+    )
+  })
+}
+
+// --- 4. 为什么不用 HTML5 drag and drop ---
+
+//! draggable + dragstart/dragover/drop：
+//! - 移动端基本不支持（触屏无法原生拖拽）
+//! - 拖拽影像无法自定义样式
+//! - 需要大量 dragover preventDefault 才能放下
+//! Pointer 事件统一鼠标 / 触屏 / 触控笔，体验更可控
+
+// --- 5. 真实项目用现成库 ---
+
+//! vueuse 的 useSortable（基于 SortableJS）
+//! vuedraggable（SortableJS 封装，Vue 3 用 vuedraggable@next）
+//! 它们处理了：自动滚动、跨列表、网格布局、触摸延迟、无障碍
+
+// --- 踩坑清单 ---
+
+//! 1. 忘记 setPointerCapture → 快速拖动时丢 pointerup，行卡在半路
+//! 2. 列表容器没设 touch-action: none → 移动端拖拽变成页面滚动
+//! 3. 拖拽中不要重建列表（v-for key 用稳定 id，别用 index）
+//! 4. FLIP 必须在 nextTick 之后测量，否则拿到的是旧位置
+//! 5. 拖拽项 z-index 要抬高，否则被后面的行盖住
+//! 6. 边缘自动滚动：拖到容器顶部/底部要自动滚，否则长列表拖不动
+//! 7. 拖拽结束后要清理临时 transform，否则和动画冲突
