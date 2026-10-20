@@ -8,16 +8,16 @@ export default {
   title: 'Toast 通知队列',
   difficulty: 'intermediate',
   tags: ['队列', 'animationend', '通知组件'],
-  summary: '屏上限 3 条超出排队补位，CSS animationend 驱动消失，hover 真暂停倒计时',
+  summary: '屏幕上最多 3 条，超出排队补位，动画结束驱动消失，悬停真正暂停倒计时',
   sell: '最多 3 条排队补位，animationend 精确回收',
   explain: {
     situation:
-      '页面上同时弹了 10 条 Toast，内容全被遮住。你设 3 秒自动关闭，可鼠标移上去暂停了，3 秒一到它还是消失了。',
+      '页面上同时弹了 10 条提示，内容全被遮住。你设 3 秒自动关闭，可鼠标移上去暂停了，3 秒一到它还是消失了。',
     background:
-      'Toast 要分「屏上显示区」和「排队区」：屏上最多 3 条，超出的排队，走一条补一条。消失别用 setTimeout，用 CSS 的 animationend：hover 时 animation-play-state: paused 会真正暂停动画，进度条和消失时机天然一致。',
+      '提示条要分「屏幕上显示区」和「排队区」：屏幕上最多 3 条，超出的排队，走一条补一条。消失别用定时器，用 CSS 动画结束事件：鼠标悬停时把动画暂停，进度条和消失时机天然一致。',
     action:
-      '案例最多同时显示 3 条，超出自动排队补位；hover 真暂停倒计时，移开继续；进度条和消失由同一个动画驱动。',
+      '案例维护两个数组：显示中和等待中。新提示来时，显示区没满 3 条就直接放入，满了就进等待队列。每条提示播放一个进度条动画，悬停时设置 animation-play-state: paused 暂停；动画结束事件触发后移除该条，并从等待队列取一条补上。',
     conclusion:
-      '记住：Toast = 队列 + 上限 + 动画驱动回收。别让 setTimeout 和动画各管各的，迟早对不上。',
+      '记住：提示条 = 队列 + 上限 + 动画驱动回收。别让定时器和动画各管各的，迟早对不上。',
   },
 } satisfies CaseMeta

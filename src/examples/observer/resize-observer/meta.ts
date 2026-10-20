@@ -8,16 +8,16 @@ export default {
   title: 'ResizeObserver 容器尺寸监听',
   difficulty: 'beginner',
   tags: ['ResizeObserver', '响应式布局', 'content-box'],
-  summary: '监听任意容器尺寸变化，contentRect 与 borderBoxSize 两种测量模式对比',
+  summary: '监听任意容器尺寸变化，内容区与含边框两种测量模式对比',
   sell: '容器尺寸变化不用轮询，两种测量模式一次讲清',
   explain: {
     situation:
-      '侧边栏一折叠，图表的容器变窄了，但图还是老宽度；你监听 window.resize，可容器变了窗口没变，回调根本不触发。',
+      '侧边栏一折叠，图表容器变窄了，但图表还是原来的宽度；你监听窗口大小变化，可容器变了、窗口没变，回调根本不触发。',
     background:
-      'window.resize 只知道「窗口」变了，不知道某个 div 变了。ResizeObserver 直接观察元素本身，尺寸一变就通知，还能区分内容区（contentRect）和含边框的整体尺寸。',
+      '窗口大小变化只知道「浏览器窗口」变了，不知道页面里某个盒子变了。ResizeObserver 是专门观察元素尺寸的接口：元素宽高一变就通知你，而且能区分「内容区尺寸」和「包含内边距、边框的整体尺寸」。',
     action:
-      '案例用 ResizeObserver 观察容器，实时显示宽高；对比 contentRect（不含 padding/border）和 borderBoxSize（含边框）两种测量，演示折叠侧栏、改字体等场景。',
+      '案例用 ResizeObserver 观察图表容器，回调里读取 contentRect 拿到内容区宽高并重绘；同时展示 borderBoxSize，说明加上内边距和边框后的尺寸差异。观察时第二个参数传 box 可以指定按哪种盒子测量。组件卸载时 disconnect。',
     conclusion:
-      '记住：组件自适应看 ResizeObserver，别用 window.resize。图表、虚拟列表、文本溢出检测都靠它。',
+      '记住：组件自适应看 ResizeObserver，不要用窗口大小变化代替。图表、虚拟列表、文字溢出检测都靠它。',
   },
 } satisfies CaseMeta

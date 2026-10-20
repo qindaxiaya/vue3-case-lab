@@ -266,25 +266,31 @@ const explainBlocks = computed(() => {
         <div class="card note-card">
           <!-- 已补齐 SBAC：场景 / 背景 / 做法 / 结论，按新手能懂的方式讲 -->
           <template v-if="explain">
-            <div
-              v-for="block in explainBlocks"
-              :key="block.key"
-              class="sbac-row"
-            >
-              <span
-                class="sbac-badge"
-                :class="`sbac-${block.key.toLowerCase()}`"
-                aria-hidden="true"
-              >{{ block.key }}</span>
-              <div class="sbac-body">
-                <h3 class="sbac-label">
-                  {{ block.label }}
-                </h3>
-                <p class="sbac-text">
-                  {{ block.text }}
-                </p>
-              </div>
-            </div>
+            <p class="note-lead">
+              {{ item.meta.sell }}
+            </p>
+
+            <ol class="sbac-list">
+              <li
+                v-for="block in explainBlocks"
+                :key="block.key"
+                class="sbac-row"
+              >
+                <span
+                  class="sbac-badge"
+                  :class="`sbac-${block.key.toLowerCase()}`"
+                  aria-hidden="true"
+                >{{ block.key }}</span>
+                <div class="sbac-body">
+                  <h3 class="sbac-label">
+                    {{ block.label }}
+                  </h3>
+                  <p class="sbac-text">
+                    {{ block.text }}
+                  </p>
+                </div>
+              </li>
+            </ol>
           </template>
 
           <!-- 未补齐说明：回退到卖点 + 教学代码的重点行 -->
@@ -531,16 +537,50 @@ const explainBlocks = computed(() => {
 .note-card {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1.25rem;
   padding: 1.35rem 1.6rem;
+}
+
+/* 顶部导语：一句话卖点 */
+.note-lead {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.7;
 }
 
 /* ---------- SBAC 四段 ---------- */
 
+.sbac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .sbac-row {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 0.9rem;
+}
+
+/* 竖线把四段串成一条阅读路径 */
+.sbac-row:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 2.05rem;
+  bottom: -1.2rem;
+  left: 0.85rem;
+  width: 1px;
+  background-color: var(--border);
 }
 
 .sbac-badge {
@@ -582,7 +622,7 @@ const explainBlocks = computed(() => {
 }
 
 .sbac-label {
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.3rem;
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -592,8 +632,22 @@ const explainBlocks = computed(() => {
 .sbac-text {
   margin: 0;
   font-size: 0.92rem;
-  line-height: 1.8;
+  line-height: 1.9;
   color: var(--text);
+  /* 做法段用换行列步骤时保留换行 */
+  white-space: pre-line;
+}
+
+@media (max-width: 560px) {
+  .note-card {
+    padding: 1.1rem;
+    gap: 1rem;
+  }
+
+  .sbac-text {
+    font-size: 0.88rem;
+    line-height: 1.85;
+  }
 }
 
 .note-sell {
