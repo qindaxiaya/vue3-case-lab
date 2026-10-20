@@ -16,6 +16,7 @@
 ## 约定
 
 - 全程中文界面、中文说明文案；变量/函数/文件名英文
+- **Windows 中文乱码（2026-10-20 根治）**：opencode 以 `-NoProfile` 启动 Windows PowerShell 5.1，控制台/管道默认 GBK(936)，而 opencode 按 UTF-8 解码，中文输出就成乱码。已加全局插件 `~/.config/opencode/plugins/utf8-encoding.ts`，在每次 bash 工具调用前注入 `[Console]::OutputEncoding=...UTF8`（重启 opencode 生效）。未重启或 `--pure` 模式下，查看中文优先用 Read/Grep 工具，必须用 shell 时在命令前手动加同样设置
 - **站点自身全部代码写中文注释**（组件/composable/工具/路由），关键逻辑逐行注释「做什么、为什么」，与案例代码同等标准
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）；ESLint `no-explicit-any` 为 error
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
@@ -125,5 +126,6 @@
 | 2026-10-20 | **详情页 tab 吸顶 + 回到顶部** | 说明/源码 tab 吸顶在顶栏下方（64px），长代码里随时切回说明；右下角浮动按钮滚动 480px 后出现，外圈显示阅读进度 |
 | 2026-10-20 | **全站动效统一** | 新增 `--ease-out`（快出慢收）替代统一 ease-out；路由切换只做淡入淡出（不加位移，保护吸顶与固定按钮）；按钮/卡片/chips/主题图标/搜索弹窗/面板切换全部补齐过渡，尊重 reduced-motion |
 | 2026-10-20 | **回到顶部自绘缓动滚动** | 不用 `behavior: 'smooth'`（系统「减少动态」或环境差异会退化为瞬间跳转）；改用 requestAnimationFrame + 缓入缓出插值，滚动期间临时关闭 CSS scroll-behavior，用户滚轮/触屏时立即让出控制权 |
+| 2026-10-20 | **中文乱码从源头修复** | 根因是 PowerShell 5.1 `-NoProfile` + GBK 输出；用 opencode 全局插件在每条 bash 命令前注入 UTF-8 编码设置，替代「避开 shell / 读文件」的绕行方案；同时给交互式 PowerShell 加了 UTF-8 profile |
 | 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
 | 2026-10-20 | **CI 门禁用单 job 顺序跑四项检查** | GitHub Actions Ubuntu + Node 22 LTS；push main / PR / 手动触发，`npm ci` 后依次 type-check、lint、vitest、build；不拆多 job 以免重复安装依赖，保持配置简单 |
