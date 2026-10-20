@@ -121,12 +121,14 @@ function resetAll(): void {
           <h3>防抖 debounce（500ms）</h3>
           <span class="ratio">原始 {{ inputRaw }} → 执行 {{ searchExec }}</span>
         </header>
-        <input
+        <el-input
           v-model="keyword"
           class="input"
+          size="large"
           placeholder="快速连续打字试试…"
+          aria-label="防抖搜索输入"
           @input="onInput"
-        >
+        />
         <p class="scene-note">
           最近搜索：<b>{{ lastSearch }}</b>
           ——连续打字只触发最后一次（搜索框/窗口 resize 的标准解法）。
@@ -261,20 +263,9 @@ function resetAll(): void {
   color: var(--primary);
 }
 
+/* Element Plus 输入框只保留铺满宽度，颜色/圆角/焦点由全局主题适配层统一 */
 .input {
   width: 100%;
-  box-sizing: border-box;
-  padding: 0.45rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.82rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 }
 
 .scroll-box {

@@ -16,7 +16,7 @@ const onSearch = useDebounceFn((v: string) => {
   console.log('真正发起搜索：', v)
 }, 500)
 
-// 模板：<input v-model="keyword" @input="onSearch(keyword)">
+// 模板：<el-input v-model="keyword" size="large" @input="onSearch(keyword)" />
 // 组件卸载时 VueUse 自动清理计时器——无需手动 cancel（内部已处理生命周期）
 
 // --- 场景二：滚动埋点节流（函数版） ---

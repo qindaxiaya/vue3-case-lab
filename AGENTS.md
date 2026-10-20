@@ -21,6 +21,7 @@
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）；ESLint `no-explicit-any` 为 error
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
 - 禁止第三方 UI 组件库、禁止 Pinia；样式用 Sass（SCSS）+ CSS 变量主题，自建全局类 `btn-primary`/`btn-ghost`/`card`/`tag`，案例 Demo 用自身 scoped SCSS
+  - 例外（2026-10-20 试点）：Element Plus 允许用于 Demo 通用表单控件（输入框 / 下拉 / 多行输入），必须按需引入（unplugin-vue-components + ElementPlusResolver），禁止 `app.use(ElementPlus)` 整包注册；站点壳与教学型组件（Toast/Teleport/弹窗/可编辑表格/自定义指令等）仍自建；Pinia 仍禁止
 - 暗色模式：`.dark` class 策略（`<html class="dark">`，index.html 内联脚本防闪白）+ `localStorage` 键 `moyu-theme` 持久化
 - 案例目录结构（新增案例零注册成本）：
   ```
@@ -38,7 +39,7 @@
 - **不造轮子（2026-10-19 用户拍板）**：
   1. 工程实践类案例优先用现成库/原生 API（VueUse、fuse.js 等），**不手写已解决的通用工具**（debounce/throttle/深拷贝等）——案例代码应贴近真实项目写法
   2. 原生浏览器 API（canvas/Worker/Clipboard/EyeDropper/Observer 系）不算造轮子，直接演示
-  3. 第三方 UI 组件库仍禁用；Toast 这类「教学如何做组件」的案例除外（注明真实项目可用 vue-toastification 等）
+  3. UI 组件库仅允许 Element Plus 通用表单控件（2026-10-20 试点，按需引入）；Toast 这类「教学如何做组件」的案例仍自建（注明真实项目可用 vue-toastification 等）
 - 案例分类：`performance`（性能监控）、`observer`（观察者）、`virtual`（虚拟渲染）、`vue3`（Vue 3 API）、`composables`（组合式函数）、`practice`（工程实践）
 - Commit：Conventional Commits + 中文描述；每任务收尾必 commit
 - **工作节奏（2026-10-19 用户拍板）**：
@@ -107,6 +108,7 @@
 - ✅ 2026-10-20 PDF 预览重构为 pdf.js + canvas：动态加载运行时与 worker，自建翻页/缩放/卸载；渲染前取消 `RenderTask`，卸载 destroy `loadingTask`。3 轮实测首屏 35~69ms（中位 45，含 worker 启动）、翻页 8~15ms、150% 缩放 6~11ms；快速连点、渲染中卸载、路由往返、375px 均无报错与页面横向溢出
 - ✅ 2026-10-20 顶栏精修：品牌标记、搜索与主题图标全部改为自绘 SVG；搜索框收窄到 18.5rem、快捷键按平台显示；滚动 4px 后切半透明毛玻璃 + 轻投影；移动端只留标记并补 `aria-label`。实测 1200 / 375 / 320 均无横向溢出，亮暗色正常、控制台无报错
 - ✅ 2026-10-20 详情页新增「深入」tab：`notes.md` 经 `import.meta.glob` 懒加载 + Promise 缓存，marked 渲染五段、highlight.js 高亮代码块（新增 bash/yaml，vue/html 按 xml），含骨架屏/失败重试/空态；首个 H1 隐藏，三个 tab 支持左右键循环。机器验收：vitest 25/25（含全案例 notes 加载器用例）、type-check、lint、build；Chrome CDP 实测 raf-loop / teleport-layer 五段齐全、代码高亮、暗色代码主题生效、375px 表格内部横滚且页面无溢出、控制台零错误
+- ✅ 2026-10-20 Element Plus 试点：接入 unplugin-vue-components 按需引入（不整包注册），新增主题适配层 `_element.scss`（主色/字体/圆角/边框/背景对齐站点 token，含暗色与 Select 弹层）；3 个样板案例改用统一大号表单控件：vitest-gate（el-select）、debounce-throttle（el-input）、json-viewer（el-input textarea）
 - dev 地址：主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 - 续工 worktree：尺寸 `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-demo-size`（dev `5174` / CDP `9333`）；Element Plus `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-element-plus`（dev `5175` / CDP `9334`）
 
@@ -152,3 +154,4 @@
 | 2026-10-20 | **CI 门禁用单 job 顺序跑四项检查** | GitHub Actions Ubuntu + Node 22 LTS；push main / PR / 手动触发，`npm ci` 后依次 type-check、lint、vitest、build；不拆多 job 以免重复安装依赖，保持配置简单 |
 | 2026-10-20 | **仓库转公开 + ruleset 硬门禁** | 私有免费仓库不支持分支保护/ruleset（API 403）；转公开后创建 `main-merge-gate`：必须 PR、必需检查 `Type check, lint, test, build`、禁强推/删除、线性历史、审批 0（单人不能自批）、无 bypass；管理员直推同样被 GH013 拒绝 |
 | 2026-10-20 | **Demo 尺寸统一走 token + 全局兜底** | `_tokens.scss` 新增 `--demo-*`；`.demo-card` 控件桌面 ≥36px / 移动 ≥40px 由 `_components.scss` 兜底；字号按 13/14/15/16 分层，避免统一大字号压平层级；`CasePage` 外卡桌面 `2.25rem 2.5rem`、移动 `1.25rem`。覆盖 54/56，剩 `debounce-throttle`、`json-viewer` 等 Element Plus PR #7 合并后再补 |
+| 2026-10-20 | **Element Plus 仅限通用表单控件试点，按需引入，站点壳不换皮** | 用户拍板试点：用 unplugin-vue-components + ElementPlusResolver（`importStyle: false`）按需引入，样式由 main.ts 引入官方完整主题，再用 `_element.scss` 把主色/字体/圆角/边框/背景/暗色与 Select 弹层映射到站点 token；禁止整包 `app.use(ElementPlus)`；站点壳与教学型组件仍自建，Pinia 仍禁止 |
