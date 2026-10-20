@@ -18,16 +18,24 @@ function onScroll(): void {
 
 // --- 2. 追加消息：底部跟随 / 上翻不打扰 ---
 
-async function append(msg: Msg): Promise<void> {
+async function append(msg: Msg, force = false): Promise<void> {
   messages.value.push(msg)
   await nextTick() // 等 DOM 高度更新
 
-  if (stickToBottom.value) {
+  if (force || stickToBottom.value) {
+    //! 自己发消息 force = true：即使正在上翻，也必须回到底部
+    stickToBottom.value = true
     scroller.value!.scrollTop = scroller.value!.scrollHeight
+    unread.value = 0
   } else {
     //! 上翻时千万别改 scrollTop，否则用户正在看的内容被拽走
     unread.value++
   }
+}
+
+function send(text: string): void {
+  // 自己的消息带 force：用户要立刻看到刚发出去的内容
+  void append({ id: Date.now(), from: 'me', text }, true)
 }
 
 // --- 3. 内容高度变化也要吸底 ---

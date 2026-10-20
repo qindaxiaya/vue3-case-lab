@@ -1,9 +1,10 @@
 // ============================================================
 // 案例：聊天流吸底（chat-scroll）
-// 三条规则：
+// 四条规则：
 // 1. 在底部时来新消息 → 自动吸底
 // 2. 用户上翻查看历史 → 不打扰，只提示「N 条新消息 ↓」
-// 3. 滚到顶部 → 加载更早历史，并保持当前视觉位置
+// 3. 自己发送消息 → 无条件回到底部（必须看到刚发的内容）
+// 4. 滚到顶部 → 加载更早历史，并保持当前视觉位置
 // ============================================================
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref } from 'vue'
@@ -78,12 +79,13 @@ function scrollToBottom(): void {
 // 追加消息
 // ============================================================
 
-async function append(msg: Msg): Promise<void> {
+async function append(msg: Msg, force = false): Promise<void> {
   messages.value.push(msg)
   await nextTick()
 
-  if (stickToBottom.value) {
-    //! 在底部：新消息进来后直接吸底
+  if (force || stickToBottom.value) {
+    //! force：自己发消息即使正在上翻，也必须回到底部
+    stickToBottom.value = true
     scrollToBottom()
   } else {
     //! 上翻中：不改变滚动位置，只累计未读
@@ -95,7 +97,8 @@ function send(): void {
   const text = input.value.trim()
   if (!text) return
   input.value = ''
-  void append(makeMsg('me', text))
+  //! 发送自己的消息：强制吸底，用户要立刻看到刚发出的内容
+  void append(makeMsg('me', text), true)
 }
 
 /** 模拟对方来消息（含高消息，验证高度变化） */
@@ -252,7 +255,7 @@ function resetAll(): void {
 
     <p class="chat-hint">
       往上翻看历史时，对方来消息不会把页面拽回底部，只显示「N 条新消息」；
-      滚回底部后恢复吸底。滚到最顶部会加载更早记录且保持当前视线位置。
+      但自己发送消息会立即回到底部。滚回底部后恢复吸底，滚到最顶部会加载更早记录且保持当前视线位置。
     </p>
   </div>
 </template>
