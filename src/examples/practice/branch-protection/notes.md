@@ -96,7 +96,7 @@ gh pr merge --squash --delete-branch
 | 直接 `git push origin main` | 成功，main 立即更新 | 拒绝：`GH013`，提示必须走 PR，且必需检查未报告 |
 | 红灯 PR 合并 | 允许（检查只是建议） | 拒绝：`gh pr merge` 返回 `base branch policy prohibits the merge`，`mergeStateStatus=BLOCKED` |
 | 绿灯 PR 合并 | 允许 | 检查通过后 squash 合并成功（本案例 PR #1） |
-| 单次 Actions 耗时 | — | 18s（红灯）/ 25s / 31s / 38s（实际运行） |
+| 单次 Actions 耗时 | — | 18s（红灯）/ 25s / 31s / 33s / 38s（实际运行） |
 | 私有免费仓库创建规则集 | — | API 403：需转公开或升级付费计划 |
 
 测量方式：2026-10-20 在本仓库实际执行 `git push origin main`、`gh pr merge`、`gh run watch`，记录退出码与输出；Actions 耗时取 GitHub 运行页面的整数秒。本案例 PR #1 先提交一个故意失败的测试，`gh pr checks --watch` 得到 18s 失败，`gh pr merge` 退出码 1；删除失败测试后同一 PR 转绿并合并。
