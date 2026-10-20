@@ -79,8 +79,7 @@
 - ✅ 2026-10-20 详情页说明改 SBAC（场景/背景/做法/结论），54 个案例全部补齐；源码区默认收起，先看演示与说明
 - ✅ 2026-10-20 质量批次 4：修正 pinia（重复 store 名）/ history-guard（allowed、二次 popstate）/ route-rbac（user、computed）/ route-transition（direction）/ keep-alive-lru（ref）教学代码
 - ✅ 2026-10-20 质量批次 5：4 个新案例 notes 五段 + 实测（time-slicing 切片/全量、virtual-variable DOM 9/2000、chat-scroll 未读/吸底、pull-refresh 刷新/加载）+ 375px 与刷新验收
-- 待做（2026-10-20 质量批次）：
-  - 批次 6：其余 50 个存量案例的 notes.md 渐进补齐
+- ✅ 2026-10-20 质量批次 6：其余 50 个存量案例 notes.md 五段补齐（54/54 全覆盖）；全部含现象/SBAC 式原理/关键代码/实测或行为指标/追问边界；脚本校验 54 篇均含 1~5 段；vitest 18/18、type-check、lint、build 通过
 - 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
