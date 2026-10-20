@@ -74,8 +74,8 @@
   - ✅ spec 扩展批 5（practice 文件能力 4）：file-preview / pdf-preview（手写 PDF 1.4）/ file-upload / chunk-upload
   - ✅ spec 扩展批 6（practice 5）：drag-sort / slider-captcha / tracking-sdk / vite-split / vitest-gate
 - ✅ 2026-10-20 质量批次 1：完成标准 DoD + notes 模板落盘；CaseMeta 增加 `sell`，54 个案例一次补齐
+- ✅ 2026-10-20 质量批次 2：路由切换重置演示状态；暗色代码主题改用 `?url` 导入并验证构建产物（github-dark css 1.06 kB）
 - 待做（2026-10-20 质量批次）：
-  - 批次 2：CasePage 演示状态残留、CodeWorkbench 暗色代码主题
   - 批次 3：详情页搜索跳转、分类筛选校正、主题持久化、375px 顶栏
   - 批次 4：存量教学代码纠错（pinia / history / route-*）
   - 批次 5：新案例 notes.md + 对比 + 实测验收

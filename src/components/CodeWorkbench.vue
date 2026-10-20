@@ -17,6 +17,9 @@ import xml from 'highlight.js/lib/languages/xml'
 import css from 'highlight.js/lib/languages/css'
 import json from 'highlight.js/lib/languages/json'
 import 'highlight.js/styles/github.css'
+// 暗色代码主题：以 ?url 导入为独立资源地址（构建时输出 CSS asset），
+// 主题切换时用 <link> 启停，避免亮/暗两套样式表同时生效互相覆盖。
+import darkHref from 'highlight.js/styles/github-dark.css?url'
 import { useTheme } from '../composables/useTheme'
 import type { CodeTab } from '../examples/registry'
 
@@ -39,17 +42,14 @@ const props = defineProps<{
 const { isDark } = useTheme()
 
 // ---------- 暗色代码主题（动态 link 启停，避免双主题样式表互相覆盖） ----------
+// 注意：不要用 import.meta.glob('../../../node_modules/...')——从 src/components
+// 出发会越界到项目根之外，匹配为空，暗色主题将静默失效。
 let darkLink: HTMLLinkElement | null = null
-const darkCssUrl = import.meta.glob(
-  '../../../node_modules/highlight.js/styles/github-dark.css',
-  { query: '?url', import: 'default', eager: true },
-)
-const darkHref = Object.values(darkCssUrl)[0] as string | undefined
 
 watch(
   isDark,
   (dark) => {
-    if (dark && darkHref) {
+    if (dark) {
       if (!darkLink) {
         darkLink = document.createElement('link')
         darkLink.rel = 'stylesheet'
@@ -74,15 +74,17 @@ const activeKey = ref('')
  */
 const allTabs = computed(() => {
   // 按演示 key 过滤展示片段（约定：code/<key>.*.txt；无 key 显示全部）
-  const coreTabs = (
-    props.demoKey
-      ? props.tabs.filter((t) => t.name.startsWith(props.demoKey!))
-      : props.tabs
-  ).map((t, i) => ({
+  const keyedTabs = props.demoKey
+    ? props.tabs.filter((t) => t.name.startsWith(props.demoKey!))
+    : props.tabs
+  // 防御：demoKey 有值但没有任何片段匹配（命名不一致/状态残留）时回退全部，
+  // 避免代码区只剩「可复制源码」，让内容仍可查阅。
+  const sourceTabs = keyedTabs.length > 0 ? keyedTabs : props.tabs
+  const coreTabs = sourceTabs.map((t, i) => ({
     key: `core:${t.name}`,
-    // 单套时直接叫「展示代码」；多套（无联动 key）时带文件名区分
+    // 单套直接叫「展示代码」；多套时带文件名区分，避免同名 tab 无法分辨
     label:
-      props.tabs.length > 1 && !props.demoKey
+      sourceTabs.length > 1
         ? `展示代码 · ${t.name.replace(/\.txt$/, '').replace(/\.\w+$/, '')}`
         : '展示代码',
     lang: t.lang,

@@ -4,7 +4,7 @@
 // 代码区两个 tab：展示代码（重点行高亮）+ 可复制源码（复制即用）
 // ============================================================
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { getCase } from '../examples/registry'
@@ -31,6 +31,20 @@ function onDemoTabs(
 // 路由参数查找案例（不存在渲染空状态）
 const item = computed(() =>
   getCase(String(route.params.categoryId), String(route.params.caseId)),
+)
+
+/**
+ * 路由切换时重置演示 tab 状态
+ * CasePage 在同一路由记录内复用（只换 params），组件不会重建；
+ * 若不重置，上一个案例的 demoKey 会残留，代码区按旧 key 过滤后可能只剩「可复制源码」。
+ * watch 默认 pre-flush：先清空，再由新 Demo 挂载时 emit('tabs') 重新上报。
+ */
+watch(
+  () => route.fullPath,
+  () => {
+    demoTabs.value = []
+    activeDemoKey.value = ''
+  },
 )
 
 /** 当前分类展示名（面包屑用，找不到回退为原始 id） */
