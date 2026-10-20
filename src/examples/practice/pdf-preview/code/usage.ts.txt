@@ -1,78 +1,88 @@
 // ============================================================
-// PDF 预览教学片段
+// PDF 预览教学片段（pdf.js + canvas）
 // 重点行用 //! 标记——展示时高亮、复制时自动去标记
 // ============================================================
 
-// --- 1. 最小 PDF 结构（看懂就不怕它） ---
+// --- 1. 安装与 Worker 配置 ---
 
-//! %PDF-1.4                       ← 版本头
-//! 1 0 obj << /Type /Catalog ... >> endobj
-//! 2 0 obj << /Type /Pages /Kids [...] /Count 3 >> endobj
-//! 3 0 obj << /Type /Font /BaseFont /Helvetica >> endobj
-//! ...
-//! xref                            ← 交叉引用表：每个对象的字节偏移
-//! 0 5
-//! 0000000000 65535 f
-//! 0000000009 00000 n
-//! ...
-//! trailer << /Size 5 /Root 1 0 R >>
-//! startxref
-//! 1234
-//! %%EOF
+//! // npm i pdfjs-dist
+//! import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
+//! import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+//!
+//! // 解析放在独立线程，主线程只画 canvas
+//! GlobalWorkerOptions.workerSrc = workerUrl
 
-//! xref 里的偏移必须精确到字节，否则浏览器报「文件已损坏」
+// Vite 的 ?url 会把 worker 单独输出成文件；不配 workerSrc 会在控制台报错，
+// 也可能是「假成功」——页面空白但没有任何异常。
 
-// --- 2. 生成 Blob 并预览 ---
+// --- 2. 读取 PDF 字节 ---
 
-const blob = createPdfBlob(pages) // 返回 new Blob([text], { type: 'application/pdf' })
-const url = URL.createObjectURL(blob)
+// 现场生成一份演示 PDF（真实项目通常是 input[type=file] 或接口返回的 Blob）
+const blob = createSamplePdf()
 
-// iframe
-//! <iframe :src="url" style="width:100%;height:600px;border:0" />
+//! // 直接把字节交给 pdf.js，不需要 Blob URL
+//! const data = new Uint8Array(await blob.arrayBuffer())
+//! const loadingTask = getDocument({ data })
+//! const doc = await loadingTask.promise
+//! console.log('页数', doc.numPages)
 
-// object（语义正确，可带 fallback）
-//! <object :data="url" type="application/pdf">
-//!   <a :href="url">下载 PDF</a>
-//! </object>
+// --- 3. 渲染一页到 canvas ---
 
-// --- 3. 查看器参数 ---
+//! const pdfPage = await doc.getPage(1)
+//! const base = pdfPage.getViewport({ scale: 1 })
+//!
+//! // 目标显示宽度 ÷ PDF 原始宽度 = 渲染比例
+//! const dpr = Math.min(window.devicePixelRatio || 1, 2)
+//! const cssWidth = 480
+//! const viewport = pdfPage.getViewport({
+//!   scale: (cssWidth / base.width) * dpr,
+//! })
+//!
+//! const canvas = canvasEl.value
+//! canvas.width = Math.floor(viewport.width)
+//! canvas.height = Math.floor(viewport.height)
+//! canvas.style.width = `${cssWidth}px`
+//! canvas.style.height = `${cssWidth / (base.width / base.height)}px`
+//!
+//! await pdfPage.render({ canvas, viewport }).promise
 
-//! #page=2        跳到第 2 页
-//! #zoom=80       缩放 80%（也支持 zoom=page-fit）
-//! #toolbar=0     隐藏工具栏（部分浏览器支持）
-//! #view=FitH     宽度适配
-// 注意：这些参数由「浏览器内置查看器」解析，Chrome/Edge/Firefox 支持度不同
+// 先放大 canvas 的像素尺寸，再用 CSS 缩回目标宽度：高分屏上文字才不糊。
+// 只改 canvas.width 会重置整张画布，所以每次重绘都要重新设置尺寸和样式。
 
-// --- 4. 移动端问题 ---
+// --- 4. 翻页 / 缩放必须先取消上一次渲染 ---
 
-//! iOS Safari 内嵌 PDF 经常只显示第一页，或者直接弹下载
-//! 需要跨端一致时，用 pdfjs-dist 自己渲染到 <canvas>
+let renderTask: RenderTask | null = null
 
-import * as pdfjs from 'pdfjs-dist'
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+//! // 保存 RenderTask 引用（import type { RenderTask } from 'pdfjs-dist'）
+//! renderTask?.cancel()
+//! renderTask = pdfPage.render({ canvas, viewport })
+//! await renderTask.promise
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+// 用户连续点「下一页」时，上一次渲染可能还没结束。
+// 直接复用同一个 canvas 会抛错或画出半张图，所以先 cancel 再开始新的渲染。
 
-const doc = await pdfjs.getDocument({ url }).promise
-const pdfPage = await doc.getPage(1)
-const viewport = pdfPage.getViewport({ scale: 1.5 })
-const canvas = document.createElement('canvas')
-canvas.width = viewport.width
-canvas.height = viewport.height
-await pdfPage.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
+// --- 5. 卸载时释放文档 ---
 
-// --- 5. 真实项目选型 ---
+//! const loadingTask = getDocument({ data })
+//! // ...用完、或组件卸载时
+//! loadingTask.destroy() // 终止 worker，释放页面与字体缓存
 
-//! - 只是「能看」：iframe + object URL，10 行代码
-//! - 要自定义 UI（翻页/缩放/搜索/高亮/水印）：pdfjs-dist
-//! - 要生成 PDF（合同/报表）：pdf-lib（纯前端，支持嵌入中文字体）
-//! - 要「禁止下载/加水印/跨端一致」：服务端转图或专业服务
+// 注意：pdf.js 6 的 PDFDocumentProxy 没有 destroy，
+// 关闭文档要保留 getDocument() 返回的 loadingTask 并调用它的 destroy()。
+// 只把 canvas 隐藏不够：worker 里仍保留解析结果，反复打开大文件会涨内存。
+
+// --- 6. 和浏览器内置查看器怎么选 ---
+
+//! - 只要「能看」：交给浏览器自带查看器，代码最少
+//! - 要自定义工具栏 / 翻页 / 缩放 / 水印：pdf.js 渲染到 canvas
+//! - 要生成 PDF（合同、报表）：pdf-lib（可嵌入中文字体）
+//! - 要禁止下载 / 服务端统一转图：专业文档服务
 
 // --- 踩坑清单 ---
 
-//! 1. Blob URL 忘记 revoke → 内存泄漏（特别是反复生成的场景）
-//! 2. CSP 限制：frame-src / object-src 要放行 blob:
-//! 3. 中文：Helvetica 无中文字形，需要嵌入字体子集（pdf-lib + fontkit）
-//! 4. 大文件：先下载完再创建 URL，否则查看器一直转圈
-//! 5. 同源策略：跨域 PDF 在 iframe 里可能被拦（X-Frame-Options）
-//! 6. 打印：iframe 内的 PDF 打印行为各浏览器不一致，别依赖
+//! 1. 忘了配置 workerSrc → 控制台报错或页面空白
+//! 2. 同一 canvas 并发 render → 必须先 cancel 上一个任务
+//! 3. 中文 PDF 缺字体 → 配置 cMapUrl / standardFontDataUrl，否则文字缺失
+//! 4. worker 被 CSP 拦截 → 放行 worker-src 'self' blob:
+//! 5. 大文件一次性读入内存 → 用 range 请求按需加载（PDFDataRangeTransport）
+//! 6. 需要复制文字 / 搜索 → 还要额外渲染 TextLayer，canvas 本身没有文字层
