@@ -167,7 +167,7 @@ function resetAll(): void {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -181,7 +181,7 @@ function resetAll(): void {
   border-radius: 999px;
   background-color: var(--primary-soft);
   color: var(--primary-soft-text);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
 }
 
 .btn-reset {
@@ -191,7 +191,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -209,7 +209,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &.active {
@@ -241,7 +241,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.86rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 }
@@ -249,7 +249,7 @@ function resetAll(): void {
 .ka-demo :deep(.ka-stat) {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -259,7 +259,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
 
   &:focus {
     outline: none;
@@ -269,7 +269,7 @@ function resetAll(): void {
 
 .ka-demo :deep(.ka-tip) {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -282,7 +282,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.85;
   color: var(--text-secondary);
   min-height: 5.6rem;
@@ -290,7 +290,7 @@ function resetAll(): void {
 
 .ka-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

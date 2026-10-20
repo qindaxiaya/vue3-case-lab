@@ -231,7 +231,7 @@ function clearAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -270,7 +270,7 @@ function clearAll(): void {
   display: flex;
   align-items: center;
   gap: 1.1rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -280,7 +280,7 @@ function clearAll(): void {
 }
 
 .status-hint {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 }
 
 /* ---------- 通知栈（右上角） ---------- */
@@ -350,7 +350,7 @@ function clearAll(): void {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: #fff;
 }
@@ -378,21 +378,21 @@ function clearAll(): void {
 
 .toast-title {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .toast-id {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--text-secondary);
 }
 
 .toast-msg {
   margin: 0.15rem 0 0;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--text-secondary);
   word-break: break-word;
@@ -403,7 +403,7 @@ function clearAll(): void {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   padding: 0.1rem;
 

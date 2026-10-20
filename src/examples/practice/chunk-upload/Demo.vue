@@ -370,7 +370,7 @@ function formatSize(bytes: number): string {
   border-radius: var(--radius-sm);
   border: 1px solid var(--primary);
   color: var(--primary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -387,7 +387,7 @@ function formatSize(bytes: number): string {
 .btn-ghost {
   padding: 0.22rem 0.55rem;
   border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   border: 1px solid var(--primary);
   background-color: transparent;
@@ -428,13 +428,13 @@ function formatSize(bytes: number): string {
 }
 
 .cu-name {
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text);
   word-break: break-all;
 }
 
 .cu-kv {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -451,7 +451,7 @@ function formatSize(bytes: number): string {
   margin-left: auto;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   background-color: var(--success);
   color: #fff;
 }
@@ -520,7 +520,7 @@ function formatSize(bytes: number): string {
 
 .cu-pct {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   min-width: 2.4rem;
   text-align: right;
@@ -539,7 +539,7 @@ function formatSize(bytes: number): string {
 
 .cu-log {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 
@@ -552,7 +552,7 @@ function formatSize(bytes: number): string {
   margin: 0;
   padding: 1.1rem;
   text-align: center;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   border: 1px dashed var(--border);
   border-radius: var(--radius-btn);
@@ -560,13 +560,13 @@ function formatSize(bytes: number): string {
 
 .cu-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

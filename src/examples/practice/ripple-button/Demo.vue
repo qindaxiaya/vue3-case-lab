@@ -160,7 +160,7 @@ function spawnRipple(e: MouseEvent): void {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text);
   cursor: pointer;
 
@@ -176,13 +176,13 @@ function spawnRipple(e: MouseEvent): void {
 
 .ctl-val {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   min-width: 4em;
 }
 
 .stat {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -210,7 +210,7 @@ function spawnRipple(e: MouseEvent): void {
   padding: 0.6rem 1.5rem;
   border-radius: var(--radius-btn);
   border: 1px solid transparent;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
   transition: filter 0.15s, transform 0.1s;
@@ -276,7 +276,7 @@ function spawnRipple(e: MouseEvent): void {
 
 .footnote {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 }

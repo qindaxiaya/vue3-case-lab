@@ -345,7 +345,7 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   background-color: var(--bg);
   color: var(--text-secondary);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 
@@ -361,7 +361,7 @@ onUnmounted(() => {
 
 kbd {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   padding: 0.1rem 0.35rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -370,7 +370,7 @@ kbd {
 }
 
 .trigger-hint {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -463,7 +463,7 @@ kbd {
   padding: 0.5rem 0.65rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text);
 }
 
@@ -491,7 +491,7 @@ kbd {
 }
 
 .result-group {
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -500,14 +500,14 @@ kbd {
 
 .result-hint {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .result-empty {
   padding: 1.2rem;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -520,7 +520,7 @@ kbd {
   gap: 0.6rem;
   padding: 0.5rem 0.9rem;
   border-top: 1px solid var(--border);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -532,7 +532,7 @@ kbd {
 
 .foot-feedback {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   overflow: hidden;
   text-overflow: ellipsis;

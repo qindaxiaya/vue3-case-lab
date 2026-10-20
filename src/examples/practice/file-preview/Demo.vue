@@ -389,7 +389,7 @@ onBeforeUnmount(release)
 }
 
 .fp-drop-text {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -407,7 +407,7 @@ onBeforeUnmount(release)
 }
 
 .fp-samples-label {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -417,7 +417,7 @@ onBeforeUnmount(release)
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -428,7 +428,7 @@ onBeforeUnmount(release)
 
 .fp-error {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--danger);
 }
 
@@ -448,26 +448,26 @@ onBeforeUnmount(release)
 .fp-tag {
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   background-color: var(--primary);
   color: #fff;
 }
 
 .fp-name {
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text);
   word-break: break-all;
 }
 
 .fp-info {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .fp-download {
   margin-left: auto;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   text-decoration: none;
 
@@ -499,7 +499,7 @@ onBeforeUnmount(release)
   max-height: 260px;
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -529,7 +529,7 @@ onBeforeUnmount(release)
 .fp-unknown {
   padding: 1.4rem;
   text-align: center;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   p {
@@ -540,14 +540,14 @@ onBeforeUnmount(release)
 .fp-unknown-sub {
   margin-top: 0.3rem !important;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
 }
 
 .fp-empty {
   margin: 0;
   padding: 1.2rem;
   text-align: center;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   border: 1px dashed var(--border);
   border-radius: var(--radius-btn);
@@ -555,13 +555,13 @@ onBeforeUnmount(release)
 
 .fp-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

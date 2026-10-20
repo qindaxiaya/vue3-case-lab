@@ -459,7 +459,7 @@ onBeforeUnmount(() => {
 .btn-ghost {
   padding: 0.22rem 0.55rem;
   border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   border: 1px solid var(--primary);
   background-color: transparent;
@@ -490,13 +490,13 @@ onBeforeUnmount(() => {
   min-width: 3.2rem;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .pdf-stat {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -507,7 +507,7 @@ onBeforeUnmount(() => {
 
 .pdf-src {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   padding: 0.1rem 0.35rem;
   border-radius: var(--radius-sm);
   background-color: var(--code-bg);
@@ -546,7 +546,7 @@ onBeforeUnmount(() => {
   gap: 0.6rem;
   background-color: color-mix(in srgb, var(--code-bg) 82%, transparent);
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
 }
 
 .pdf-progress {
@@ -582,7 +582,7 @@ onBeforeUnmount(() => {
   margin: auto;
   padding: 2rem 1rem;
   text-align: center;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   p {
@@ -593,7 +593,7 @@ onBeforeUnmount(() => {
 .pdf-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 
   th,
   td {
@@ -618,13 +618,13 @@ onBeforeUnmount(() => {
 
 .pdf-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -635,7 +635,7 @@ onBeforeUnmount(() => {
 @media (max-width: 560px) {
   .pdf-stat,
   .pdf-src {
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
   }
 
   .pdf-table {

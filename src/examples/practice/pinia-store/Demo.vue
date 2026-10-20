@@ -229,7 +229,7 @@ store.increment()
 }
 
 .ps-label {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -244,7 +244,7 @@ store.increment()
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   width: 9rem;
 
   &:focus {
@@ -259,7 +259,7 @@ store.increment()
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -298,7 +298,7 @@ store.increment()
 
   h4 {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: var(--text);
   }
 }
@@ -318,14 +318,14 @@ store.increment()
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .ps-demo :deep(.ps-list) {
   margin: 0;
   padding-left: 1rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.8;
 }
@@ -343,20 +343,20 @@ store.increment()
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 
 /* ---------- 说明 ---------- */
 
 .ps-hint {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.69rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -371,7 +371,7 @@ store.increment()
 
   h3 {
     margin: 0 0 0.35rem;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: var(--text);
   }
 
@@ -381,7 +381,7 @@ store.increment()
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     line-height: 1.65;
     color: var(--text-secondary);
     overflow-x: auto;
@@ -390,7 +390,7 @@ store.increment()
 
 .ps-warn {
   margin: 0.4rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--warning);
   line-height: 1.6;
 }

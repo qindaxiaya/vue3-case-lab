@@ -305,7 +305,7 @@ const resultText = (): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   pointer-events: none;
 }
@@ -345,7 +345,7 @@ const resultText = (): string => {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -357,7 +357,7 @@ const resultText = (): string => {
 .btn-ghost {
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   border: 1px solid var(--border);
   background-color: transparent;
@@ -371,14 +371,14 @@ const resultText = (): string => {
 
 .sc-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
   max-width: 40rem;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
