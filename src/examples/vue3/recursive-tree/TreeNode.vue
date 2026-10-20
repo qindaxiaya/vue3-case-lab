@@ -11,6 +11,11 @@ const props = defineProps<{
   depth: number
 }>()
 
+// 显式声明插槽类型：递归组件不声明时，透传会触发 TS7022 循环推断
+defineSlots<{
+  default?: (props: { node: TreeNodeData; depth: number }) => unknown
+}>()
+
 /** 是否展开（默认展开前两层） */
 const open = ref(props.depth < 1)
 
@@ -58,8 +63,11 @@ const hasChildren = (): boolean => Boolean(props.node.children?.length)
         :depth="depth + 1"
       >
         <!-- 把父级的插槽继续向下透传，保证任意层级都能自定义 -->
-        <template #default="slotProps">
-          <slot v-bind="slotProps" />
+        <template #default="{ node: childNode, depth: childDepth }">
+          <slot
+            :node="childNode"
+            :depth="childDepth"
+          />
         </template>
       </TreeNode>
     </ul>
