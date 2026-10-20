@@ -455,7 +455,7 @@ onBeforeUnmount(() => {
 /* ---------- 出现/消失动画 ---------- */
 .search-modal-enter-active,
 .search-modal-leave-active {
-  transition: opacity 0.2s ease-out;
+  transition: opacity 0.24s var(--ease-out);
 }
 
 .search-modal-enter-from,
@@ -464,11 +464,11 @@ onBeforeUnmount(() => {
 }
 
 .search-modal-enter-active .search-panel {
-  transition: transform 0.22s ease-out;
+  transition: transform 0.26s var(--ease-out);
 }
 
 .search-modal-enter-from .search-panel {
-  transform: translateY(-12px) scale(0.98);
+  transform: translateY(-14px) scale(0.985);
 }
 
 /* ---------- 移动端 ---------- */

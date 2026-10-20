@@ -125,3 +125,15 @@ code {
     scroll-behavior: auto !important;
   }
 }
+
+// ---------- 路由切换动效 ----------
+// 只淡入淡出，不加位移：位移会创建新的包含块，影响详情页的吸顶 tab 与固定按钮
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.14s ease-out;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}

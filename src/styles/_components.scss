@@ -97,7 +97,12 @@
 
     &:hover {
       box-shadow: var(--shadow-soft-lg);
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+    }
+
+    // 按下回弹：提示点击已被接收
+    &:active {
+      transform: translateY(-1px) scale(0.995);
     }
   }
 }

@@ -46,13 +46,18 @@ defineEmits<{
   transition:
     border-color var(--transition),
     background-color var(--transition),
-    color var(--transition);
+    color var(--transition),
+    transform var(--transition);
 }
 
 .search-trigger:hover {
   color: var(--text);
   border-color: var(--primary);
   background-color: var(--surface);
+}
+
+.search-trigger:active {
+  transform: scale(0.99);
 }
 
 .search-trigger:focus-visible {

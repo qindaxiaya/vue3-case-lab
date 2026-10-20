@@ -27,4 +27,18 @@ const { isDark, toggle } = useTheme()
   border-radius: var(--radius-btn);
   font-size: 1rem;
 }
+
+/* 图标微动效：hover 轻转，按下回弹 */
+.theme-toggle span {
+  display: inline-block;
+  transition: transform var(--transition);
+}
+
+.theme-toggle:hover span {
+  transform: rotate(-16deg) scale(1.06);
+}
+
+.theme-toggle:active span {
+  transform: scale(0.86);
+}
 </style>

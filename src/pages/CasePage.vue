@@ -124,6 +124,11 @@ const tabsWrapEl = ref<HTMLElement | null>(null)
 const explainTabEl = ref<HTMLButtonElement | null>(null)
 const codeTabEl = ref<HTMLButtonElement | null>(null)
 
+/** 是否开启了系统「减少动态效果」 */
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 /**
  * 切换说明 / 源码
  * 吸顶状态下如果已经滚到代码中段，切过去会从中间开始看；
@@ -139,7 +144,10 @@ async function switchTab(next: 'explain' | 'code'): Promise<void> {
   // 顶栏高 64px，留出吸顶位置
   const target = wrap.getBoundingClientRect().top + window.scrollY - 64
   if (window.scrollY > target) {
-    window.scrollTo({ top: target, behavior: 'smooth' })
+    window.scrollTo({
+      top: target,
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
   }
 }
 
@@ -163,20 +171,36 @@ function onTabKeydown(
 // 回到顶部：滚动超过一屏后出现
 // ============================================================
 
-/** 按钮是否显示（只在跨越阈值时写一次，避免每个滚动事件都触发更新） */
+/** 按钮是否显示 */
 const showBackTop = ref(false)
+/** 当前阅读进度 0..1（画在按钮外圈的进度环） */
+const scrollProgress = ref(0)
+/** 滚动回调的逐帧节流开关：一帧最多计算一次 */
+let scrollTicking = false
 
-/** 滚动监听：passive 不阻塞滚动，只在可见性翻转时更新状态 */
+/** 滚动监听：passive + 逐帧节流，避免每个滚动事件都触发响应式更新 */
 function onWindowScroll(): void {
-  const visible = window.scrollY > 480
-  if (visible !== showBackTop.value) {
-    showBackTop.value = visible
-  }
+  if (scrollTicking) return
+  scrollTicking = true
+
+  requestAnimationFrame(() => {
+    const y = window.scrollY
+    showBackTop.value = y > 480
+
+    // 进度 = 已滚距离 / 可滚总距离（内容不足一屏时保持 0）
+    const max = document.documentElement.scrollHeight - window.innerHeight
+    scrollProgress.value = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0
+
+    scrollTicking = false
+  })
 }
 
-/** 平滑回到顶部（基础样式已设 scroll-behavior，这里显式指定更稳） */
+/** 平滑回到顶部（系统要求减少动态时直接跳转） */
 function backToTop(): void {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  window.scrollTo({
+    top: 0,
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+  })
 }
 
 onMounted(() => {
@@ -331,7 +355,11 @@ const explainBlocks = computed(() => {
               @keydown="onTabKeydown($event, 'code')"
             >
               源码
-              <span class="content-tab-count">{{ item.codeTabs.length }}</span>
+              <span
+                v-if="item.codeTabs.length > 1"
+                class="content-tab-count"
+                :title="`共 ${item.codeTabs.length} 段核心代码`"
+              >{{ item.codeTabs.length }}</span>
             </button>
           </div>
         </div>
@@ -340,6 +368,7 @@ const explainBlocks = computed(() => {
         <div
           v-show="activeTab === 'explain'"
           id="panel-explain"
+          class="content-panel"
           role="tabpanel"
           aria-labelledby="tab-explain"
         >
@@ -399,6 +428,7 @@ const explainBlocks = computed(() => {
         <div
           v-show="activeTab === 'code'"
           id="panel-code"
+          class="content-panel"
           role="tabpanel"
           aria-labelledby="tab-code"
         >
@@ -409,7 +439,7 @@ const explainBlocks = computed(() => {
         </div>
       </section>
 
-      <!-- 回到顶部：滚动超过一屏后浮现，固定在右下角 -->
+      <!-- 回到顶部：滚动超过一屏后浮现，外圈是阅读进度 -->
       <Transition name="back-top">
         <button
           v-if="showBackTop"
@@ -418,7 +448,29 @@ const explainBlocks = computed(() => {
           aria-label="回到顶部"
           @click="backToTop"
         >
-          <span aria-hidden="true">↑</span>
+          <svg
+            class="back-top-ring"
+            viewBox="0 0 44 44"
+            aria-hidden="true"
+          >
+            <circle
+              class="back-top-track"
+              cx="22"
+              cy="22"
+              r="20"
+            />
+            <circle
+              class="back-top-bar"
+              cx="22"
+              cy="22"
+              r="20"
+              :style="{ strokeDashoffset: `${125.66 * (1 - scrollProgress)}` }"
+            />
+          </svg>
+          <span
+            class="back-top-arrow"
+            aria-hidden="true"
+          >↑</span>
         </button>
       </Transition>
     </template>
@@ -463,12 +515,17 @@ const explainBlocks = computed(() => {
   transition:
     color var(--transition),
     border-color var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    transform var(--transition);
 
   &:hover {
     color: var(--primary);
     border-color: var(--primary);
     background-color: var(--primary-soft);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }
 
@@ -551,6 +608,23 @@ const explainBlocks = computed(() => {
   /* 半透明 + 模糊：内容从下方滚过时不与 tab 文字互相干扰 */
   background-color: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(8px);
+}
+
+/* 面板切换：v-show 重新显示时重播动画，避免「啪」地硬切 */
+.content-panel {
+  animation: panel-in 0.24s var(--ease-out);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .content-tabs {
@@ -802,11 +876,11 @@ const explainBlocks = computed(() => {
   right: 1.75rem;
   bottom: 1.75rem;
   z-index: 30;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.85rem;
+  height: 2.85rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--primary);
   background-color: var(--surface);
   border: 1px solid var(--border);
@@ -816,13 +890,20 @@ const explainBlocks = computed(() => {
   transition:
     transform var(--transition),
     border-color var(--transition),
-    color var(--transition);
+    color var(--transition),
+    box-shadow var(--transition);
 }
 
 .back-top:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   color: var(--primary-hover);
   border-color: var(--primary);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
+}
+
+/* 按下回弹：给点击一个明确的触感 */
+.back-top:active {
+  transform: translateY(-1px) scale(0.92);
 }
 
 .back-top:focus-visible {
@@ -832,18 +913,59 @@ const explainBlocks = computed(() => {
     var(--shadow-soft-lg);
 }
 
-/* 出现/消失：淡入 + 轻微上移 */
-.back-top-enter-active,
+/* 阅读进度环：贴按钮内圈，从 12 点方向顺时针补齐 */
+.back-top-ring {
+  position: absolute;
+  inset: 2px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.back-top-track,
+.back-top-bar {
+  fill: none;
+  stroke-width: 2;
+}
+
+.back-top-track {
+  stroke: var(--border);
+}
+
+.back-top-bar {
+  stroke: var(--primary);
+  stroke-linecap: round;
+  /* 圆周长 2πr ≈ 125.66：dashoffset 由进度动态控制 */
+  stroke-dasharray: 125.66;
+  transition: stroke-dashoffset 0.12s linear;
+}
+
+.back-top-arrow {
+  position: relative;
+  line-height: 1;
+  transition: transform var(--transition);
+}
+
+.back-top:hover .back-top-arrow {
+  transform: translateY(-2px);
+}
+
+/* 出现：上浮 + 放大（柔和收尾）；消失：快速收紧 */
+.back-top-enter-active {
+  transition:
+    opacity 0.3s var(--ease-out),
+    transform 0.3s var(--ease-out);
+}
+
 .back-top-leave-active {
   transition:
-    opacity 0.2s ease-out,
-    transform 0.2s ease-out;
+    opacity 0.18s ease-in,
+    transform 0.18s ease-in;
 }
 
 .back-top-enter-from,
 .back-top-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(18px) scale(0.7);
 }
 
 /* ---------- 移动端 ---------- */

@@ -13,7 +13,18 @@ import AppHeader from './components/AppHeader.vue'
     <AppHeader />
 
     <!-- 路由出口：首页 landing / 案例列表 / 案例详情 -->
-    <RouterView />
+    <!-- 页面切换只做淡入淡出：不加位移，避免影响详情页吸顶与固定按钮 -->
+    <RouterView v-slot="{ Component, route }">
+      <Transition
+        name="page"
+        mode="out-in"
+      >
+        <component
+          :is="Component"
+          :key="route.path"
+        />
+      </Transition>
+    </RouterView>
   </div>
 </template>
 

@@ -226,12 +226,18 @@ function difficultyLabel(difficulty: string): string {
   transition:
     color var(--transition),
     border-color var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    transform var(--transition);
 }
 
 .filter-chip:hover {
   color: var(--primary);
   border-color: var(--primary);
+}
+
+/* 按下微缩，给筛选一个即时触感 */
+.filter-chip:active {
+  transform: scale(0.96);
 }
 
 /* 选中态：主色浅底 + 主色文字 + 主色边框 */
@@ -288,6 +294,11 @@ function difficultyLabel(difficulty: string): string {
   text-decoration: none;
 }
 
+/* hover 时标题提亮：与卡片上浮配合，指明「这一张可点」 */
+.case-card:hover .card-title {
+  color: var(--primary);
+}
+
 .card-head {
   display: flex;
   align-items: flex-start;
@@ -300,6 +311,7 @@ function difficultyLabel(difficulty: string): string {
   font-weight: 600;
   margin: 0;
   line-height: 1.5;
+  transition: color var(--transition);
 }
 
 .card-summary {

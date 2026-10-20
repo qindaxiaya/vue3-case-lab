@@ -50,7 +50,9 @@ $font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
   --shadow-soft-lg: 0 6px 16px rgb(0 0 0 / 0.1); // 卡片 hover 提升
 
   // 过渡（统一动效时长，尊重 prefers-reduced-motion 在 base 中处理）
-  --transition: 0.25s ease-out;
+  // 缓动曲线「快出慢收」：起步果断、收尾柔和，避免机械感
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: 0.24s var(--ease-out);
 
   // 字体
   --font-sans: #{$font-sans};
