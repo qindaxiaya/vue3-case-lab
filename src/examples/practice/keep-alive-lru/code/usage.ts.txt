@@ -1,0 +1,78 @@
+// ============================================================
+// KeepAlive + LRU 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 基本用法：max 就是 LRU 容量 ---
+
+//! <KeepAlive :max="2">
+//!   <component :is="current" />
+//! </KeepAlive>
+//
+// 缓存超过 2 个时，自动淘汰「最久没有被激活」的那个实例，
+// 被淘汰的组件会真正 unmount（触发 onUnmounted）。
+
+// --- 2. 生命周期：mounted 只跑一次，activated 每次进入都跑 ---
+
+import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
+
+onMounted(() => {
+  //! 首次创建；之后切走再回来不会再触发
+  console.log('mounted（初始化数据放这里）')
+})
+
+onActivated(() => {
+  //! 每次被激活：适合刷新列表、恢复定时器、上报曝光
+  console.log('activated')
+})
+
+onDeactivated(() => {
+  //! 切走但没销毁：暂停轮询、暂停视频、清定时器
+  console.log('deactivated')
+})
+
+onUnmounted(() => {
+  //! 只有被淘汰/删除缓存时才触发
+  console.log('unmounted（LRU 淘汰或 max=0）')
+})
+
+// --- 3. 按组件名缓存：include / exclude ---
+
+//! include 匹配的是组件的 name（<script setup> 里用 defineOptions 声明）
+defineOptions({ name: 'OrderList' })
+
+//! <KeepAlive include="OrderList,UserCenter">
+//! <KeepAlive :include="/^Order/">
+
+// --- 4. 同一个组件不同参数：必须靠 key 区分 ---
+
+//! <router-view v-slot="{ Component, route }">
+//!   <KeepAlive :max="10">
+//!     <component :is="Component" :key="route.fullPath" />
+//!   </KeepAlive>
+//! </router-view>
+//
+// 不加 key：/user/1 和 /user/2 共用同一个缓存实例，数据串台。
+//! 加了 key：每个 fullPath 一份缓存，max 要相应调大。
+
+// --- 5. 什么时候不要缓存 ---
+
+//! 1. 需要每次拿最新数据的页面（订单详情、支付结果）
+//! 2. 内存敏感页面（大数据表格、视频）
+//! 3. 有轮询/WebSocket 的页面：deactivated 忘了停，后台一直在跑
+
+// --- 6. 手动控制缓存 ---
+
+//! 用 include + 动态数组：从数组里删掉名字 = 销毁它的缓存
+const cached = ref(['OrderList'])
+cached.value = cached.value.filter((name) => name !== 'OrderList')
+
+// --- 踩坑清单 ---
+
+//! 1. activated 里重复请求：首次 mounted 已经请求过，记得判断
+//! 2. deactivated 里没清定时器/监听器：页面看不见但任务还在跑
+//! 3. 缓存页面里用了 provide/inject 的响应式数据：切回来可能已过期
+//! 4. max 太小导致频繁重建：比不缓存还慢（列表重新请求）
+//! 5. 组件名大小写：include 匹配的是 name，不是文件名
+//! 6. keep-alive 与 Transition 同用：KeepAlive 要包在里面
+//! 7. 滚动位置不会自动恢复：要自己记录 scrollTop 并在 activated 里还原

@@ -52,9 +52,10 @@
 
 ## 当前进度
 
-- **阶段**：P0+P1 共 15 案例 + 工程实践类 8 案例全部完成（共 23 案例 / 6 分类）；「不造轮子」「框架案例抽离」约定已固化
+- **阶段**：共 54 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 9 · vue3 16 · practice 22）；「不造轮子」「框架案例抽离」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
+- 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
 - 已完成：
   - ✅ 设计文档 + 实施计划 + GitHub 私有仓库（qindaxiaya/vue3-case-lab）
   - ✅ Task 1~4 脚手架/注册表/站点壳/案例页双 tab 工作台
@@ -63,6 +64,12 @@
   - ✅ 工程实践八案例：debounce-throttle（VueUse）/ command-palette（fuse.js）/ toast-queue / web-worker（Blob Worker）/ json-viewer / image-compress（canvas toBlob）/ ripple-button（WAAPI）/ color-picker（EyeDropper）
   - ✅ 分类 composables + practice；registry 排序复用 categories.ts（新增分类只改一处）
   - ✅ landing 首页 + 信息架构精简（无侧边栏）+ 页面宽度根因修复
+  - ✅ spec 扩展批 1（vue3 5）：reactive-loss / computed-cache / effect-scope / define-model / multi-v-model
+  - ✅ spec 扩展批 2（vue3 5）：recursive-tree / custom-directives / teleport-modal / theme-switch / editable-table
+  - ✅ spec 扩展批 3（practice 6）：pinia-store（reactive 等效实现）/ route-rbac / keep-alive-lru / route-transition / history-guard / i18n-lazy
+  - ✅ spec 扩展批 4（virtual 1 + performance 5）：virtual-variable / chat-scroll / time-slicing / pull-refresh / typewriter-stream / sse-chat
+  - ✅ spec 扩展批 5（practice 文件能力 4）：file-preview / pdf-preview（手写 PDF 1.4）/ file-upload / chunk-upload
+  - ✅ spec 扩展批 6（practice 5）：drag-sort / slider-captcha / tracking-sdk / vite-split / vitest-gate
 - 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
@@ -83,3 +90,10 @@
 | 2026-10-19 | 按钮类必须显式覆盖全局 a 样式 | RouterLink 用作按钮时 `a:hover` 的下划线/链接色会覆盖按钮样式——`.btn-primary:hover` 须显式 `color:#fff; text-decoration:none` |
 | 2026-10-19 | **框架与案例抽离** | 案例差异全部收在案例目录内自包含；多演示通用约定（emit `tabs` + `demoActive` + code `<key>.*.txt` 过滤），新案例用约定不改框架 |
 | 2026-10-19 | **不造轮子** | 工程实践案例优先现成库/原生 API（VueUse/fuse.js 已装），不手写已解决的通用工具；UI 库仍禁（Toast 教学案例除外）；原生浏览器 API 不算造轮子 |
+| 2026-10-20 | **spec 38 案例全部实现（扩到 54）** | 用户"都需要实现做一下"；按 6 批实现（vue3 10 / practice 15 / virtual 1 / performance 5），每批一 commit |
+| 2026-10-20 | **Pinia 案例不装 Pinia** | 站点自定「禁止 Pinia」；用 20 行 reactive 实现等效 store，代码区展示真实 Pinia 写法并注明差异 |
+| 2026-10-20 | **路由类案例用模拟状态机** | pinia-store/route-rbac/keep-alive-lru/route-transition/history-guard 不接真实 router，在 Demo 内模拟；keep-alive-lru 用真实 `<KeepAlive :max="2">` |
+| 2026-10-20 | **PDF 案例手写最小 PDF 1.4** | 不引入 pdf-lib；用 Helvetica 内置字体（仅 ASCII）+ 精确 xref 偏移生成多页 PDF，代码区说明生产环境选型 |
+| 2026-10-20 | **说明型案例也做交互** | vite-split 用勾选估算体积，vitest-gate 用「模拟 CI 运行 + 注入失败」；不做纯文字页 |
+| 2026-10-20 | **SFC 顶层注释禁止出现 `<Tag>`** | 顶层 `//` 注释里的 `<KeepAlive>`/`<Transition>` 会被当模板标签 → "Element is missing end tag"；用纯文字描述 |
+| 2026-10-20 | **禁止用 PowerShell Set-Content 写源码** | 默认 ANSI 会吞换行/毁中文（本会话踩过，靠 git checkout 恢复）；统一用 write/edit 工具 |
