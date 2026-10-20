@@ -7,17 +7,17 @@ export default {
   id: 'pdf-preview',
   title: 'PDF 预览',
   difficulty: 'intermediate',
-  tags: ['PDF', 'Blob URL', 'iframe', 'pdfjs'],
-  summary: '纯前端生成三页 PDF，对比三种嵌入方式与翻页缩放参数，给出选型建议',
-  sell: 'PDF 预览方案挑花眼：手写样例加三种嵌入对比',
+  tags: ['PDF.js', 'Canvas', 'Web Worker', '渲染'],
+  summary: 'pdf.js 把 PDF 渲染到 canvas，自建翻页缩放工具栏，跨端表现一致',
+  sell: 'PDF.js 渲染到 canvas，预览界面完全自己掌控',
   explain: {
     situation:
-      '合同、发票要在线预览 PDF 文件。你用 iframe 一嵌，有的浏览器直接弹下载，有的显示空白；想默认翻到第 3 页，也不知道从哪下手。',
+      '在线预览合同或发票时，浏览器自带查看器在手机上可能只显示一页，甚至直接触发下载；想换个工具栏样式、加个水印也完全做不到。',
     background:
-      'PDF 不是网页，浏览器靠内置阅读器渲染。iframe、object、embed 是三种不同的嵌入标签，行为不完全一样；地址后面还能加 #page=3&zoom=120 控制页码和缩放。要自定义工具栏、加水印，就需要引入 PDF.js 这类专门的库。',
+      'PDF 不是网页，浏览器只是调用了内置阅读器。PDF.js 则用 JavaScript 解析 PDF：后台线程负责拆解文件，主线程拿到每一页后画到 canvas 上，所以翻页、缩放、水印都能自己决定。',
     action:
-      '案例先手写一个最小的 PDF 文件（不引任何库），再用三种标签分别嵌入同一个文件对比效果，地址里加上 #page 和 #zoom 参数演示翻页与缩放，最后说明移动端和 PDF.js 的选型。',
+      '案例现场生成一份三页 PDF，用 PDF.js 的 Worker 解析，把当前页放大设备像素比后画到 canvas；自建上一页/下一页、缩放、卸载按钮，翻页前取消上一次渲染任务，卸载时销毁文档对象。',
     conclusion:
-      '记住：简单预览用 iframe 加 #page 就够；要文字层、批注、自定义界面就用 PDF.js。苹果手机浏览器对 embed 支持差，优先 iframe。',
+      '记住：只需要「能看」可以用浏览器自带查看器；要跨端一致、自定义界面或加水印，就用 PDF.js 渲染到 canvas。PDF.js 只负责解析和绘制，界面完全由你控制。',
   },
 } satisfies CaseMeta

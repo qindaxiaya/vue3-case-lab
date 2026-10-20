@@ -91,6 +91,7 @@
 - ✅ 2026-10-20 CI 门禁：`.github/workflows/ci.yml` 在 push main / PR / 手动触发时跑 `npm ci` + type-check + lint + vitest + build；Node 22 LTS + npm 缓存，同分支并发自动取消旧任务
 - ✅ 2026-10-20 main 硬门禁：ruleset `main-merge-gate` 要求 PR + 必需检查 `Type check, lint, test, build`，禁止强推/删除、只允许线性历史、审批数 0、无 bypass；实测直推报 GH013，红灯 PR 合并返回 `base branch policy prohibits the merge`
 - ✅ 2026-10-20 合并门禁案例 `practice/branch-protection`：规则集开关 + 直推/红灯 PR/绿灯 PR 四态演示；实测红灯检查 18s、绿灯 33s，375px 无横向溢出，代码区含规则集配置与验证命令
+- ✅ 2026-10-20 PDF 预览重构为 pdf.js + canvas：动态加载运行时与 worker，自建翻页/缩放/卸载；渲染前取消 `RenderTask`，卸载 destroy `loadingTask`。3 轮实测首屏 35~69ms（中位 45，含 worker 启动）、翻页 8~15ms、150% 缩放 6~11ms；快速连点、渲染中卸载、路由往返、375px 均无报错与页面横向溢出
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -113,7 +114,8 @@
 | 2026-10-20 | **spec 38 案例全部实现（扩到 54）** | 用户"都需要实现做一下"；按 6 批实现（vue3 10 / practice 15 / virtual 1 / performance 5），每批一 commit |
 | 2026-10-20 | **Pinia 案例不装 Pinia** | 站点自定「禁止 Pinia」；用 20 行 reactive 实现等效 store，代码区展示真实 Pinia 写法并注明差异 |
 | 2026-10-20 | **路由类案例用模拟状态机** | pinia-store/route-rbac/keep-alive-lru/route-transition/history-guard 不接真实 router，在 Demo 内模拟；keep-alive-lru 用真实 `<KeepAlive :max="2">` |
-| 2026-10-20 | **PDF 案例手写最小 PDF 1.4** | 不引入 pdf-lib；用 Helvetica 内置字体（仅 ASCII）+ 精确 xref 偏移生成多页 PDF，代码区说明生产环境选型 |
+| 2026-10-20 | **PDF 案例手写最小 PDF 1.4** | 生成端不引入 pdf-lib；用 Helvetica 内置字体（仅 ASCII）+ 精确 xref 偏移生成多页 PDF，代码区说明生产环境选型 |
+| 2026-10-20 | **PDF 预览改用 pdfjs-dist 渲染 canvas，不用 iframe** | 用户要求；pdf.js 6 动态 import（首屏包体不背 430KB），worker 用 `?url`；渲染前 cancel `RenderTask`，卸载 destroy `loadingTask`（v6 的 document proxy 没有 destroy）；翻页/缩放/水印自建 |
 | 2026-10-20 | **说明型案例也做交互** | vite-split 用勾选估算体积，vitest-gate 用「模拟 CI 运行 + 注入失败」；不做纯文字页 |
 | 2026-10-20 | **SFC 顶层注释禁止出现 `<Tag>`** | 顶层 `//` 注释里的 `<KeepAlive>`/`<Transition>` 会被当模板标签 → "Element is missing end tag"；用纯文字描述 |
 | 2026-10-20 | **禁止用 PowerShell Set-Content 写源码** | 默认 ANSI 会吞换行/毁中文（本会话踩过，靠 git checkout 恢复）；统一用 write/edit 工具 |
