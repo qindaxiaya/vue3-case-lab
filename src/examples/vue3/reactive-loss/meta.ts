@@ -10,4 +10,14 @@ export default {
   tags: ['reactive', 'toRef', 'toRefs', '解构', 'props', '响应式'],
   summary: '解构/整体赋值/浅拷贝/解构 props 四类丢失逐一复现，并验证 Vue 3 已修复的数组下标老坑',
   sell: '五个现场复现响应式丢失，逐条给出修法',
+  explain: {
+    situation:
+      '从接口拿到用户信息，解构出 name 放到页面上。刷新接口后数据明明变了，页面却还是旧名字——你以为是接口没更新，其实是页面没「跟着变」。',
+    background:
+      'Vue 3 的响应式靠 Proxy 实现：只有通过原对象取值，Vue 才知道「有人用了这个属性」。一旦把 name 解构出来，它就成了一个普通字符串，和原对象断了联系，自然不会再更新。',
+    action:
+      '案例演示 5 种最常见的丢失场景：解构、整体重新赋值、浅拷贝、解构 props、数组下标。每种都给出「错误写法 → 正确写法」：用 toRef / toRefs 保留引用、用 Object.assign 合并、用 reactive 包住整个对象。',
+    conclusion:
+      '记住：想让页面跟着变，就传引用（对象或 ref），别传值。拿不准时用 toRefs 解构，或者干脆不解构。日常写 Vue，九成的「数据没更新」都栽在这里。',
+  },
 } satisfies CaseMeta

@@ -124,6 +124,24 @@ const keyPoints = computed<string[]>(() => {
 
 /** 源码默认关闭：先看演示与说明，需要时再展开 */
 const showCode = ref(false)
+
+// ============================================================
+// SBAC 说明：场景 / 背景 / 做法 / 结论
+// ============================================================
+
+/** 已补齐说明的案例按四段渲染；未补齐时回退到「卖点 + 代码要点」 */
+const explain = computed(() => item.value?.meta.explain ?? null)
+
+const explainBlocks = computed(() => {
+  const e = explain.value
+  if (!e) return []
+  return [
+    { key: 'S', label: '场景', text: e.situation },
+    { key: 'B', label: '背景', text: e.background },
+    { key: 'A', label: '做法', text: e.action },
+    { key: 'C', label: '结论', text: e.conclusion },
+  ]
+})
 </script>
 
 <template>
@@ -246,25 +264,50 @@ const showCode = ref(false)
         </h2>
 
         <div class="card note-card">
-          <div class="note-sell">
-            <span class="note-sell-label">为什么看</span>
-            <p class="note-sell-text">
-              {{ item.meta.sell }}
-            </p>
-          </div>
-
-          <!-- 要点自动取自教学代码的 //! 重点行，不额外维护文案 -->
-          <ul
-            v-if="keyPoints.length"
-            class="note-points"
-          >
-            <li
-              v-for="point in keyPoints"
-              :key="point"
+          <!-- 已补齐 SBAC：场景 / 背景 / 做法 / 结论，按新手能懂的方式讲 -->
+          <template v-if="explain">
+            <div
+              v-for="block in explainBlocks"
+              :key="block.key"
+              class="sbac-row"
             >
-              {{ point }}
-            </li>
-          </ul>
+              <span
+                class="sbac-badge"
+                :class="`sbac-${block.key.toLowerCase()}`"
+                aria-hidden="true"
+              >{{ block.key }}</span>
+              <div class="sbac-body">
+                <h3 class="sbac-label">
+                  {{ block.label }}
+                </h3>
+                <p class="sbac-text">
+                  {{ block.text }}
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <!-- 未补齐说明：回退到卖点 + 教学代码的重点行 -->
+          <template v-else>
+            <div class="note-sell">
+              <span class="note-sell-label">为什么看</span>
+              <p class="note-sell-text">
+                {{ item.meta.sell }}
+              </p>
+            </div>
+
+            <ul
+              v-if="keyPoints.length"
+              class="note-points"
+            >
+              <li
+                v-for="point in keyPoints"
+                :key="point"
+              >
+                {{ point }}
+              </li>
+            </ul>
+          </template>
 
           <p class="note-foot">
             共 {{ item.codeTabs.length }} 段教学代码 · 难度 {{ difficultyLabel }} · 分类 {{ categoryName }}
@@ -488,8 +531,69 @@ const showCode = ref(false)
 .note-card {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
   padding: 1.35rem 1.6rem;
+}
+
+/* ---------- SBAC 四段 ---------- */
+
+.sbac-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.sbac-badge {
+  flex-shrink: 0;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-top: 0.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* 四种语义色：场景/背景/做法/结论一眼区分 */
+.sbac-s {
+  color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
+.sbac-b {
+  color: var(--warning);
+  background-color: color-mix(in srgb, var(--warning) 16%, transparent);
+}
+
+.sbac-a {
+  color: var(--success);
+  background-color: color-mix(in srgb, var(--success) 16%, transparent);
+}
+
+.sbac-c {
+  color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 13%, transparent);
+}
+
+.sbac-body {
+  min-width: 0;
+}
+
+.sbac-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.sbac-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--text);
 }
 
 .note-sell {
