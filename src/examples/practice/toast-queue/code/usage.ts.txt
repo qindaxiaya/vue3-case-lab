@@ -1,0 +1,53 @@
+// ============================================================
+// Toast 队列教学片段（队列 + 计时 + 补位）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { ref } from 'vue'
+
+interface Toast {
+  id: number
+  type: 'success' | 'error' | 'info' | 'warning'
+  message: string
+  duration: number
+}
+
+//! 屏上显示区与排队区分开：这是队列管理的核心结构
+const visible = ref<Toast[]>([])
+const queued = ref<Toast[]>([])
+const MAX_VISIBLE = 3
+let nextId = 1
+
+// --- 入队：未满直接上屏，满了排队 ---
+
+function push(type: Toast['type'], message: string, duration = 3200): void {
+  const t: Toast = { id: nextId++, type, message, duration }
+  if (visible.value.length < MAX_VISIBLE) visible.value.push(t)
+  else queued.value.push(t)
+}
+
+// --- 关闭：腾位后从队长补位 ---
+
+function dismiss(id: number): void {
+  visible.value = visible.value.filter((t) => t.id !== id)
+  //! 补位：队列头部上位——保证顺序且屏上始终尽量满
+  const next = queued.value.shift()
+  if (next) visible.value.push(next)
+}
+
+// --- 计时：不手写 setTimeout，让 CSS 动画驱动消失 ---
+
+// 模板：<div class="toast-progress" @animationend="dismiss(t.id)"
+//          :style="{ animationDuration: t.duration + 'ms' }" />
+//
+//! 为什么用 animationend 而不是 setTimeout：
+//! 1. hover 暂停时 animation-play-state: paused 会真正暂停动画——
+//!    animationend 也随之延后，进度条与消失时机天然一致（零同步代码）
+//! 2. setTimeout 方案要额外维护「剩余时间 + 恢复」逻辑，极易出现
+//!    「进度条停了但计时器还在跑」的不一致 bug
+
+// --- 生产环境建议 ---
+
+// 自建只适合「简单固定样式」；需要堆叠分组/自定义渲染/SSR 时直接用：
+// vue-toastification（生态最成熟）或 @vueuse/core 无关的 sonner-vue
+// 自建的价值在于掌控体积与交互细节。
