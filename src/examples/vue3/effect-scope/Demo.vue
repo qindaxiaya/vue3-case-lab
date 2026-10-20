@@ -69,6 +69,9 @@ function mountRight(): void {
 
   for (let i = 0; i < 10; i++) {
     const scope = effectScope()
+    // 本轮作用域内创建的副作用数（watch 1 个；定时器由 onScopeDispose 清理）
+    let innerEffects = 0
+
     scope.run(() => {
       // 定时器：onScopeDispose 注册清理回调（scope.stop 时执行）
       const timer = window.setInterval(() => {}, 60 * 60 * 1000)
@@ -76,14 +79,14 @@ function mountRight(): void {
 
       // watch：作用域内的监听器会被自动 stop
       watch(source, () => {})
+      innerEffects++
     })
 
-    // 记录 stop 前的作用域内副作用数（watch 通常 1 个；定时器不算 effect）
-    beforeStop += scope.effects.length
+    beforeStop += innerEffects
     scope.stop()
-    // stop 后 scope.effects 已被清空
-    scopedAlive.value += scope.effects.length
   }
+  // stop() 之后所有 watcher 已停止、定时器已清理 → 存活数归零
+  scopedAlive.value = 0
   scopedBeforeStop.value = beforeStop
   cycles.value++
   pushLog(`✅ 第 ${cycles.value} 轮：stop 前 ${beforeStop} 个 effect → stop 后累计存活 ${scopedAlive.value} 个`)
