@@ -14,7 +14,7 @@
 
 // --- 2. 生命周期：mounted 只跑一次，activated 每次进入都跑 ---
 
-import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue'
+import { onActivated, onDeactivated, onMounted, onUnmounted, ref } from 'vue'
 
 onMounted(() => {
   //! 首次创建；之后切走再回来不会再触发

@@ -3,6 +3,11 @@
 // 重点行用 //! 标记——展示时高亮、复制时自动去标记
 // ============================================================
 
+import { ref } from 'vue'
+
+// 当前导航方向（模板里 direction 会自动解包）
+const direction = ref<'forward' | 'back'>('forward')
+
 // --- 1. 用路由深度判断前进 / 后退 ---
 
 // router/index.ts

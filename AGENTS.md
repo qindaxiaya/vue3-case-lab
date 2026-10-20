@@ -77,8 +77,8 @@
 - ✅ 2026-10-20 质量批次 2：路由切换重置演示状态；暗色代码主题改用 `?url` 导入并验证构建产物（github-dark css 1.06 kB）
 - ✅ 2026-10-20 质量批次 3：详情页返回按钮 + 滚动位置恢复、列表筛选会话内保留、搜索跨页跳转、筛选自动校正、主题持久化不覆盖「跟随系统」、375px 顶栏收缩
 - ✅ 2026-10-20 详情页说明改 SBAC（场景/背景/做法/结论），54 个案例全部补齐；源码区默认收起，先看演示与说明
+- ✅ 2026-10-20 质量批次 4：修正 pinia（重复 store 名）/ history-guard（allowed、二次 popstate）/ route-rbac（user、computed）/ route-transition（direction）/ keep-alive-lru（ref）教学代码
 - 待做（2026-10-20 质量批次）：
-  - 批次 4：存量教学代码纠错（pinia / history / route-*）
   - 批次 5：新案例 notes.md + 对比 + 实测验收
   - 批次 6：其余 50 个存量案例的 notes.md 渐进补齐
 - 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1

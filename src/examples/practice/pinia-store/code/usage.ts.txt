@@ -33,8 +33,9 @@ export const useDemoStore = defineStore('demo', () => {
 // main.ts
 // app.use(createPinia().use(piniaPluginPersistedstate))
 
-export const useDemoStore = defineStore(
-  'demo',
+// 真实项目里两种写法二选一；这里用不同 id 并列展示，避免同名 store 冲突
+export const usePersistedDemoStore = defineStore(
+  'demo-persist',
   () => {
     const count = ref(0)
     return { count }
@@ -63,6 +64,14 @@ const { increment } = store
 // --- 4. 拆分与跨模块 ---
 
 // stores/user.ts、stores/cart.ts …一个领域一个 store
+// import { useUserStore } from './user'
+
+// 示例商品类型（真实项目从 '@/types' 导入）
+interface Item {
+  id: string
+  name: string
+}
+
 //! 跨 store 调用：在 action 里直接 useOtherStore()
 export const useCartStore = defineStore('cart', () => {
   const userStore = useUserStore()

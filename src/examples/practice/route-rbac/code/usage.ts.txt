@@ -3,6 +3,10 @@
 // 重点行用 //! 标记——展示时高亮、复制时自动去标记
 // ============================================================
 
+import { computed } from 'vue'
+// 用户 store（真实项目从 '@/stores/user' 导入）
+// import { useUserStore } from '@/stores/user'
+
 // --- 1. 路由表声明权限（唯一真源） ---
 
 // router/routes.ts
@@ -38,6 +42,9 @@ router.beforeEach((to) => {
 })
 
 // --- 3. 动态菜单：与路由表同源 ---
+
+// 在组件 setup 中取当前用户（守卫里那次调用作用域独立）
+const user = useUserStore()
 
 //! 菜单不要手写一份：从 routes 过滤（避免菜单与守卫两套规则漂移）
 const menus = computed(() =>
