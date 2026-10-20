@@ -34,6 +34,25 @@ watch(activeCategory, (value) => {
 const searched = computed(() => filterCases(allCases, query.value))
 
 /**
+ * 搜索词变化后校正选中分类
+ * 例如先选「虚拟渲染」再搜索一个该分类无结果的词：chips 里不再有该分类，
+ * 但 activeCategory 仍指向它，会显示空列表且没有选中项。此时自动回退「全部」。
+ */
+watch(
+  searched,
+  (list) => {
+    if (
+      activeCategory.value &&
+      !list.some((c) => c.categoryId === activeCategory.value)
+    ) {
+      activeCategory.value = ''
+    }
+  },
+  // 首次进入也要校正：搜索词是跨页保留的，恢复的分类可能已无命中
+  { immediate: true },
+)
+
+/**
  * 分类筛选 chips 数据
  * 只列「当前搜索下有案例」的分类（空分类不显示，避免点了空页面）
  */

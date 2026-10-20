@@ -48,7 +48,7 @@ const features = [
         Vue 3 案例库
       </h1>
       <p class="hero-tagline">
-        高级用法速查站——可交互演示 + 逐行注释代码 + 中文原理说明
+        高级用法速查站——可交互演示 + 逐行中文注释代码 + 完整源码
       </p>
 
       <div class="hero-actions">

@@ -29,16 +29,28 @@ export function useTheme() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     isDark.value = stored === 'dark' || (stored === null && prefersDark)
 
-    // 响应式同步：isDark 变化 → 更新 html class + 持久化用户显式选择
+    // 响应式同步：isDark 变化 → 更新 html class
+    // 注意：这里不写 localStorage。初始化即写入会把「跟随系统」固化成
+    // 一次性快照，之后系统切换主题就再也跟不上了。
     watchEffect(() => {
       document.documentElement.classList.toggle('dark', isDark.value)
-      localStorage.setItem(STORAGE_KEY, isDark.value ? 'dark' : 'light')
     })
+
+    // 用户尚未显式选择（localStorage 无记录）时，跟随系统主题实时变化
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', (event) => {
+        if (localStorage.getItem(STORAGE_KEY) === null) {
+          isDark.value = event.matches
+        }
+      })
   }
 
-  /** 切换暗/亮 */
+  /** 切换暗/亮（仅显式切换时持久化） */
   function toggle(): void {
     isDark.value = !isDark.value
+    // localStorage 为空代表继续跟随系统；有值则固定为用户选择
+    localStorage.setItem(STORAGE_KEY, isDark.value ? 'dark' : 'light')
   }
 
   return { isDark, toggle }

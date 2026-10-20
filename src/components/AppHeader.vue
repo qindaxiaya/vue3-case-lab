@@ -3,11 +3,27 @@
 // 左：站点名（回首页）+「案例」导航；右：搜索框 + 暗色切换
 // ============================================================
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import SearchBox from './SearchBox.vue'
 import ThemeToggle from './ThemeToggle.vue'
 
 // 搜索词双向绑定（App.vue 持有并 provide 给案例列表页过滤）
 const searchQuery = defineModel<string>('query', { default: '' })
+
+const route = useRoute()
+const router = useRouter()
+
+/**
+ * 在非列表页输入搜索词时自动回到列表页：
+ * 用户当前在首页/详情页，输入后页面不变会以为搜索没生效。
+ * 已在 /cases 时不重复 push，避免破坏输入焦点与历史记录。
+ */
+watch(searchQuery, (value) => {
+  if (value.trim() && route.path !== '/cases') {
+    void router.push('/cases')
+  }
+})
 </script>
 
 <template>
@@ -72,8 +88,12 @@ const searchQuery = defineModel<string>('query', { default: '' })
 /* 右侧工具区推到最右（品牌+导航居左，VitePress nav 惯例） */
 .header-tools {
   margin-left: auto;
+  /* 允许工具区在窄屏收缩，搜索框由自身 min-width: 0 让出空间 */
+  min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.75rem;
 }
 
@@ -81,6 +101,7 @@ const searchQuery = defineModel<string>('query', { default: '' })
 
 .header-nav {
   display: flex;
+  flex-shrink: 0;
   gap: 0.25rem;
 }
 
@@ -113,6 +134,7 @@ const searchQuery = defineModel<string>('query', { default: '' })
 
 .site-brand {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.5rem;
   font-size: 1rem;
@@ -127,5 +149,22 @@ const searchQuery = defineModel<string>('query', { default: '' })
 
 .site-logo {
   font-size: 1.25rem;
+}
+
+/* 窄屏（含 375px）：收紧留白并隐藏站点名文字，只保留 logo，
+   把宽度让给搜索框，避免顶栏横向溢出 */
+@media (max-width: 560px) {
+  .header-inner {
+    padding: 0 1rem;
+    gap: 0.5rem;
+  }
+
+  .site-name {
+    display: none;
+  }
+
+  .header-tools {
+    gap: 0.5rem;
+  }
 }
 </style>

@@ -33,6 +33,8 @@ const model = defineModel<string>({ default: '' })
 .search-box {
   position: relative;
   flex: 1;
+  /* 允许收缩到 0：否则 input 的固有宽度会顶破 375px 顶栏 */
+  min-width: 0;
   max-width: 20rem;
 }
 

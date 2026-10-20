@@ -4,7 +4,7 @@
 
 ## 项目速览
 
-- **定位**：本地运行的 Vue 3 高级案例速查站——分类导航 + 搜索，每个案例含可交互演示、带中文注释的核心代码、可下钻完整源码、中文原理说明（私人收藏查阅用）
+- **定位**：本地运行的 Vue 3 高级案例速查站——分类导航 + 搜索，每个案例含可交互演示、带中文注释的核心代码、可下钻完整源码，以及站外查阅的 `notes.md` 五段式原理资料（私人收藏用）
 - **技术栈**：Vite + Vue 3.5（`<script setup lang="ts">`）+ TypeScript strict + Sass（SCSS，CSS 变量主题）+ Vue Router + highlight.js + marked + vitest；包管理 npm
 - **常用命令**：
   - `npm run dev` — 启动开发服务器
