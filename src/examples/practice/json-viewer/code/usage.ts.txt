@@ -1,0 +1,72 @@
+// ============================================================
+// JSON 树查看器教学片段（扁平化折叠树）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import { computed, ref } from 'vue'
+
+// --- 步骤一：为什么用「扁平化」而不是递归组件 ---
+
+// 递归组件（JsonNode 里渲染 JsonNode）：直观但每次折叠都触发组件树重挂载，
+// 深层 JSON 会创建大量组件实例。
+// //! 扁平化方案：一次性递归把所有可见节点转成「行数组」，模板只 v-for 平铺——
+// //! 折叠只是「过滤掉子行」，无组件树变化，性能稳定且能接虚拟滚动。
+
+// --- 步骤二：扁平化递归 ---
+
+type ValueType = 'string' | 'number' | 'boolean' | 'null' | 'object' | 'array'
+
+interface Row {
+  path: string // 完整路径：$.data.list[0].name
+  key: string
+  value: unknown
+  type: ValueType
+  depth: number
+  hasChildren: boolean
+  childCount: number
+}
+
+const collapsed = ref<Set<string>>(new Set())
+
+function flatten(value: unknown, path: string, key: string, depth: number): Row[] {
+  const type: ValueType = value === null ? 'null' : Array.isArray(value) ? 'array' : (typeof value as ValueType)
+  const isContainer = type === 'object' || type === 'array'
+  const entries = isContainer ? Object.entries(value as object) : []
+
+  const row: Row = { path, key, value, type, depth, hasChildren: entries.length > 0, childCount: entries.length }
+
+  //! 折叠或空容器：不再下钻（这就是「折叠」的全部实现）
+  if (!isContainer || collapsed.value.has(path) || entries.length === 0) return [row]
+
+  const rows: Row[] = [row]
+  for (const [k, v] of entries) {
+    //! 路径拼接：数组用 [i]、对象用 .key（复制出去可直接在控制台取值）
+    const childPath = Array.isArray(value) ? `${path}[${k}]` : `${path}.${k}`
+    rows.push(...flatten(v, childPath, Array.isArray(value) ? `[${k}]` : k, depth + 1))
+  }
+  return rows
+}
+
+const rows = computed(() => flatten(JSON.parse('{}') as unknown, '$', '$', 0))
+
+// --- 步骤三：折叠状态用 Set + 替换触发 ---
+
+function toggle(path: string): void {
+  const next = new Set(collapsed.value)
+  if (next.has(path)) next.delete(path)
+  else next.add(path)
+  //! Set 的增删不是响应式的——必须「替换成新 Set」才能触发 computed 重算
+  collapsed.value = next
+}
+
+// --- 步骤四：类型着色（模板 class） ---
+
+// <span class="val" :class="`val--${row.type}`">{{ preview(row) }}</span>
+// .val--string{color:green} .val--number{color:orange} ...
+// //! string 记得显示引号、null 显示灰字、容器显示 Array(n)/{n} 摘要
+
+// --- 生产建议 ---
+
+// 需要完整交互（编辑/大数据虚拟滚动/搜索高亮）直接用现成库：
+// vue-json-pretty、vue-json-viewer、@textea/json-viewer
+// 自建适合：只读展示 + 体积极小 + 自定义交互（如本例的路径复制）
