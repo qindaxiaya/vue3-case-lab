@@ -1,0 +1,73 @@
+// ============================================================
+// 路由级 RBAC 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 路由表声明权限（唯一真源） ---
+
+// router/routes.ts
+export const routes: RouteRecordRaw[] = [
+  {
+    path: '/dashboard',
+    component: Dashboard,
+    //! meta.roles 写清哪些角色可进（游客也要显式列出）
+    meta: { roles: ['admin', 'editor', 'guest'] },
+  },
+  {
+    path: '/users',
+    component: Users,
+    meta: { roles: ['admin'] },
+  },
+]
+
+// --- 2. 全局守卫：登录态 + 权限 ---
+
+router.beforeEach((to) => {
+  const user = useUserStore()
+
+  // 未登录 → 登录页（带 redirect）
+  if (!user.isLogin && to.path !== '/login') {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  //! 无权限 → 403 或首页（不要放行后再在页面里判断，晚了）
+  const allowed = (to.meta.roles as string[] | undefined) ?? []
+  if (allowed.length && !allowed.includes(user.role)) {
+    return { path: '/403' }
+  }
+})
+
+// --- 3. 动态菜单：与路由表同源 ---
+
+//! 菜单不要手写一份：从 routes 过滤（避免菜单与守卫两套规则漂移）
+const menus = computed(() =>
+  routes
+    .filter((r) => r.meta?.title)
+    .filter((r) => {
+      const roles = (r.meta?.roles as string[] | undefined) ?? []
+      return roles.length === 0 || roles.includes(user.role)
+    }),
+)
+
+// --- 4. 按钮级权限 ---
+
+// 指令（简化版，见 custom-directives 案例）
+function can(code: string): boolean {
+  return user.permissions.includes(code)
+}
+
+// <button v-if="can('user:delete')">删除用户</button>
+
+// --- 5. 动态路由（addRoute） ---
+
+//! 后端返回权限码后再添加路由：适合「权限粒度到页面」的后台
+const granted = await fetchMyRoutes()
+granted.forEach((r) => router.addRoute('layout', r))
+
+// --- 6. 防踩坑 ---
+
+//! 1. 守卫里不要做重活（每次跳转都跑）；权限数据提前在登录后拉取
+//! 2. addRoute 后要 removeRoute 清理（退出登录时），否则权限串号
+//! 3. 前端权限只是体验层，接口必须二次校验（前端可被绕过）
+//! 4. 403 页面必须存在且可返回，否则用户卡死
+//! 5. 角色切换后刷新当前页：路由 meta 不变，但菜单和按钮要重算

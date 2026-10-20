@@ -1,0 +1,58 @@
+// ============================================================
+// i18n 按需加载教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 语言包拆文件，动态 import 才分包 ---
+
+// locales/zh.ts  locales/en.ts  locales/ja.ts
+//! 静态 import 会把所有语言打进首屏 bundle
+import zh from './locales/zh'
+
+//! 动态 import 生成独立 chunk，用到才下载
+const loaders = {
+  en: () => import('./locales/en'),
+  ja: () => import('./locales/ja'),
+}
+
+// --- 2. 加载状态 + 内存缓存 ---
+
+const cache = new Map<string, Record<string, string>>([['zh', zh]])
+
+async function loadLocale(lang: string): Promise<Record<string, string>> {
+  const hit = cache.get(lang)
+  //! 已加载过就别再请求（切来切去不应该重复下载）
+  if (hit) return hit
+
+  const mod = await loaders[lang as 'en' | 'ja']()
+  cache.set(lang, mod.default)
+  return mod.default
+}
+
+// --- 3. 真实项目：vue-i18n 的按需加载 ---
+
+// const i18n = createI18n({ locale: 'zh', messages: { zh } })
+
+// async function setLocale(lang: string) {
+//   if (!i18n.global.availableLocales.includes(lang)) {
+//!     i18n.global.setLocaleMessage(lang, (await loaders[lang]()).default)
+//   }
+//   i18n.global.locale.value = lang
+// }
+
+// --- 4. 首屏语言怎么定 ---
+
+//! 优先级：URL 前缀 > localStorage 上次选择 > navigator.language > 默认 zh
+const saved = localStorage.getItem('locale')
+const lang = saved ?? navigator.language.split('-')[0] ?? 'zh'
+
+//! 首屏语言要静态打包（否则首屏还要等一个 chunk）；其余语言动态
+//! 服务端渲染（SSR）时由服务端读 Accept-Language / cookie 决定
+
+// --- 5. 踩坑 ---
+
+//! 1. 动态 import 路径必须是静态可分析的字符串（变量拼路径会导致无法分包）
+//! 2. 语言包别用 JSON 深合并代替完整包（缺失键回退很麻烦，用 fallbackLocale）
+//! 3. 切换语言后日期/数字格式也要换（Intl.DateTimeFormat 传 locale）
+//! 4. 长文案拆 key 时保留上下文注释（翻译者需要）
+//! 5. 用 vite-plugin-vue-i18n 可在编译期预编译，但会增加构建复杂度——小项目动态 import 足够

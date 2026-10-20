@@ -1,0 +1,52 @@
+// ============================================================
+// History 拦截返回教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 方案 A（推荐）：路由守卫 ---
+
+import { onBeforeRouteLeave } from 'vue-router'
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (!dirty.value) return next()
+  //! 用自定义弹窗替代 window.confirm（可定制、可访问性更好）
+  if (window.confirm('有未保存的修改，确定离开？')) next()
+  // 不调用 next() = 取消导航
+})
+
+// --- 方案 B：关闭 / 刷新页面 ---
+
+window.addEventListener('beforeunload', (e) => {
+  if (!dirty.value) return
+  //! 现代浏览器忽略自定义文案，只显示默认提示；preventDefault + returnValue 都要写
+  e.preventDefault()
+  e.returnValue = ''
+})
+
+// --- 方案 C：拦截浏览器前进/后退（popstate） ---
+
+//! 思路：进入页面时 push 一个哨兵，返回时 popstate 先触发，
+//! 取消则再 pushState 把历史栈“顶回去”
+history.pushState({ guard: true }, '', location.href)
+
+window.addEventListener('popstate', () => {
+  if (!dirty.value) return
+
+  const leave = window.confirm('有未保存的修改，确定离开？')
+  if (leave) {
+    // 真正离开：不再拦截（移除监听 / 标记放行）
+    allowed = true
+    history.back()
+  } else {
+    //! 取消：补一条历史记录，抵消刚才的返回
+    history.pushState({ guard: true }, '', location.href)
+  }
+})
+
+// --- 坑与边界 ---
+
+//! 1. popstate 无法阻止浏览器返回动作，只能“返回后再顶回去”，会出现 URL 闪动
+//! 2. 移动端手势返回同理；iOS 上体验尤其要注意
+//! 3. 同一个页面重复 addEventListener 会叠加，记得保存 handler 并在卸载时移除
+//! 4. beforeunload 只在用户有交互后生效（浏览器策略）
+//! 5. 只对“真正会丢数据”的场景拦截，滥用会惹恼用户

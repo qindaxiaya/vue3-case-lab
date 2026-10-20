@@ -1,0 +1,84 @@
+// ============================================================
+// Pinia 状态管理教学片段（真实项目写法）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. setup store（推荐） ---
+
+// stores/demo.ts
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
+export const useDemoStore = defineStore('demo', () => {
+  // state
+  const count = ref(0)
+  const user = ref('张三')
+  const todos = ref<string[]>([])
+
+  // getters
+  const double = computed(() => count.value * 2)
+
+  // actions
+  function increment(): void {
+    count.value++
+  }
+
+  //! setup store 必须 return 所有要暴露的 state/getter/action
+  return { count, user, todos, double, increment }
+})
+
+// --- 2. 持久化：用插件，不要手写 ---
+
+// npm i pinia-plugin-persistedstate
+// main.ts
+// app.use(createPinia().use(piniaPluginPersistedstate))
+
+export const useDemoStore = defineStore(
+  'demo',
+  () => {
+    const count = ref(0)
+    return { count }
+  },
+  {
+    //! 插件会自动 deep watch + localStorage 读写（等价于本例 20 行手写）
+    persist: {
+      key: 'moyu-demo-store',
+      // 需要只持久化部分字段时用 paths
+      // paths: ['count'],
+    },
+  },
+)
+
+// --- 3. 组件里使用 ---
+
+const store = useDemoStore()
+store.increment()
+
+//! 解构会丢响应式：必须 storeToRefs（状态用 toRefs 语义，方法直接解构）
+import { storeToRefs } from 'pinia'
+
+const { count, user } = storeToRefs(store)
+const { increment } = store
+
+// --- 4. 拆分与跨模块 ---
+
+// stores/user.ts、stores/cart.ts …一个领域一个 store
+//! 跨 store 调用：在 action 里直接 useOtherStore()
+export const useCartStore = defineStore('cart', () => {
+  const userStore = useUserStore()
+  const items = ref<Item[]>([])
+
+  function checkout(): void {
+    if (!userStore.isLogin) return
+    // ...
+  }
+
+  return { items, checkout }
+})
+
+// --- 5. 什么时候不用 Pinia ---
+
+//! 1. 单个组件内部状态 → ref/reactive
+//! 2. 只往下传两层 → props/emit
+//! 3. 一个子树共享 → provide/inject
+//! 4. 服务端数据缓存 → 用 TanStack Query / vue-query，不要塞进 store

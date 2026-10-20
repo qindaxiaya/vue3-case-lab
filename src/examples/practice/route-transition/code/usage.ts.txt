@@ -1,0 +1,51 @@
+// ============================================================
+// 路由转场动画教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 用路由深度判断前进 / 后退 ---
+
+// router/index.ts
+router.afterEach((to, from) => {
+  //! to.meta.depth / from.meta.depth 由路由表手动标注（0 首页、1 列表、2 详情）
+  //! 或用 history.state.position 比较（Vue Router 4 会在 state 里写 position）
+  const toDepth = to.meta.depth ?? 0
+  const fromDepth = from.meta.depth ?? 0
+  direction.value = toDepth >= fromDepth ? 'forward' : 'back'
+})
+
+// --- 2. Transition 按方向切换 name ---
+
+// <RouterView v-slot="{ Component }">
+//!  <Transition :name="direction === 'forward' ? 'slide-left' : 'slide-right'" mode="out-in">
+//     <component :is="Component" :key="$route.fullPath" />
+//   </Transition>
+// </RouterView>
+
+// --- 3. 两套 CSS（进出方向相反） ---
+
+// .slide-left-enter-from { transform: translateX(36px); opacity: 0 }
+// .slide-left-leave-to   { transform: translateX(-36px); opacity: 0 }
+// .slide-right-enter-from { transform: translateX(-36px); opacity: 0 }
+// .slide-right-leave-to   { transform: translateX(36px); opacity: 0 }
+// .slide-left-enter-active,
+// .slide-left-leave-active,
+// .slide-right-enter-active,
+// .slide-right-leave-active { transition: transform .28s ease, opacity .28s ease }
+
+// --- 4. 滚动位置恢复 ---
+
+//! 前进到新页：滚动到顶；后退回来：恢复到离开时的位置
+// 方案 A：<RouterView> 外包 <KeepAlive>，配合 onActivated 手动 restore
+// 方案 B：scrollBehavior(to, from, savedPosition) {
+//   return savedPosition || { top: 0 }
+// }
+// 方案 C：进入前记录 scrollTop 到 map<fullPath, number>，后退时还原
+
+// --- 5. 踩坑 ---
+
+//! 1. mode="out-in" 必须加，否则两个页面同时存在会重叠闪烁
+//! 2. 动画期间禁止重复点击导航（用一个 transitioning 标记，或在路由守卫里 return false）
+//! 3. 移动端 transform 动画优先（不触发重排），别用 left/top
+//! 4. KeepAlive + Transition 同时用时，组件必须有唯一 key（否则复用实例不触发动画）
+//! 5. 首屏不要播放入场动画（direction 初始值判断 + appear 属性）
