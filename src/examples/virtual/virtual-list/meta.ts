@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['虚拟列表', '长列表', 'rAF 节流'],
   summary: '10 万行只渲染视口 ±5 行，transform 定位 + rAF 节流滚动，DOM 恒定约 30 个',
+  sell: '10 万行只渲染 30 个 DOM，滚动依旧顺滑',
 } satisfies CaseMeta

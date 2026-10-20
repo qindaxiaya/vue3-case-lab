@@ -10,4 +10,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['requestAnimationFrame', '动画', '节流', '渲染循环'],
   summary: '时间戳驱动正弦往返动画 + mousemove 高频事件 rAF 节流渲染对照',
+  sell: '动画与高频事件都交给 rAF，按帧渲染不丢帧',
 } satisfies CaseMeta

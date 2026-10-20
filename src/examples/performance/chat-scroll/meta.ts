@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['滚动', '吸底', '未读提示', '历史加载'],
   summary: '底部自动跟随、上翻不打扰（未读气泡）、顶部加载历史且保持视线位置，含高度变化场景',
+  sell: '三条规则做好聊天吸底：跟随、不打扰、保视线',
 } satisfies CaseMeta

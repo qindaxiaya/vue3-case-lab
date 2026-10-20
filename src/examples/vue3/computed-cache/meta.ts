@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['computed', 'watch', '缓存', '渲染'],
   summary: '改无关状态时，computed 不重算、方法每次渲染都跑、watch 不触发——用计数看清三者边界',
+  sell: '计数看清 computed / 方法 / watch 的边界',
 } satisfies CaseMeta

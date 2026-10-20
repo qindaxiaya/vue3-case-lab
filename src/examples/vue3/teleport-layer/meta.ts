@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['Teleport', 'z-index', '弹层'],
   summary: '弹层挂 body 脱离 overflow 裁剪，集中式 z-index 计数器防层级冲突',
+  sell: '弹层挂 body 不被裁剪，z-index 统一管理',
 } satisfies CaseMeta

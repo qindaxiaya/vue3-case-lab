@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['SSE', '流式', '断线重连', 'AbortController'],
   summary: '本地模拟 token 流：断线 → 重连中 → 用 Last-Event-ID 从断点续传，支持主动中止',
+  sell: 'SSE 断线重连 + Last-Event-ID 续传',
 } satisfies CaseMeta

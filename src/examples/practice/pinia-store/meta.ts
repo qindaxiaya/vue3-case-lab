@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['Pinia', 'store', '持久化', 'localStorage'],
   summary: '20 行等价实现讲透 setup store：跨组件共享 + deep watch 持久化，附真实 Pinia 写法对照',
+  sell: '20 行还原 setup store，持久化与拆分讲透',
 } satisfies CaseMeta

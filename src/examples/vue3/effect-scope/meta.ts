@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['effectScope', 'onScopeDispose', '内存泄漏', 'watch'],
   summary: '反复挂载卸载时，用 effectScope 一次性收口 watcher 与定时器，把「看不见的泄漏」变成数字',
+  sell: 'effectScope 一次收口，泄漏看得见、停得掉',
 } satisfies CaseMeta

@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['分片上传', '断点续传', '秒传', 'SHA-256'],
   summary: '本地算 SHA-256 指纹 → 秒传判断 → 1MB 分片并发 3 上传；暂停后续传只补未完成分片',
+  sell: '指纹秒传 + 分片并发 + 断点续传，大文件也稳',
 } satisfies CaseMeta

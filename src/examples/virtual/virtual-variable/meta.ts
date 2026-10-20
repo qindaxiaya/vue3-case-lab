@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['虚拟列表', '二分查找', '前缀和', '长列表'],
   summary: '2000 条不定高消息：offsets 前缀和 + 二分定位，只渲染视口内 10 行，全量模式对照',
+  sell: '不定高也能虚拟化，前缀和 + 二分定位',
 } satisfies CaseMeta

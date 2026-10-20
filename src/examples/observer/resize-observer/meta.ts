@@ -9,4 +9,5 @@ export default {
   difficulty: 'beginner',
   tags: ['ResizeObserver', '响应式布局', 'content-box'],
   summary: '监听任意容器尺寸变化，contentRect 与 borderBoxSize 两种测量模式对比',
+  sell: '容器尺寸变化不用轮询，两种测量模式一次讲清',
 } satisfies CaseMeta

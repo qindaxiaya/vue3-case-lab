@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['IntersectionObserver', '懒加载', '曝光'],
   summary: 'root/rootMargin/threshold 三配置对比，进入视口才加载，用完 unobserve 释放',
+  sell: '三参数调好懒加载，进视口才下载，用完即释放',
 } satisfies CaseMeta

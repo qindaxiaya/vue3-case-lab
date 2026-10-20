@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['fuse.js', '快捷键', '模糊搜索'],
   summary: 'Ctrl+K 唤起，fuse.js 模糊匹配 + 命中高亮，纯键盘导航的 Raycast 式操作入口',
+  sell: 'Ctrl+K 唤起，模糊搜索 + 纯键盘操作',
 } satisfies CaseMeta

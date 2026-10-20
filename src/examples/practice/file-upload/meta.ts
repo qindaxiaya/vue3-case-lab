@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['上传', '并发队列', '进度', '取消重试'],
   summary: '类型/大小校验、并发 2 的上传队列、单项取消、失败重试与总进度，全部模拟可交互',
+  sell: '校验、并发队列、取消、重试，上传流程一次讲全',
 } satisfies CaseMeta

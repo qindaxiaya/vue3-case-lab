@@ -9,4 +9,5 @@ export default {
   difficulty: 'beginner',
   tags: ['CSS 变量', '暗色模式', 'matchMedia', 'localStorage'],
   summary: '亮/暗/跟随系统三态切换，局部变量预览 + head 内联脚本方案，讲清首帧不闪白的根因',
+  sell: '三态主题 + 内联脚本，首帧不闪白',
 } satisfies CaseMeta

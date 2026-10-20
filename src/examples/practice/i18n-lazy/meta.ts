@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['i18n', '动态 import', '代码分割', '首屏体积'],
   summary: '首屏只加载当前语言，切换时动态 import 独立 chunk 并显示加载态，已加载语言走内存缓存',
+  sell: '语言包按需 import，首屏只带当前语言',
 } satisfies CaseMeta

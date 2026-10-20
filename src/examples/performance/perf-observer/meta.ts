@@ -10,4 +10,5 @@ export default {
   difficulty: 'advanced',
   tags: ['PerformanceObserver', 'LCP', 'CLS', 'INP'],
   summary: '实时性能指标面板：FPS/内存流动 + Core Web Vitals + 交互实验台',
+  sell: '一张面板看清 FPS、内存与 Core Web Vitals',
 } satisfies CaseMeta

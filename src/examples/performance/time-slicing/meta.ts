@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['时间切片', 'rAF', '长任务', '首屏'],
   summary: '1 万条数据每帧渲染 300 条，对比一次性全量：首帧、总耗时、主线程点击响应延迟',
+  sell: '1 万行分帧渲染，首屏快、点击不卡',
 } satisfies CaseMeta

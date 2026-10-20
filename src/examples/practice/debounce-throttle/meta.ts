@@ -9,4 +9,5 @@ export default {
   difficulty: 'beginner',
   tags: ['VueUse', 'debounce', 'throttle'],
   summary: 'useDebounceFn/useThrottleFn 一行接入，脉冲波形直观对比原始事件与实际执行频率',
+  sell: '波形对比防抖节流，一行接入 VueUse',
 } satisfies CaseMeta

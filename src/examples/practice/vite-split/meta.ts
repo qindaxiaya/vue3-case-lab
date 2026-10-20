@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['Vite', '代码分割', '懒加载', '构建优化'],
   summary: '勾选懒加载/vendor 拆分/按需引入/外置，实时看首屏体积变化，附 vite.config 配置要点',
+  sell: '勾选配置实时看首屏体积，分割策略有数',
 } satisfies CaseMeta

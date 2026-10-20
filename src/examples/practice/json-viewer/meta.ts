@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['JSON', '扁平化', '路径复制'],
   summary: '扁平化行 + 缩进实现可折叠树（不用递归组件），点行复制 JSON 路径',
+  sell: '不写递归组件，扁平化行实现可折叠 JSON 树',
 } satisfies CaseMeta

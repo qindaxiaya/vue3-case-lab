@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['File', 'Blob URL', 'MIME', '拖拽'],
   summary: '按 MIME 分流图片/文本/PDF/音视频，内置 canvas 图片、WAV、手写 PDF 示例全部本地生成',
+  sell: '按 MIME 分流预览，示例文件全部本地生成',
 } satisfies CaseMeta

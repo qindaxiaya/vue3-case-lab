@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['IntersectionObserver', '分页', '哨兵元素'],
   summary: '哨兵进底部 200px 预取下一页，rootMargin 单向扩展，loading 防重入',
+  sell: '哨兵 + rootMargin 预取，滚动加载零回调',
 } satisfies CaseMeta

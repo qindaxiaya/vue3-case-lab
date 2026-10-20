@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['canvas', 'toBlob', '图片处理'],
   summary: 'canvas 等比缩放 + toBlob(quality) 原生编码，拖动分割线对比体积与画质',
+  sell: 'canvas 压缩 + 分割线对比，体积画质看得见',
 } satisfies CaseMeta

@@ -25,9 +25,11 @@
   ```
   src/examples/<category>/<case-id>/
   ├── Demo.vue        # 可交互演示（scoped SCSS、内部关键逻辑中文注释、不引用站点内部组件）
-  ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary，无 notes）
+  ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary/sell）
+  ├── notes.md        # 五段式案例资料（不参与 registry、不展示；模板见 docs/templates/notes.md）
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
+- **案例完成标准（2026-10-20 用户拍板）**：`docs/case-definition-of-done.md` 为唯一验收源，覆盖 Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程。新案例严格执行，存量按批次渐进补齐；豁免必须写进 notes.md 第 5 段。
 - **框架与案例抽离（2026-10-19 用户拍板）**：
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
   2. 案例差异全部收在案例目录内自包含（Demo/meta/code）；框架只认通用约定
@@ -43,11 +45,12 @@
   2. 有页面变化时必须给出 dev 地址（`http://localhost:5173/`）供用户查看
   3. git 分步提交：一个任务/一个逻辑单元一个 commit，不攒大提交
 - **完成前强制验证清单（2026-10-19 教训固化，每个任务/案例收尾必跑）**：
-  1. `npx vitest run`（含真实 glob 收录链路集成测试——新增案例会自动扩展验证）
-  2. `npm run type-check`、`npm run lint`、`npm run build`
-  3. dev 页面实测：案例页 HTTP 200 + 关键模块编译产物检查
-  4. 有页面交互变化时，dev 地址交用户人工走查（机器验证不能替代）
-  5. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（verification-before-completion skill）
+  1. 按 `docs/case-definition-of-done.md` 逐条验收（Demo 稳定性 / 对比开关 / 实测数据 / notes 五段 / meta.sell / 375px）
+  2. `npx vitest run`（含真实 glob 收录链路集成测试——新增案例会自动扩展验证）
+  3. `npm run type-check`、`npm run lint`、`npm run build`
+  4. dev 页面实测：案例页可交互、刷新无控制台告警、路由往返状态正确
+  5. 有页面交互变化时，dev 地址交用户人工走查（机器验证不能替代）
+  6. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（verification-before-completion skill）
 - 每任务收尾必更新本文件「当前进度」段；重大取舍记入「决策记录」
 
 ## 当前进度
@@ -70,6 +73,13 @@
   - ✅ spec 扩展批 4（virtual 1 + performance 5）：virtual-variable / chat-scroll / time-slicing / pull-refresh / typewriter-stream / sse-chat
   - ✅ spec 扩展批 5（practice 文件能力 4）：file-preview / pdf-preview（手写 PDF 1.4）/ file-upload / chunk-upload
   - ✅ spec 扩展批 6（practice 5）：drag-sort / slider-captcha / tracking-sdk / vite-split / vitest-gate
+- ✅ 2026-10-20 质量批次 1：完成标准 DoD + notes 模板落盘；CaseMeta 增加 `sell`，54 个案例一次补齐
+- 待做（2026-10-20 质量批次）：
+  - 批次 2：CasePage 演示状态残留、CodeWorkbench 暗色代码主题
+  - 批次 3：详情页搜索跳转、分类筛选校正、主题持久化、375px 顶栏
+  - 批次 4：存量教学代码纠错（pinia / history / route-*）
+  - 批次 5：新案例 notes.md + 对比 + 实测验收
+  - 批次 6：其余 50 个存量案例的 notes.md 渐进补齐
 - 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
@@ -97,3 +107,6 @@
 | 2026-10-20 | **说明型案例也做交互** | vite-split 用勾选估算体积，vitest-gate 用「模拟 CI 运行 + 注入失败」；不做纯文字页 |
 | 2026-10-20 | **SFC 顶层注释禁止出现 `<Tag>`** | 顶层 `//` 注释里的 `<KeepAlive>`/`<Transition>` 会被当模板标签 → "Element is missing end tag"；用纯文字描述 |
 | 2026-10-20 | **禁止用 PowerShell Set-Content 写源码** | 默认 ANSI 会吞换行/毁中文（本会话踩过，靠 git checkout 恢复）；统一用 write/edit 工具 |
+| 2026-10-20 | **案例完成标准 DoD 固化** | 7 类标准写入 `docs/case-definition-of-done.md`：Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程；新案例严格执行、存量渐进；豁免写 notes 第 5 段 |
+| 2026-10-20 | **notes.md 五段式，且不接入页面** | 现象/场景 → 原理 → 关键代码（标 3 处为什么）→ 数据对比（实测+方法）→ 追问与边界；作为案例资料存放在案例目录，不参与 registry；非性能案例第 4 段允许行为指标替代 |
+| 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；54 个存量 meta 一次补齐 |

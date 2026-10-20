@@ -9,4 +9,5 @@ export default {
   difficulty: 'intermediate',
   tags: ['defineAsyncComponent', '代码分割', 'Suspense'],
   summary: 'loader/delay/timeout/loading/error 配置全家桶，失败换 key 重试的标准姿势',
+  sell: '异步组件全家桶，加载、超时、错误、重试',
 } satisfies CaseMeta

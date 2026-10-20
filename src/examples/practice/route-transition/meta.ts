@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['Transition', '路由动画', '前进后退', '历史栈'],
   summary: '模拟路由栈：前进左滑、后退右滑，Transition 按方向切换动画类，栈状态可视化',
+  sell: '前进左滑、后退右滑，路由方向决定动画',
 } satisfies CaseMeta

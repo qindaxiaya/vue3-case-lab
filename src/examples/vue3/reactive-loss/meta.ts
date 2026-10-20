@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['reactive', 'toRef', 'toRefs', '解构', 'props', '响应式'],
   summary: '解构/整体赋值/浅拷贝/解构 props 四类丢失逐一复现，并验证 Vue 3 已修复的数组下标老坑',
+  sell: '五个现场复现响应式丢失，逐条给出修法',
 } satisfies CaseMeta

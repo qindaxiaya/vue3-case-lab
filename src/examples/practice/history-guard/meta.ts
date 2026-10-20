@@ -9,4 +9,5 @@ export default {
   difficulty: 'advanced',
   tags: ['history', 'popstate', '路由守卫', 'beforeunload'],
   summary: '有未保存内容时拦截返回：确认/取消状态机 + 日志，附 onBeforeRouteLeave 与 popstate 真实方案',
+  sell: '未保存就拦截返回，确认/取消状态机可复用',
 } satisfies CaseMeta
