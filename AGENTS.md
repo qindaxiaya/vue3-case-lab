@@ -11,7 +11,7 @@
   - `npm run type-check` — vue-tsc 类型检查
   - `npm run lint` — ESLint 检查
   - `npx vitest run` — 运行测试
-- **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（私有），单 `main` 分支线性提交
+- **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
 
@@ -56,7 +56,7 @@
 
 ## 当前进度
 
-- **阶段**：共 55 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 10 · vue3 16 · practice 22）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 56 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 10 · vue3 16 · practice 23）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -87,8 +87,10 @@
 - ✅ 2026-10-20 详情页体验：回到顶部浮动按钮（滚动 480px 出现，带阅读进度环与缩放上浮动画）；说明/源码 tab 吸顶（top 64px）+ 左右键切换 + 切换后回到 tab 位置
 - ✅ 2026-10-20 全站动效统一：`--ease-out` 快出慢收曲线；路由切换淡入淡出；卡片/筛选 chips/主题图标/搜索弹窗/面板切换补齐过渡；源码段数徽章仅多段时显示
 - ✅ 2026-10-20 Task 14 机器走查：55/55 案例直连 + 375px 双视口无横向溢出；说明/源码默认态与切换、搜索弹窗（点击 / Ctrl+K / ↑↓ / 回车 / Esc）、分类筛选与返回保留、主题持久化、无效路由全部通过；首页 CTA / 特性卡、代码区核心与 demo 源码切换、复制（剪贴板无 `//!` 标记）、浏览器前进后退、减少动态下滚动恢复均通过；发现并修复返回列表滚动位置被旧页面高度截断（`scrollBehavior` 改读 history.state.scroll + 等新页高度足够再 instant 恢复）
-- ✅ 2026-10-20 结项：用户人工走查通过（375px / 暗色 / 键盘 / 搜索弹窗 / 返回列表）；55 案例 / 6 分类全部完成，tag v0.1
+- ✅ 2026-10-20 结项：用户人工走查通过（375px / 暗色 / 键盘 / 搜索弹窗 / 返回列表）；55 案例 / 6 分类全部完成，tag v0.1（后续新增合并门禁案例，现 56）
 - ✅ 2026-10-20 CI 门禁：`.github/workflows/ci.yml` 在 push main / PR / 手动触发时跑 `npm ci` + type-check + lint + vitest + build；Node 22 LTS + npm 缓存，同分支并发自动取消旧任务
+- ✅ 2026-10-20 main 硬门禁：ruleset `main-merge-gate` 要求 PR + 必需检查 `Type check, lint, test, build`，禁止强推/删除、只允许线性历史、审批数 0、无 bypass；实测直推报 GH013，红灯 PR 合并返回 `base branch policy prohibits the merge`
+- ✅ 2026-10-20 合并门禁案例 `practice/branch-protection`：规则集开关 + 直推/红灯 PR/绿灯 PR 四态演示；实测红灯检查 18s、绿灯 33s，375px 无横向溢出，代码区含规则集配置与验证命令
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -129,3 +131,4 @@
 | 2026-10-20 | **中文乱码从源头修复** | 根因是 PowerShell 5.1 `-NoProfile` + GBK 输出；用 opencode 全局插件在每条 bash 命令前注入 UTF-8 编码设置，替代「避开 shell / 读文件」的绕行方案；同时给交互式 PowerShell 加了 UTF-8 profile |
 | 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
 | 2026-10-20 | **CI 门禁用单 job 顺序跑四项检查** | GitHub Actions Ubuntu + Node 22 LTS；push main / PR / 手动触发，`npm ci` 后依次 type-check、lint、vitest、build；不拆多 job 以免重复安装依赖，保持配置简单 |
+| 2026-10-20 | **仓库转公开 + ruleset 硬门禁** | 私有免费仓库不支持分支保护/ruleset（API 403）；转公开后创建 `main-merge-gate`：必须 PR、必需检查 `Type check, lint, test, build`、禁强推/删除、线性历史、审批 0（单人不能自批）、无 bypass；管理员直推同样被 GH013 拒绝 |
