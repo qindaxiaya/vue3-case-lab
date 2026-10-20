@@ -64,11 +64,11 @@
   - 剩余 2 案例：`practice/debounce-throttle`、`practice/json-viewer`（在 #7 中改用 EP 控件，故意留到 #7 合并后再补，避免冲突）
   - 续工步骤（新会话 / 新设备）：
     1. `git fetch --all`；`git switch feat/demo-sizing`（worktree `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-demo-size`，不存在则 `git worktree add` 重建）
-    2. 先评审并合并 `#7`；再把本分支 rebase 到最新 `main`（`git rebase origin/main`），解决 `vitest-gate` 与 `AGENTS.md` 冲突
+    2. 确认 `#9` 文档已合并（本指引已在 main）；再评审并合并 `#7`，然后把本分支 rebase 到最新 `main`（`git rebase origin/main`），解决 `vitest-gate` 冲突
     3. 给剩余 2 个 Demo 的 EP 控件补尺寸/字号（`:deep` 内层高度与字号），逐条过 `docs/case-definition-of-done.md`
     4. 机器复验：`npx vitest run` → `npm run type-check` → `npm run lint` → `npm run build`；CDP 抽查 3 个 EP 案例 + 代表性尺寸案例 1200/375
     5. `gh pr ready 8`；确认 `main-merge-gate` 绿灯后按线性历史合并；合并后更新本段「当前进度」并删除此续工块
-  - 合并顺序：先 `#7` 再 `#8`（两分支都改 `vitest-gate`，反向会冲突）
+  - 合并顺序：`#9` 文档（先合，主分支才有本指引）→ `#7` Element Plus → rebase `#8` 并补齐 2 案例（`#7`、`#8` 都改 `vitest-gate`，必须 7 在前）
   - 审计资产：尺寸截图/脚本 `C:\Users\qw156\AppData\Local\Temp\opencode\demo-batch-a-audit\`；EP 截图/脚本 `C:\Users\qw156\AppData\Local\Temp\opencode\element-plus-audit\`
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
