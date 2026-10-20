@@ -4,7 +4,7 @@
 // - 分类分组的案例卡片：标题 / 摘要 / 难度 / 标签，点击进详情
 // ============================================================
 <script setup lang="ts">
-import { computed, inject, ref, type Ref } from 'vue'
+import { computed, inject, ref, watch, type Ref } from 'vue'
 import { categories } from '../examples/categories'
 import { allCases, filterCases } from '../examples/registry'
 
@@ -14,8 +14,21 @@ const searchQuery = inject<Ref<string>>('searchQuery')
 /** 当前搜索词（无注入时为空串） */
 const query = computed(() => searchQuery?.value ?? '')
 
-/** 选中的分类 id（'' = 全部；chips 本地状态） */
-const activeCategory = ref('')
+/** 分类筛选持久化键：从详情页返回时保留用户选中的分类 */
+const FILTER_KEY = 'moyu-cases-filter'
+
+/** 选中的分类 id（'' = 全部；chips 本地状态，sessionStorage 记忆） */
+const activeCategory = ref(sessionStorage.getItem(FILTER_KEY) ?? '')
+
+// 恢复的筛选可能已不存在（分类被删/改名）→ 回退到「全部」
+if (activeCategory.value && !categories.some((c) => c.id === activeCategory.value)) {
+  activeCategory.value = ''
+}
+
+// 筛选变化即写入会话存储（关闭标签页后自动清空）
+watch(activeCategory, (value) => {
+  sessionStorage.setItem(FILTER_KEY, value)
+})
 
 /** 搜索命中的全部案例（先过搜索，再过分组展示） */
 const searched = computed(() => filterCases(allCases, query.value))
@@ -184,9 +197,9 @@ function difficultyLabel(difficulty: string): string {
      width:100% 显式声明，防止 flex 父级下 auto margin 禁用 stretch
      导致宽度随内容漂移（与 CasePage 同一机制） */
   width: 100%;
-  max-width: 72rem;
+  max-width: 84rem;
   margin: 0 auto;
-  padding: 2.5rem 2rem 5rem;
+  padding: 2.5rem 2.5rem 5rem;
 }
 
 .page-header {

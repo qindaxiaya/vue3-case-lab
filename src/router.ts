@@ -35,8 +35,10 @@ export const router = createRouter({
     // 未知路径回首页
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
-  // 页面切换回顶部
-  scrollBehavior() {
+  // 页面切换回顶部；浏览器前进/后退时恢复原滚动位置
+  scrollBehavior(_to, _from, savedPosition) {
+    // savedPosition 只在 popstate（浏览器返回/前进）时存在
+    if (savedPosition) return savedPosition
     return { top: 0 }
   },
 })
