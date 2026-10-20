@@ -1,0 +1,40 @@
+// ============================================================
+// defineModel 教学片段（父组件视角）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 旧写法：props + emit ---
+
+// 子组件：
+// const props = defineProps<{ modelValue: string }>()
+// const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+// <input :value="modelValue" @input="emit('update:modelValue', $event.target.value)" />
+
+// --- 新写法：defineModel（Vue 3.4+） ---
+
+// 子组件一行：
+// const model = defineModel<string>({ default: '' })
+// <input v-model="model" />
+
+//! 父组件用法完全不变
+// <ModelInput v-model="text" />
+
+// --- 本质：它只是语法糖 ---
+
+// defineModel() 等价于：
+// props: { modelValue: String }
+// emits: ['update:modelValue']
+// const model = computed({
+//   get: () => props.modelValue,
+//   set: (v) => emit('update:modelValue', v),
+// })
+
+//! 所以旧项目升级不用改父组件，只把子组件内部收窄成一行
+
+// --- 注意事项 ---
+
+//! 1. 需要 Vue 3.4+（3.3 之前是实验性的 defineModel 宏）
+//! 2. 默认模型名是 modelValue；自定义名 defineModel('title') → 父级 v-model:title
+//! 3. 本地写入是「先改本地 ref，再 emit」——父级不响应时界面会回弹（受控组件语义）
+//! 4. 需要本地临时状态（如输入中不立即同步）时用 { local: true }（3.4+）
+//! 5. 修饰符（.trim）通过第二个返回值读取：const [model, mods] = defineModel()

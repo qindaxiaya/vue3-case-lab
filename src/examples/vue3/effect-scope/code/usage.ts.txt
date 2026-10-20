@@ -1,0 +1,50 @@
+// ============================================================
+// effectScope 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 问题：手动清理容易漏 ---
+
+function mountBad(): void {
+  // 每个实例都要记得 stop / clear
+  const stop = watch(source, () => {})
+  const timer = setInterval(() => {}, 1000)
+  //! 组件卸载时漏掉任意一个，就会一直跑（内存 + 回调泄漏）
+  // onUnmounted(() => { stop(); clearInterval(timer) })
+}
+
+// --- 方案：effectScope 统一收口 ---
+
+import { effectScope, onScopeDispose, watch } from 'vue'
+
+function mountGood(): void {
+  //! 创建作用域：run 内部创建的 watch/computed 都归它管
+  const scope = effectScope()
+
+  scope.run(() => {
+    //! 作用域内的 watcher 会随 stop() 自动停止
+    watch(source, () => {})
+
+    //! 非响应式资源（定时器/事件监听）用 onScopeDispose 注册清理
+    const timer = setInterval(() => {}, 1000)
+    onScopeDispose(() => clearInterval(timer))
+  })
+
+  //! 一键停止：watcher + onScopeDispose 回调全部执行
+  scope.stop()
+}
+
+// --- 典型使用场景 ---
+
+// 1) 组合式函数封装（useXxx 内部建 scope，调用方只管 stop）
+// 2) 弹窗 / Tab 切走时批量停掉页面内所有监听
+// 3) 微前端子应用卸载
+// 4) 测试里隔离副作用（每个用例一个 scope）
+
+// --- 边界与避坑 ---
+
+//! 1. onScopeDispose 必须写在 scope.run 内，否则找不到当前作用域（开发环境会警告）
+//! 2. 检测是否在作用域内：getCurrentScope() 返回 undefined 说明不在
+//! 3. detached scope（scope.run 里再 effectScope(true)）不随父 scope 停止，要手动收
+//! 4. 组件 setup 内调用 effectScope() 创建的 scope 不会自动随组件卸载停止，需自己 stop
+//! 5. 异步回调里创建 watcher 前先确认 scope 还活着（isScopeActive 思路）

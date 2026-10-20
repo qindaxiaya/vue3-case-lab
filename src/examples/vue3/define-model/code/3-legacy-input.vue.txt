@@ -1,0 +1,28 @@
+// ============================================================
+// 旧写法子组件完整源码（对照用）
+// ============================================================
+<script setup lang="ts">
+const props = defineProps<{
+  modelValue: string
+  label?: string
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+}>()
+
+function onInput(e: Event): void {
+  //! 手动取值 + 手动 emit，每个 v-model 组件都要重复
+  emit('update:modelValue', (e.target as HTMLInputElement).value)
+}
+</script>
+
+<template>
+  <label>
+    <span>{{ label ?? '旧写法' }}</span>
+    <input
+      :value="props.modelValue"
+      @input="onInput"
+    >
+  </label>
+</template>

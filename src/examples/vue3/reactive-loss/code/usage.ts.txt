@@ -1,0 +1,65 @@
+// ============================================================
+// 响应式丢失教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 现场 1：解构 reactive ---
+
+const state = reactive({ count: 0 })
+
+//! 错误：拿到的是「当时的数字」，与响应式系统断开
+const { count } = state
+
+//! 正确：toRef / toRefs 建立只读连接
+const countRef = toRef(state, 'count')
+// 或：const { count } = toRefs(state)
+
+state.count++
+console.log(count) // 0（快照不动）
+console.log(countRef.value) // 1（连接跟着走）
+
+// --- 现场 2：整体重新赋值 ---
+
+let form = reactive({ name: 'a' })
+
+//! 错误：变量被换成裸对象，旧 Proxy 的依赖永远等不到更新
+form = { name: 'b' }
+
+//! 正确：原地改，保持同一个 Proxy
+Object.assign(form, { name: 'b' })
+// 或者从头就用 ref：const form = ref({ name: 'a' }); form.value = { name: 'b' }
+
+// --- 现场 3：展开浅拷贝 ---
+
+//! 错误：{ ...state } 拷走的是值，不是响应式连接
+const copy = { ...state }
+
+//! 正确：直接读源对象，或明确这是不响应的快照
+const n = state.count
+
+// --- 现场 4：解构 props ---
+
+// 子组件里：
+// const props = defineProps<{ msg: string }>()
+//! 错误：setup 只跑一次，msg 是首帧快照
+// const { msg } = props
+//! 正确：toRef 保持实时读取
+// const msg = toRef(props, 'msg')
+//! Vue 3.5+ 解构语法糖（编译期自动 toRef）
+// const { msg } = defineProps<{ msg: string }>()
+
+// --- 现场 5：Vue 3 已修复的老坑 ---
+
+const arr = reactive([1, 2, 3])
+const obj = reactive<{ late?: number }>({})
+
+//! Vue 3 用 Proxy 拦截：下标赋值 / 新增属性都直接生效
+arr[0] = 99 // Vue 2 要 Vue.set(arr, 0, 99)
+obj.late = 1 // Vue 2 要 Vue.set(obj, 'late', 1)
+
+// --- 怎么快速排查 ---
+
+// 1. 界面不动时先看：读的是不是普通变量/普通对象（控制台打印 __v_isReactive）
+// 2. 用 computed 观察可疑值：不刷新说明依赖没建立
+// 3. 组件间共享状态别用「普通对象传参」，用 provide/inject 或 Pinia
+// 4. 深拷贝（structuredClone）后的对象一定不响应，需重新包裹

@@ -1,0 +1,19 @@
+// ============================================================
+// defineModel 子组件完整源码（教学代码）
+// ============================================================
+<script setup lang="ts">
+/**
+ * //! 一行完成三件事：声明 modelValue prop、update 事件、可写 ref
+ */
+const model = defineModel<string>({ default: '' })
+
+defineProps<{ label?: string }>()
+</script>
+
+<template>
+  <label>
+    <span>{{ label ?? 'defineModel' }}</span>
+    <!-- 直接 v-model 绑定 defineModel 返回的 ref -->
+    <input v-model="model">
+  </label>
+</template>

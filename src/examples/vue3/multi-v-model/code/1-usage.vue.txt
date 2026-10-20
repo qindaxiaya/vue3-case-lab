@@ -1,0 +1,41 @@
+// ============================================================
+// 多 v-model 教学片段（父 → 子 → 父）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 子组件：每一个 defineModel('key') 对应一个 v-model:key ---
+
+const title = defineModel<string>('title', { default: '' })
+const visible = defineModel<boolean>('visible', { default: false })
+
+//! 值转换用 set：等价于父级 .trim 修饰符，但逻辑收在子组件内
+const name = defineModel<string>('name', {
+  default: '',
+  set: (value) => value.trim(),
+})
+
+// --- 父组件：一个组件挂多个 v-model ---
+
+// <MultiModelForm
+//   v-model:title="title"
+//   v-model:name="name"
+//   v-model:visible="visible"
+// />
+
+// --- 内置修饰符 .trim / .number / .lazy ---
+
+// 父级写 v-model:title.trim="title"
+//! 子组件需要主动读修饰符才能生效：
+// const [title, titleMods] = defineModel<string>('title')
+// const model = computed({
+//   get: () => title.value,
+//   set: (v) => (title.value = titleMods.trim ? v.trim() : v),
+// })
+
+// --- 常见坑 ---
+
+//! 1. v-model:title 与 defineModel('title') 名字必须严格一致（大小写敏感）
+//! 2. 默认模型仍是 v-model（modelValue），自定义名不会自动兼容
+//! 3. 布尔模型别用 .trim（无意义），用 .lazy 可减少输入时的同步次数
+//! 4. 多个模型更新会触发父级多次渲染（Vue 会批量，但对象型模型可考虑合并成一个对象）
+//! 5. 用 v-model 绑定 props 会报错——必须走 defineModel 或 emit

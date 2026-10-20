@@ -1,0 +1,37 @@
+// ============================================================
+// 多 v-model 子组件完整源码
+// ============================================================
+<script setup lang="ts">
+/** 标题模型 ↔ 父级 v-model:title */
+const title = defineModel<string>('title', { default: '' })
+
+/** 名称模型：写入前自动 trim */
+const name = defineModel<string>('name', {
+  default: '',
+  set: (value) => value.trim(),
+})
+
+/** 可见性模型 ↔ 父级 v-model:visible */
+const visible = defineModel<boolean>('visible', { default: false })
+</script>
+
+<template>
+  <div>
+    <label>
+      标题
+      <input v-model="title">
+    </label>
+
+    <label>
+      名称
+      <input v-model="name">
+    </label>
+
+    <button @click="visible = !visible">
+      {{ visible ? '已打开' : '已关闭' }}
+    </button>
+
+    <!-- 子组件内部直接消费模型，不需要额外 prop -->
+    <div v-if="visible">弹层内容</div>
+  </div>
+</template>
