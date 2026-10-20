@@ -7,6 +7,12 @@ defineEmits<{
   /** 请求打开搜索弹窗 */
   (e: 'open'): void
 }>()
+
+// 快捷键文案跟随系统：Mac 显示 ⌘ K，其他平台显示 Ctrl K
+const isMac =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+const shortcut = isMac ? '⌘ K' : 'Ctrl K'
 </script>
 
 <template>
@@ -16,12 +22,31 @@ defineEmits<{
     aria-label="打开搜索"
     @click="$emit('open')"
   >
-    <span
+    <svg
       class="search-icon"
+      viewBox="0 0 20 20"
+      fill="none"
       aria-hidden="true"
-    >🔍</span>
-    <span class="search-placeholder">搜索案例、标签……</span>
-    <kbd class="search-kbd">Ctrl K</kbd>
+    >
+      <circle
+        cx="9"
+        cy="9"
+        r="5.25"
+        stroke="currentColor"
+        stroke-width="1.6"
+      />
+      <path
+        d="m13 13 3.2 3.2"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+      />
+    </svg>
+    <span class="search-placeholder">搜索案例或标签</span>
+    <kbd
+      class="search-kbd"
+      aria-hidden="true"
+    >{{ shortcut }}</kbd>
   </button>
 </template>
 
@@ -30,13 +55,13 @@ defineEmits<{
   flex: 1;
   /* 允许收缩到 0：否则固有宽度会顶破 375px 顶栏 */
   min-width: 0;
-  max-width: 20rem;
+  max-width: 18.5rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45em 0.7em 0.45em 0.9em;
+  gap: 0.45rem;
+  padding: 0.42em 0.55em 0.42em 0.8em;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   text-align: left;
   color: var(--text-secondary);
   background-color: var(--bg);
@@ -52,8 +77,12 @@ defineEmits<{
 
 .search-trigger:hover {
   color: var(--text);
-  border-color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
   background-color: var(--surface);
+
+  .search-icon {
+    color: var(--primary);
+  }
 }
 
 .search-trigger:active {
@@ -67,8 +96,11 @@ defineEmits<{
 }
 
 .search-icon {
-  font-size: 0.8rem;
-  opacity: 0.6;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: color var(--transition);
 }
 
 /* 占位文案：窄屏优先保留，超出省略 */
@@ -83,18 +115,23 @@ defineEmits<{
 /* 快捷键提示：窄屏隐藏，给输入框让位 */
 .search-kbd {
   flex-shrink: 0;
-  padding: 0 0.3rem;
+  padding: 0.06rem 0.32rem;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
+  line-height: 1.5;
   color: var(--text-secondary);
   background-color: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
 }
 
 @media (max-width: 560px) {
   .search-kbd {
     display: none;
+  }
+
+  .search-trigger {
+    font-size: 0.82rem;
   }
 }
 </style>

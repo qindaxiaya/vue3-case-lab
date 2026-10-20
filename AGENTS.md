@@ -92,6 +92,7 @@
 - ✅ 2026-10-20 main 硬门禁：ruleset `main-merge-gate` 要求 PR + 必需检查 `Type check, lint, test, build`，禁止强推/删除、只允许线性历史、审批数 0、无 bypass；实测直推报 GH013，红灯 PR 合并返回 `base branch policy prohibits the merge`
 - ✅ 2026-10-20 合并门禁案例 `practice/branch-protection`：规则集开关 + 直推/红灯 PR/绿灯 PR 四态演示；实测红灯检查 18s、绿灯 33s，375px 无横向溢出，代码区含规则集配置与验证命令
 - ✅ 2026-10-20 PDF 预览重构为 pdf.js + canvas：动态加载运行时与 worker，自建翻页/缩放/卸载；渲染前取消 `RenderTask`，卸载 destroy `loadingTask`。3 轮实测首屏 35~69ms（中位 45，含 worker 启动）、翻页 8~15ms、150% 缩放 6~11ms；快速连点、渲染中卸载、路由往返、375px 均无报错与页面横向溢出
+- ✅ 2026-10-20 顶栏精修：品牌标记、搜索与主题图标全部改为自绘 SVG；搜索框收窄到 18.5rem、快捷键按平台显示；滚动 4px 后切半透明毛玻璃 + 轻投影；移动端只留标记并补 `aria-label`。实测 1200 / 375 / 320 均无横向溢出，亮暗色正常、控制台无报错
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -129,6 +130,7 @@
 | 2026-10-20 | **顶栏搜索改为全局弹窗** | 点击搜索框或 Ctrl / Cmd + K 打开半透明遮罩弹窗；输入实时过滤标题/摘要/标签，结果卡片展示标题/分类/难度/摘要，上下键 + 回车或点击直达详情；打开时锁页面滚动，Esc / 点遮罩关闭；列表页恢复为纯分类筛选 |
 | 2026-10-20 | **详情页 tab 吸顶 + 回到顶部** | 说明/源码 tab 吸顶在顶栏下方（64px），长代码里随时切回说明；右下角浮动按钮滚动 480px 后出现，外圈显示阅读进度 |
 | 2026-10-20 | **全站动效统一** | 新增 `--ease-out`（快出慢收）替代统一 ease-out；路由切换只做淡入淡出（不加位移，保护吸顶与固定按钮）；按钮/卡片/chips/主题图标/搜索弹窗/面板切换全部补齐过渡，尊重 reduced-motion |
+| 2026-10-20 | **顶栏视觉精修，图标全部自绘 SVG** | 用户反馈页头需优化；emoji（📦/🔍/🌙）换成自绘标记与线性图标，避免各系统字形不一致；搜索框收窄、快捷键按平台显示；滚动后毛玻璃 + 投影；移动端隐藏站名但保留 `aria-label`，解决品牌链接无可访问名称的问题 |
 | 2026-10-20 | **回到顶部自绘缓动滚动** | 不用 `behavior: 'smooth'`（系统「减少动态」或环境差异会退化为瞬间跳转）；改用 requestAnimationFrame + 缓入缓出插值，滚动期间临时关闭 CSS scroll-behavior，用户滚轮/触屏时立即让出控制权 |
 | 2026-10-20 | **中文乱码从源头修复** | 根因是 PowerShell 5.1 `-NoProfile` + GBK 输出；用 opencode 全局插件在每条 bash 命令前注入 UTF-8 编码设置，替代「避开 shell / 读文件」的绕行方案；同时给交互式 PowerShell 加了 UTF-8 profile |
 | 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
