@@ -1,0 +1,50 @@
+// ============================================================
+// Web Worker 教学片段（主线程解冻）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 步骤一：创建 Worker 的三种方式 ---
+
+// 方式 A：独立文件（最常见）——worker.js 与页面同源
+const w1 = new Worker(new URL('./heavy.worker.ts', import.meta.url), { type: 'module' })
+//! Vite 语法：new URL(..., import.meta.url) 让构建器正确处理路径与打包
+
+// 方式 B：Blob URL 内联（零额外文件，适合案例/小逻辑演示）
+const source = `self.onmessage = (e) => {
+  const r = heavy(e.data)
+  self.postMessage(r)
+}`
+const w2 = new Worker(URL.createObjectURL(new Blob([source], { type: 'application/javascript' })))
+
+// 方式 C：Vite 专用后辍（最简，但绑定构建器）
+// import HeavyWorker from './heavy.worker?worker'
+// const w3 = new HeavyWorker()
+
+// --- 步骤二：双向通信（结构化克隆，不是共享内存） ---
+
+w1.postMessage({ units: 40_000_000, buffer: bigArray.buffer })
+
+w1.onmessage = (e) => {
+  //! 传递是「拷贝」：传大数组有拷贝成本；传 ArrayBuffer 时用 Transferable 零拷贝
+  console.log('worker 回传：', e.data)
+}
+
+//! Transferable：把 buffer 所有权直接转移（原线程失效）——大块数据首选
+// w1.postMessage({ buffer: bigArray.buffer }, [bigArray.buffer])
+
+// --- 步骤三：回收（必须做） ---
+
+// onUnmounted(() => {
+//   w1.terminate()                 // 终止线程
+//   URL.revokeObjectURL(blobUrl)   // 回收 Blob URL
+// })
+
+// --- 常见坑 ---
+
+// 1. Worker 里没有 window/document——不能直接操作 DOM（回传数据让主线程更新）
+// 2. 传函数/class 实例会直接报 DataCloneError（只能传结构化可克隆值）
+// 3. 通信是异步的：worker 适合「一次重计算」，细粒度高频通信反而更慢（通道有开销）
+// 4. 加载 worker 文件受同源限制（Blob/import 语法可绕过路径问题，跨域 CDN 不行）
+//
+// 何时该用：单次 >50ms 的纯计算（排序/加解密/图像像素处理/大 JSON 解析）。
+// 何时别用：短任务（通道开销 > 计算本身）、需要频繁同步状态的场景。
