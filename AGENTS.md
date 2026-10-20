@@ -52,7 +52,7 @@
 
 ## 当前进度
 
-- **阶段**：P0+P1 共 15 案例完成；工程实践类 8 案例进行中（1/8 完成，VueUse/fuse.js 已装）；「不造轮子」约定已固化
+- **阶段**：P0+P1 共 15 案例 + 工程实践类 8 案例全部完成（共 23 案例 / 6 分类）；「不造轮子」「框架案例抽离」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 已完成：
@@ -60,12 +60,10 @@
   - ✅ Task 1~4 脚手架/注册表/站点壳/案例页双 tab 工作台
   - ✅ P0 八案例：perf-observer / raf-loop / idle-schedule / lazy-image / virtual-list / watch-traps / async-suspense / reactive-inject
   - ✅ P1 七案例：infinite-scroll / resize-observer / mutation-observer / shallow-markraw / v-memo / teleport-layer / use-event-listener
-  - ✅ 分类 composables + practice（工程实践）；registry 排序复用 categories.ts（新增分类只改一处）
+  - ✅ 工程实践八案例：debounce-throttle（VueUse）/ command-palette（fuse.js）/ toast-queue / web-worker（Blob Worker）/ json-viewer / image-compress（canvas toBlob）/ ripple-button（WAAPI）/ color-picker（EyeDropper）
+  - ✅ 分类 composables + practice；registry 排序复用 categories.ts（新增分类只改一处）
   - ✅ landing 首页 + 信息架构精简（无侧边栏）+ 页面宽度根因修复
-  - ✅ 工程实践第 1 例：debounce-throttle（VueUse useDebounceFn/useThrottleFn + 脉冲波形对比）
-- 待做：
-  - 工程实践剩 7 例（用户已确认全做）：command-palette（Ctrl+K，fuse.js）/ toast-queue / web-worker / json-viewer / image-compress / ripple-button / color-picker——**按「不造轮子」约定写**
-  - Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
+- 待做：Task 14 收尾走查（全站手工清单 + 搜索/暗色/导航回归）→ tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
