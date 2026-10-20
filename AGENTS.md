@@ -57,7 +57,7 @@
 
 ## 当前进度
 
-- **阶段**：共 56 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 10 · vue3 16 · practice 23）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 62 案例 / 6 分类（composables 1 · observer 5 · virtual 3 · performance 11 · vue3 17 · practice 25）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -97,7 +97,8 @@
 - ✅ 2026-10-20 详情页新增「深入」tab：`notes.md` 经 `import.meta.glob` 懒加载 + Promise 缓存，marked 渲染五段、highlight.js 高亮代码块（新增 bash/yaml，vue/html 按 xml），含骨架屏/失败重试/空态；首个 H1 隐藏，三个 tab 支持左右键循环。机器验收：vitest 25/25（含全案例 notes 加载器用例）、type-check、lint、build；Chrome CDP 实测 raf-loop / teleport-layer 五段齐全、代码高亮、暗色代码主题生效、375px 表格内部横滚且页面无溢出、控制台零错误
 - ✅ 2026-10-20 Element Plus 试点：接入 unplugin-vue-components 按需引入（不整包注册），新增主题适配层 `_element.scss`（主色/字体/圆角/边框/背景对齐站点 token，含暗色与 Select 弹层）；3 个样板案例改用统一大号表单控件：vitest-gate（el-select）、debounce-throttle（el-input）、json-viewer（el-input textarea）
 - ✅ 2026-10-20 收尾合并：#9 文档 → #7 Element Plus → #8 Demo 尺寸（rebase 解决 `vitest-gate` / `AGENTS.md` 冲突）；56/56 案例完成尺寸统一，`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补 14px 字号与 40px 高度；CDP 1200/375 抽查 5 路由 + 下拉弹层 + 路由往返，无横向溢出与 console 错误
-- dev 地址：主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
+- ✅ 2026-10-20 批次 8（6 案例）：交叉观察器曝光统计 / 过渡组列表动画 / content-visibility 长列表 / 请求竞态与取消 / 乐观更新与回滚 / 虚拟网格；全部含 Demo + code + notes 五段。实测：IO 布局读取 888→0、回调 28；过渡组打乱耗时 360ms vs 普通替换 2ms；content-visibility 3000 条重建 99.4→49.9ms（1.99×，节点仍 3000）；请求竞态旧响应覆盖 2→0、最终结果串台→正确；乐观更新点击后 40ms 即变、失败约 300ms 回滚；虚拟网格 5000→44 节点、重建 97.5→14ms。vitest 25/25、type-check、lint、build 通过；1200/375 六路由无横向溢出、无 console 错误
+- dev 地址：当前主工作区 `http://localhost:5174/`（5173 被其他项目占用），列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
 

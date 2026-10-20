@@ -1,0 +1,35 @@
+// ============================================================
+// 交叉观察器做曝光统计（重点行用 //! 标记）
+// 阈值 50%：露出一半才算一次有效曝光
+// ============================================================
+
+const root = document.querySelector<HTMLElement>('.viewport')
+const cards = document.querySelectorAll<HTMLElement>('.card')
+const exposed = new Set<string>()
+
+//! root 指定滚动容器：不传默认用整个视口，内部滚动列表必须传
+const observer = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      // 1. intersectionRatio 是相交比例，不用自己算
+      console.log(entry.target, entry.intersectionRatio)
+
+      //! 2. 半可见即曝光；重复进入用 Set 去重
+      if (entry.intersectionRatio >= 0.5) {
+        exposed.add((entry.target as HTMLElement).dataset.id ?? '')
+      }
+    }
+  },
+  {
+    root,
+    //! 3. 阈值数组按需设：只关心一半可见时写 [0.5] 就够了
+    threshold: [0, 0.25, 0.5, 0.75, 1],
+  },
+)
+
+cards.forEach((card) => observer.observe(card))
+
+// 组件卸载 / 区块销毁时释放，否则观察器会一直持有节点
+// onUnmounted(() => observer.disconnect())
+
+// 只想观察一次（如图片懒加载）：回调里 observer.unobserve(entry.target)

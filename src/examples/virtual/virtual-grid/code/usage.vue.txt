@@ -1,0 +1,86 @@
+<!-- ============================================================
+     虚拟网格：只渲染可视区 + 上下缓冲行
+     前提：卡片高度固定、每行列数固定
+     ============================================================ -->
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+const TOTAL = 5000
+const COLUMNS = 4
+const ROW_HEIGHT = 90
+const VIEWPORT_HEIGHT = 480
+const BUFFER = 2
+
+const items = Array.from({ length: TOTAL }, (_, id) => ({ id }))
+const totalRows = Math.ceil(TOTAL / COLUMNS)
+const scrollTop = ref(0)
+
+//! 1. 用偏移量除以行高，得到当前第一行；上下各留 2 行缓冲，快速滚动不露白
+const startRow = computed(() => Math.max(0, Math.floor(scrollTop.value / ROW_HEIGHT) - BUFFER))
+const endRow = computed(() =>
+  Math.min(totalRows, startRow.value + Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT) + 1 + BUFFER * 2),
+)
+
+//! 2. 只切出窗口内的数据，模板里 v-for 的节点数就是几十个而不是 5000
+const rows = computed(() =>
+  Array.from({ length: endRow.value - startRow.value }, (_, index) => {
+    const row = startRow.value + index
+    return { row, items: items.slice(row * COLUMNS, (row + 1) * COLUMNS) }
+  }),
+)
+
+function onScroll(event: Event): void {
+  scrollTop.value = (event.target as HTMLElement).scrollTop
+}
+</script>
+
+<template>
+  <div
+    class="viewport"
+    @scroll.passive="onScroll"
+  >
+    //! <!-- 3. 外层用总高度撑出滚动条，窗口再绝对定位到 startRow 的位置 -->
+    <div :style="{ height: `${totalRows * ROW_HEIGHT}px`, position: 'relative' }">
+      <div
+        class="window"
+        :style="{ transform: `translateY(${startRow * ROW_HEIGHT}px)` }"
+      >
+        <div
+          v-for="row in rows"
+          :key="row.row"
+          class="row"
+        >
+          <div
+            v-for="item in row.items"
+            :key="item.id"
+            class="cell"
+          >
+            {{ item.id }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.viewport {
+  height: 480px;
+  overflow-y: auto;
+}
+
+.window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  height: 84px;
+  margin-bottom: 6px;
+}
+</style>

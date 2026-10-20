@@ -1,0 +1,77 @@
+<!-- ============================================================
+     过渡组：列表重排 / 增删的位移动画
+     重点：name 对应的 CSS 类；move 类必须加 transition
+     ============================================================ -->
+<script setup lang="ts">
+import { ref } from 'vue'
+
+interface Item {
+  id: number
+  label: string
+}
+
+const items = ref<Item[]>([
+  { id: 1, label: '任务 01' },
+  { id: 2, label: '任务 02' },
+  { id: 3, label: '任务 03' },
+])
+
+/** 打乱：数据顺序变了，过渡组负责补齐中间的位移 */
+function shuffle(): void {
+  items.value = [...items.value].reverse()
+}
+</script>
+
+<template>
+  <div>
+    <button @click="shuffle">打乱顺序</button>
+
+    //! <!-- 1. tag 指定真实标签；key 必须稳定，不能用索引 -->
+    <TransitionGroup
+      tag="ul"
+      name="list"
+      class="list"
+    >
+      //! <!-- 2. key 用数据 id：索引做 key 会让 Vue 复用错元素，动画和状态都会乱 -->
+      <li
+        v-for="item in items"
+        :key="item.id"
+        class="item"
+      >
+        {{ item.label }}
+      </li>
+    </TransitionGroup>
+  </div>
+</template>
+
+<style scoped>
+.list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*! 3. 位移过渡写在 move 类上；只写 enter/leave 不会补位 */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+/* 离场项脱离文档流，其余项才能立即开始补位 */
+.list-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+</style>
