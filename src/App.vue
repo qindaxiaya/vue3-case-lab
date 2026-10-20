@@ -5,6 +5,10 @@
 // ============================================================
 <script setup lang="ts">
 import AppHeader from './components/AppHeader.vue'
+import { useCodeTheme } from './composables/useCodeTheme'
+
+// 代码块暗色主题全站只初始化一次（代码区与 notes 共用）
+useCodeTheme()
 </script>
 
 <template>
