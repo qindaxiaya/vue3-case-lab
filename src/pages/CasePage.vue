@@ -16,6 +16,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { getCase } from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
+import NotesPanel from '../components/NotesPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -113,16 +114,29 @@ const keyPoints = computed<string[]>(() => {
 })
 
 // ============================================================
-// 说明 / 源码 tab
+// 说明 / 深入 / 源码 tab
 // ============================================================
 
+/** 内容 tab：说明（SBAC）→ 深入（notes.md）→ 源码 */
+type ContentTab = 'explain' | 'notes' | 'code'
+
+/** 键盘左右键的循环顺序 */
+const TAB_ORDER: ContentTab[] = ['explain', 'notes', 'code']
+
 /** 默认展示说明：先看演示与讲解，源码不占首屏 */
-const activeTab = ref<'explain' | 'code'>('explain')
+const activeTab = ref<ContentTab>('explain')
 /** tab 栏（吸顶容器）：切换后需要据此判断是否把页面拉回视野 */
 const tabsWrapEl = ref<HTMLElement | null>(null)
-/** 两个 tab 按钮：键盘左右切换后把焦点交给新选中的按钮 */
+/** 三个 tab 按钮：键盘左右切换后把焦点交给新选中的按钮 */
 const explainTabEl = ref<HTMLButtonElement | null>(null)
+const notesTabEl = ref<HTMLButtonElement | null>(null)
 const codeTabEl = ref<HTMLButtonElement | null>(null)
+/** tab key → 按钮引用（键盘循环用） */
+const tabElMap: Record<ContentTab, typeof explainTabEl> = {
+  explain: explainTabEl,
+  notes: notesTabEl,
+  code: codeTabEl,
+}
 
 // ============================================================
 // 平滑滚动（按钮/tab 这类主动操作，自己插值，保证一定平滑）
@@ -195,11 +209,11 @@ function smoothScrollTo(targetY: number, duration = 460): void {
 }
 
 /**
- * 切换说明 / 源码
- * 吸顶状态下如果已经滚到代码中段，切过去会从中间开始看；
+ * 切换说明 / 深入 / 源码
+ * 吸顶状态下如果已经滚到内容中段，切过去会从中间开始看；
  * 因此切换后把 tab 栏拉回顶部（只在已滚过 tab 栏时执行，避免页面跳动）
  */
-async function switchTab(next: 'explain' | 'code'): Promise<void> {
+async function switchTab(next: ContentTab): Promise<void> {
   if (activeTab.value === next) return
   activeTab.value = next
   await nextTick()
@@ -213,19 +227,18 @@ async function switchTab(next: 'explain' | 'code'): Promise<void> {
   }
 }
 
-/** tablist 键盘操作：左右键切换并移动焦点 */
-function onTabKeydown(
-  e: KeyboardEvent,
-  current: 'explain' | 'code',
-): void {
+/** tablist 键盘操作：左右键在三个 tab 间循环并移动焦点 */
+function onTabKeydown(e: KeyboardEvent, current: ContentTab): void {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
   e.preventDefault()
 
-  const next = current === 'explain' ? 'code' : 'explain'
+  const step = e.key === 'ArrowRight' ? 1 : -1
+  const index = TAB_ORDER.indexOf(current)
+  const next = TAB_ORDER[(index + step + TAB_ORDER.length) % TAB_ORDER.length]
+
   void switchTab(next)
   void nextTick(() => {
-    const target = next === 'explain' ? explainTabEl : codeTabEl
-    target.value?.focus()
+    tabElMap[next].value?.focus()
   })
 }
 
@@ -378,8 +391,8 @@ const explainBlocks = computed(() => {
         </div>
       </section>
 
-      <!-- ② 说明 / 源码：共用一个 tab 组，默认说明，源码按需切换 -->
-      <section aria-label="案例说明与源码">
+      <!-- ② 说明 / 深入 / 源码：共用一个 tab 组，默认说明，其余按需切换 -->
+      <section aria-label="案例说明、深入资料与源码">
         <div
           ref="tabsWrapEl"
           class="content-tabs-wrap"
@@ -387,7 +400,7 @@ const explainBlocks = computed(() => {
           <div
             class="content-tabs"
             role="tablist"
-            aria-label="说明与源码切换"
+            aria-label="说明、深入与源码切换"
           >
             <button
               id="tab-explain"
@@ -402,6 +415,20 @@ const explainBlocks = computed(() => {
               @keydown="onTabKeydown($event, 'explain')"
             >
               说明
+            </button>
+            <button
+              id="tab-notes"
+              ref="notesTabEl"
+              class="content-tab"
+              :class="{ 'content-tab--active': activeTab === 'notes' }"
+              type="button"
+              role="tab"
+              :aria-selected="activeTab === 'notes'"
+              aria-controls="panel-notes"
+              @click="switchTab('notes')"
+              @keydown="onTabKeydown($event, 'notes')"
+            >
+              深入
             </button>
             <button
               id="tab-code"
@@ -485,7 +512,22 @@ const explainBlocks = computed(() => {
           </div>
         </div>
 
-        <!-- 面板二：源码工作台（核心代码 / demo源码 两个子 tab） -->
+        <!-- 面板二：深入资料（notes.md 五段，懒加载） -->
+        <div
+          v-show="activeTab === 'notes'"
+          id="panel-notes"
+          class="content-panel"
+          role="tabpanel"
+          aria-labelledby="tab-notes"
+        >
+          <NotesPanel
+            :category-id="item.categoryId"
+            :case-id="item.meta.id"
+            :active="activeTab === 'notes'"
+          />
+        </div>
+
+        <!-- 面板三：源码工作台（核心代码 / demo源码 两个子 tab） -->
         <div
           v-show="activeTab === 'code'"
           id="panel-code"

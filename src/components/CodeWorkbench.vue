@@ -10,25 +10,8 @@
 // ============================================================
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import hljs from 'highlight.js/lib/core'
-import typescript from 'highlight.js/lib/languages/typescript'
-import javascript from 'highlight.js/lib/languages/javascript'
-import xml from 'highlight.js/lib/languages/xml'
-import css from 'highlight.js/lib/languages/css'
-import json from 'highlight.js/lib/languages/json'
-import 'highlight.js/styles/github.css'
-// 暗色代码主题：以 ?url 导入为独立资源地址（构建时输出 CSS asset），
-// 主题切换时用 <link> 启停，避免亮/暗两套样式表同时生效互相覆盖。
-import darkHref from 'highlight.js/styles/github-dark.css?url'
-import { useTheme } from '../composables/useTheme'
+import { hljs } from '../utils/code-highlight'
 import type { CodeTab } from '../examples/registry'
-
-// 按需注册语言（控制体积）
-hljs.registerLanguage('typescript', typescript)
-hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('xml', xml)
-hljs.registerLanguage('css', css)
-hljs.registerLanguage('json', json)
 
 const props = defineProps<{
   /** 核心代码片段 tabs（code/*.txt，带 //! 重点行） */
@@ -38,31 +21,6 @@ const props = defineProps<{
   /** 演示 tab key（Demo emit 上报）：变化时核心代码联动到同前缀的片段 */
   demoKey?: string
 }>()
-
-const { isDark } = useTheme()
-
-// ---------- 暗色代码主题（动态 link 启停，避免双主题样式表互相覆盖） ----------
-// 注意：不要用 import.meta.glob('../../../node_modules/...')——从 src/components
-// 出发会越界到项目根之外，匹配为空，暗色主题将静默失效。
-let darkLink: HTMLLinkElement | null = null
-
-watch(
-  isDark,
-  (dark) => {
-    if (dark) {
-      if (!darkLink) {
-        darkLink = document.createElement('link')
-        darkLink.rel = 'stylesheet'
-        darkLink.href = darkHref
-        document.head.appendChild(darkLink)
-      }
-      darkLink.disabled = false
-    } else if (darkLink) {
-      darkLink.disabled = true
-    }
-  },
-  { immediate: true },
-)
 
 // ---------- tab 状态 ----------
 const activeKey = ref('')

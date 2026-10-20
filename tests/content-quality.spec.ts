@@ -10,6 +10,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { allCases, filterCases } from '../src/examples/registry'
+import { loadCaseNotes, stripNotesTitle } from '../src/examples/notes'
 
 /** src/examples 的绝对路径（按测试文件位置推导，避免依赖启动目录） */
 const EXAMPLES_DIR = fileURLToPath(new URL('../src/examples', import.meta.url))
@@ -91,5 +92,26 @@ describe('案例内容质量', () => {
         expect(content, `${name} 的 notes.md 缺少第 ${i} 段`).toContain(`## ${i}.`)
       }
     }
+  })
+
+  it('每个案例的 notes 都能被详情页加载器读到，且五段齐全', async () => {
+    for (const item of allCases) {
+      const name = `${item.categoryId}/${item.meta.id}`
+      const content = await loadCaseNotes(item.categoryId, item.meta.id)
+
+      expect(content.length, `${name} 的 notes 加载为空`).toBeGreaterThan(0)
+      for (let i = 1; i <= 5; i++) {
+        expect(content, `${name} 的 notes 缺少第 ${i} 段`).toContain(`## ${i}.`)
+      }
+    }
+  })
+
+  it('stripNotesTitle 去掉首个 H1，保留正文五段', () => {
+    const raw = '# 案例标题\n\n## 1. 现象 / 场景\n\n正文内容\n'
+    const result = stripNotesTitle(raw)
+
+    expect(result.startsWith('# ')).toBe(false)
+    expect(result).toContain('## 1. 现象 / 场景')
+    expect(result).toContain('正文内容')
   })
 })

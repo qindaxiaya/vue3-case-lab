@@ -4,7 +4,7 @@
 
 ## 项目速览
 
-- **定位**：本地运行的 Vue 3 高级案例速查站——分类导航 + 搜索，每个案例含可交互演示、带中文注释的核心代码、可下钻完整源码，以及站外查阅的 `notes.md` 五段式原理资料（私人收藏用）
+- **定位**：本地运行的 Vue 3 高级案例速查站——分类导航 + 搜索，每个案例含可交互演示、带中文注释的核心代码、可下钻完整源码，以及详情页「深入」tab 的五段式原理资料（`notes.md` 懒加载）
 - **技术栈**：Vite + Vue 3.5（`<script setup lang="ts">`）+ TypeScript strict + Sass（SCSS，CSS 变量主题）+ Vue Router + highlight.js + marked + vitest；包管理 npm
 - **常用命令**：
   - `npm run dev` — 启动开发服务器
@@ -27,7 +27,7 @@
   src/examples/<category>/<case-id>/
   ├── Demo.vue        # 可交互演示（scoped SCSS、内部关键逻辑中文注释、不引用站点内部组件）
   ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary/sell/explain）
-  ├── notes.md        # 五段式案例资料（不参与 registry、不展示；模板见 docs/templates/notes.md）
+  ├── notes.md        # 五段式案例资料（详情页「深入」tab 懒加载；模板见 docs/templates/notes.md）
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
 - **案例完成标准（2026-10-20 用户拍板）**：`docs/case-definition-of-done.md` 为唯一验收源，覆盖 Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程。新案例严格执行，存量按批次渐进补齐；豁免必须写进 notes.md 第 5 段。
@@ -93,6 +93,7 @@
 - ✅ 2026-10-20 合并门禁案例 `practice/branch-protection`：规则集开关 + 直推/红灯 PR/绿灯 PR 四态演示；实测红灯检查 18s、绿灯 33s，375px 无横向溢出，代码区含规则集配置与验证命令
 - ✅ 2026-10-20 PDF 预览重构为 pdf.js + canvas：动态加载运行时与 worker，自建翻页/缩放/卸载；渲染前取消 `RenderTask`，卸载 destroy `loadingTask`。3 轮实测首屏 35~69ms（中位 45，含 worker 启动）、翻页 8~15ms、150% 缩放 6~11ms；快速连点、渲染中卸载、路由往返、375px 均无报错与页面横向溢出
 - ✅ 2026-10-20 顶栏精修：品牌标记、搜索与主题图标全部改为自绘 SVG；搜索框收窄到 18.5rem、快捷键按平台显示；滚动 4px 后切半透明毛玻璃 + 轻投影；移动端只留标记并补 `aria-label`。实测 1200 / 375 / 320 均无横向溢出，亮暗色正常、控制台无报错
+- ✅ 2026-10-20 详情页新增「深入」tab：`notes.md` 经 `import.meta.glob` 懒加载 + Promise 缓存，marked 渲染五段、highlight.js 高亮代码块（新增 bash/yaml，vue/html 按 xml），含骨架屏/失败重试/空态；首个 H1 隐藏，三个 tab 支持左右键循环。机器验收：vitest 25/25（含全案例 notes 加载器用例）、type-check、lint、build；Chrome CDP 实测 raf-loop / teleport-layer 五段齐全、代码高亮、暗色代码主题生效、375px 表格内部横滚且页面无溢出、控制台零错误
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -121,7 +122,7 @@
 | 2026-10-20 | **SFC 顶层注释禁止出现 `<Tag>`** | 顶层 `//` 注释里的 `<KeepAlive>`/`<Transition>` 会被当模板标签 → "Element is missing end tag"；用纯文字描述 |
 | 2026-10-20 | **禁止用 PowerShell Set-Content 写源码** | 默认 ANSI 会吞换行/毁中文（本会话踩过，靠 git checkout 恢复）；统一用 write/edit 工具 |
 | 2026-10-20 | **案例完成标准 DoD 固化** | 7 类标准写入 `docs/case-definition-of-done.md`：Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程；新案例严格执行、存量渐进；豁免写 notes 第 5 段 |
-| 2026-10-20 | **notes.md 五段式，且不接入页面** | 现象/场景 → 原理 → 关键代码（标 3 处为什么）→ 数据对比（实测+方法）→ 追问与边界；作为案例资料存放在案例目录，不参与 registry；非性能案例第 4 段允许行为指标替代 |
+| 2026-10-20 | **notes.md 五段式，接入详情页「深入」tab** | 现象/场景 → 原理 → 关键代码（标 3 处为什么）→ 数据对比（实测+方法）→ 追问与边界；用 `import.meta.glob` 懒加载并缓存，不进 registry 同步字段；首个 H1 隐藏，搜索暂不索引正文；非性能案例第 4 段允许行为指标替代 |
 | 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；`summary` 一句话 ≤40 字，要有具体场景与做法（能直接当面试答案）；55 个存量 meta 全部按此标准重写 |
 | 2026-10-20 | **案例说明统一 SBAC 四段** | 场景（新手真实遇到）/ 背景（大白话讲原理）/ 做法（案例怎么解决）/ 结论（记住什么、何时用）；写在 meta.explain，每段 1–3 句、少术语多类比；54 个案例全部补齐，未填时回退到 sell + 代码要点 |
 | 2026-10-20 | **详情页源码默认收起** | 先看演示与 SBAC 说明，需要时再展开；避免一进页就被几百行代码劝退 |
