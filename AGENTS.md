@@ -79,13 +79,14 @@
 - ✅ 2026-10-20 详情页说明改 SBAC（场景/背景/做法/结论），54 个案例全部补齐；源码区默认收起，先看演示与说明
 - ✅ 2026-10-20 质量批次 4：修正 pinia（重复 store 名）/ history-guard（allowed、二次 popstate）/ route-rbac（user、computed）/ route-transition（direction）/ keep-alive-lru（ref）教学代码
 - ✅ 2026-10-20 质量批次 5：4 个新案例 notes 五段 + 实测（time-slicing 切片/全量、virtual-variable DOM 9/2000、chat-scroll 未读/吸底、pull-refresh 刷新/加载）+ 375px 与刷新验收
-- ✅ 2026-10-20 质量批次 6：其余 50 个存量案例 notes.md 五段补齐（54/54 全覆盖）；全部含现象/SBAC 式原理/关键代码/实测或行为指标/追问边界；脚本校验 54 篇均含 1~5 段；vitest 18/18、type-check、lint、build 通过
+- ✅ 2026-10-20 质量批次 6：其余 50 个存量案例 notes.md 五段补齐（当时 54/54，拆分 raf-throttle 后 55/55 全覆盖）；全部含现象/SBAC 式原理/关键代码/实测或行为指标/追问边界；脚本校验 55 篇均含 1~5 段；vitest、type-check、lint、build 通过
 - ✅ 2026-10-20 说明区改为「说明 / 源码」tab 组，默认说明，源码默认隐藏；raf-loop 拆为逐帧动画 + 逐帧合并高频渲染（共 55 案例）
 - ✅ 2026-10-20 顶栏搜索改为全局弹窗：半透明遮罩 + 实时结果卡片，支持 Ctrl/Cmd+K、上下键、回车直达详情；列表页回归纯分类筛选
 - ✅ 2026-10-20 批次 7 机器验收：55 案例 / 167 个路由与模块请求全部 200；新增 `tests/content-quality.spec.ts` 五项门禁（SBAC / 长度 / 禁缩写 / notes 五段 / 搜索自洽），vitest 23/23
 - ✅ 2026-10-20 详情页体验：回到顶部浮动按钮（滚动 480px 出现，带阅读进度环与缩放上浮动画）；说明/源码 tab 吸顶（top 64px）+ 左右键切换 + 切换后回到 tab 位置
 - ✅ 2026-10-20 全站动效统一：`--ease-out` 快出慢收曲线；路由切换淡入淡出；卡片/筛选 chips/主题图标/搜索弹窗/面板切换补齐过渡；源码段数徽章仅多段时显示
-- 待做：Task 14 人工走查（375px / 暗色 / 键盘上下键 / 搜索弹窗交互 / 返回列表）→ 更新 AGENTS 结项 → tag v0.1
+- ✅ 2026-10-20 Task 14 机器走查：55/55 案例直连 + 375px 双视口无横向溢出；说明/源码默认态与切换、搜索弹窗（点击 / Ctrl+K / ↑↓ / 回车 / Esc）、分类筛选与返回保留、主题持久化、无效路由全部通过；发现并修复返回列表滚动位置被旧页面高度截断（`scrollBehavior` 改读 history.state.scroll + 等新页高度足够再 instant 恢复）
+- 待做：用户在 dev 人工走查（375px / 暗色 / 键盘 / 搜索弹窗 / 返回列表）→ 结项 → tag v0.1
 - dev 地址：`http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -123,3 +124,4 @@
 | 2026-10-20 | **详情页 tab 吸顶 + 回到顶部** | 说明/源码 tab 吸顶在顶栏下方（64px），长代码里随时切回说明；右下角浮动按钮滚动 480px 后出现，外圈显示阅读进度 |
 | 2026-10-20 | **全站动效统一** | 新增 `--ease-out`（快出慢收）替代统一 ease-out；路由切换只做淡入淡出（不加位移，保护吸顶与固定按钮）；按钮/卡片/chips/主题图标/搜索弹窗/面板切换全部补齐过渡，尊重 reduced-motion |
 | 2026-10-20 | **回到顶部自绘缓动滚动** | 不用 `behavior: 'smooth'`（系统「减少动态」或环境差异会退化为瞬间跳转）；改用 requestAnimationFrame + 缓入缓出插值，滚动期间临时关闭 CSS scroll-behavior，用户滚轮/触屏时立即让出控制权 |
+| 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
