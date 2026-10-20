@@ -1,0 +1,97 @@
+// ============================================================
+// 命令面板教学片段（fuse.js + 原生键盘事件）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+import Fuse from 'fuse.js'
+import { computed, nextTick, ref } from 'vue'
+
+// --- 步骤一：fuse.js 建索引（配置决定「手感」） ---
+
+interface Command {
+  id: string
+  label: string
+  group: string
+  hint: string
+}
+
+const commands: Command[] = [
+  { id: 'top', label: '滚动到页面顶部', group: '导航', hint: 'scrollTo' },
+  { id: 'copy', label: '复制当前页面地址', group: '操作', hint: 'Clipboard' },
+]
+
+const fuse = new Fuse(commands, {
+  //! keys 支持权重：label 是主键，group/hint 弱召回
+  keys: [
+    { name: 'label', weight: 0.7 },
+    { name: 'group', weight: 0.2 },
+    { name: 'hint', weight: 0.1 },
+  ],
+  //! threshold：0 完全匹配 / 1 全匹配；0.3~0.4 是「有容错但不噪声」的甜点
+  threshold: 0.4,
+  //! includeMatches：返回命中区间 indices——用来做命中字符高亮
+  includeMatches: true,
+  //! ignoreLocation：关键词出现在字符串任何位置都算（默认只在开头附近才高分）
+  ignoreLocation: true,
+})
+
+// --- 步骤二：搜索 + 高亮分段 ---
+
+const keyword = ref('')
+
+const results = computed(() =>
+  keyword.value.trim() ? fuse.search(keyword.value).map((r) => r.item) : commands,
+)
+
+//! matches.indices 是 [start, end] 区间数组——按区间切段渲染 <mark>
+// function segments(label, ranges) { ... 见 Demo 内实现 ... }
+
+// --- 步骤三：键盘导航（关键：捕获阶段 + preventDefault） ---
+
+const open = ref(false)
+const selected = ref(0)
+
+function onKeydown(e: KeyboardEvent): void {
+  //! Ctrl/Cmd+K 会被 Chrome 抢去聚焦地址栏——
+  //! 必须 addEventListener(..., true) 捕获阶段 + preventDefault 才拦得住
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    open.value = !open.value
+    return
+  }
+  if (!open.value) return
+
+  switch (e.key) {
+    case 'Escape':
+      open.value = false
+      break
+    case 'ArrowDown':
+      e.preventDefault() // 防止页面滚动
+      selected.value = (selected.value + 1) % results.value.length
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      selected.value = (selected.value - 1 + results.value.length) % results.value.length
+      break
+    case 'Enter':
+      e.preventDefault()
+      // 执行选中项…
+      break
+  }
+}
+
+window.addEventListener('keydown', onKeydown, true)
+// onUnmounted(() => window.removeEventListener('keydown', onKeydown, true))
+
+// --- 步骤四：打开后自动聚焦 ---
+
+async function focusInput(): Promise<void> {
+  await nextTick() //! 等 v-if 的 DOM 挂载完再 focus（否则 ref 是 null）
+  // inputEl.value?.focus()
+}
+
+// --- 生态提示 ---
+
+// 现成方案：cmdk（React）/ kbar（React）/ vue-command-palette（Vue）
+// 自建收益：完全掌控交互与体积；fuse.js 是模糊搜索事实标准（~10KB）
+// 无障碍：容器 role="dialog" aria-modal，列表 role="listbox" + aria-activedescendant
