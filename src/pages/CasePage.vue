@@ -4,7 +4,14 @@
 // 说明与源码共用一个 tab 组：默认说明，源码按需切换查看
 // ============================================================
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { getCase } from '../examples/registry'
@@ -111,6 +118,76 @@ const keyPoints = computed<string[]>(() => {
 
 /** 默认展示说明：先看演示与讲解，源码不占首屏 */
 const activeTab = ref<'explain' | 'code'>('explain')
+/** tab 栏（吸顶容器）：切换后需要据此判断是否把页面拉回视野 */
+const tabsWrapEl = ref<HTMLElement | null>(null)
+/** 两个 tab 按钮：键盘左右切换后把焦点交给新选中的按钮 */
+const explainTabEl = ref<HTMLButtonElement | null>(null)
+const codeTabEl = ref<HTMLButtonElement | null>(null)
+
+/**
+ * 切换说明 / 源码
+ * 吸顶状态下如果已经滚到代码中段，切过去会从中间开始看；
+ * 因此切换后把 tab 栏拉回顶部（只在已滚过 tab 栏时执行，避免页面跳动）
+ */
+async function switchTab(next: 'explain' | 'code'): Promise<void> {
+  if (activeTab.value === next) return
+  activeTab.value = next
+  await nextTick()
+
+  const wrap = tabsWrapEl.value
+  if (!wrap) return
+  // 顶栏高 64px，留出吸顶位置
+  const target = wrap.getBoundingClientRect().top + window.scrollY - 64
+  if (window.scrollY > target) {
+    window.scrollTo({ top: target, behavior: 'smooth' })
+  }
+}
+
+/** tablist 键盘操作：左右键切换并移动焦点 */
+function onTabKeydown(
+  e: KeyboardEvent,
+  current: 'explain' | 'code',
+): void {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  e.preventDefault()
+
+  const next = current === 'explain' ? 'code' : 'explain'
+  void switchTab(next)
+  void nextTick(() => {
+    const target = next === 'explain' ? explainTabEl : codeTabEl
+    target.value?.focus()
+  })
+}
+
+// ============================================================
+// 回到顶部：滚动超过一屏后出现
+// ============================================================
+
+/** 按钮是否显示（只在跨越阈值时写一次，避免每个滚动事件都触发更新） */
+const showBackTop = ref(false)
+
+/** 滚动监听：passive 不阻塞滚动，只在可见性翻转时更新状态 */
+function onWindowScroll(): void {
+  const visible = window.scrollY > 480
+  if (visible !== showBackTop.value) {
+    showBackTop.value = visible
+  }
+}
+
+/** 平滑回到顶部（基础样式已设 scroll-behavior，这里显式指定更稳） */
+function backToTop(): void {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  // 刷新时可能已处于滚动位置，先同步一次
+  onWindowScroll()
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onWindowScroll)
+})
 
 // ============================================================
 // SBAC 说明：场景 / 背景 / 做法 / 结论
@@ -219,34 +296,44 @@ const explainBlocks = computed(() => {
       <!-- ② 说明 / 源码：共用一个 tab 组，默认说明，源码按需切换 -->
       <section aria-label="案例说明与源码">
         <div
-          class="content-tabs"
-          role="tablist"
-          aria-label="说明与源码切换"
+          ref="tabsWrapEl"
+          class="content-tabs-wrap"
         >
-          <button
-            id="tab-explain"
-            class="content-tab"
-            :class="{ 'content-tab--active': activeTab === 'explain' }"
-            type="button"
-            role="tab"
-            :aria-selected="activeTab === 'explain'"
-            aria-controls="panel-explain"
-            @click="activeTab = 'explain'"
+          <div
+            class="content-tabs"
+            role="tablist"
+            aria-label="说明与源码切换"
           >
-            说明
-          </button>
-          <button
-            id="tab-code"
-            class="content-tab"
-            :class="{ 'content-tab--active': activeTab === 'code' }"
-            type="button"
-            role="tab"
-            :aria-selected="activeTab === 'code'"
-            aria-controls="panel-code"
-            @click="activeTab = 'code'"
-          >
-            源码
-          </button>
+            <button
+              id="tab-explain"
+              ref="explainTabEl"
+              class="content-tab"
+              :class="{ 'content-tab--active': activeTab === 'explain' }"
+              type="button"
+              role="tab"
+              :aria-selected="activeTab === 'explain'"
+              aria-controls="panel-explain"
+              @click="switchTab('explain')"
+              @keydown="onTabKeydown($event, 'explain')"
+            >
+              说明
+            </button>
+            <button
+              id="tab-code"
+              ref="codeTabEl"
+              class="content-tab"
+              :class="{ 'content-tab--active': activeTab === 'code' }"
+              type="button"
+              role="tab"
+              :aria-selected="activeTab === 'code'"
+              aria-controls="panel-code"
+              @click="switchTab('code')"
+              @keydown="onTabKeydown($event, 'code')"
+            >
+              源码
+              <span class="content-tab-count">{{ item.codeTabs.length }}</span>
+            </button>
+          </div>
         </div>
 
         <!-- 面板一：案例说明（SBAC 四段；未补齐时回退到卖点 + 代码要点） -->
@@ -321,6 +408,19 @@ const explainBlocks = computed(() => {
           />
         </div>
       </section>
+
+      <!-- 回到顶部：滚动超过一屏后浮现，固定在右下角 -->
+      <Transition name="back-top">
+        <button
+          v-if="showBackTop"
+          class="back-top"
+          type="button"
+          aria-label="回到顶部"
+          @click="backToTop"
+        >
+          <span aria-hidden="true">↑</span>
+        </button>
+      </Transition>
     </template>
   </div>
 </template>
@@ -441,17 +541,33 @@ const explainBlocks = computed(() => {
 
 /* ---------- 说明 / 源码 tab 组 ---------- */
 
+/* 吸顶容器：滚动查看长代码时 tab 保持可见，随时切回说明 */
+.content-tabs-wrap {
+  position: sticky;
+  top: 64px; /* 顶栏高度 */
+  z-index: 10;
+  margin: -0.4rem 0 0.9rem;
+  padding: 0.45rem 0;
+  /* 半透明 + 模糊：内容从下方滚过时不与 tab 文字互相干扰 */
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
 .content-tabs {
   display: inline-flex;
   gap: 0.2rem;
   padding: 0.25rem;
-  margin-bottom: 1.1rem;
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
+  box-shadow: var(--shadow-soft);
 }
 
 .content-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
   padding: 0.34rem 1.15rem;
   font-size: 0.86rem;
   font-family: inherit;
@@ -462,21 +578,44 @@ const explainBlocks = computed(() => {
   cursor: pointer;
   transition:
     color var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    box-shadow var(--transition);
 }
 
 .content-tab:hover {
   color: var(--text);
+  background-color: var(--bg);
 }
 
-.content-tab--active {
+.content-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.content-tab--active,
+.content-tab--active:hover {
   color: #fff;
   font-weight: 500;
   background-color: var(--primary);
+  box-shadow: var(--shadow-soft);
 }
 
-.content-tab--active:hover {
+/* 「源码」后的代码段数：小号胶囊，提示有多少段可看 */
+.content-tab-count {
+  min-width: 1.15rem;
+  padding: 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.15rem;
+  text-align: center;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background-color: var(--bg);
+}
+
+.content-tab--active .content-tab-count {
   color: #fff;
+  background-color: rgb(255 255 255 / 0.22);
 }
 
 /* 演示卡：宽屏下给足留白，避免显得局促 */
@@ -656,6 +795,57 @@ const explainBlocks = computed(() => {
   }
 }
 
+/* ---------- 回到顶部 ---------- */
+
+.back-top {
+  position: fixed;
+  right: 1.75rem;
+  bottom: 1.75rem;
+  z-index: 30;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  color: var(--primary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  box-shadow: var(--shadow-soft-lg);
+  cursor: pointer;
+  transition:
+    transform var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.back-top:hover {
+  transform: translateY(-2px);
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
+.back-top:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--primary-soft),
+    var(--shadow-soft-lg);
+}
+
+/* 出现/消失：淡入 + 轻微上移 */
+.back-top-enter-active,
+.back-top-leave-active {
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.back-top-enter-from,
+.back-top-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 /* ---------- 移动端 ---------- */
 
 @media (max-width: 768px) {
@@ -672,7 +862,15 @@ const explainBlocks = computed(() => {
 
   .content-tab {
     flex: 1;
+    justify-content: center;
     padding: 0.45rem 1rem;
+  }
+
+  .back-top {
+    right: 1rem;
+    bottom: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .demo-card {
