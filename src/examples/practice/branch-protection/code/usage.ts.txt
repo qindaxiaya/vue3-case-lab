@@ -1,0 +1,104 @@
+// ============================================================
+// 合并门禁教学片段
+// 目标：main 只接受「PR + 必需检查通过」的改动
+// 规则集（Ruleset）和经典分支保护（Branch protection）是同一类东西，
+// 新仓库优先用规则集，配置更集中、支持批量条件。
+// ============================================================
+
+// --- 1. 先让 Actions 产出检查 ---
+
+// .github/workflows/ci.yml
+// name: CI
+// on:
+//   push:
+//     branches: [main]
+//   pull_request:
+// jobs:
+//   verify:
+//     name: Type check, lint, test, build   ← 这个 name 就是检查名
+//     runs-on: ubuntu-24.04
+//     steps:
+//       - uses: actions/checkout@v5
+//       - uses: actions/setup-node@v5
+//         with:
+//           node-version: 22
+//           cache: npm
+//       - run: npm ci
+//       - run: npm run type-check
+//       - run: npm run lint
+//       - run: npx vitest run
+//       - run: npm run build
+
+//! workflow 的 name（CI）不是检查名；规则集要填的是 job 的 name
+//! 只在 push 上触发、不在 pull_request 上触发，PR 里就等不到这个检查
+
+// --- 2. 创建规则集 ---
+
+// ruleset.json（用 gh api 提交，避免手点漏项）
+export const mainRuleset = {
+  name: 'main-merge-gate',
+  target: 'branch',
+  enforcement: 'active',
+  conditions: {
+    ref_name: {
+      include: ['~DEFAULT_BRANCH'],
+      exclude: [],
+    },
+  },
+  rules: [
+    // 禁止删除 main、禁止强推（改写历史）
+    { type: 'deletion' },
+    { type: 'non_fast_forward' },
+
+    // 只允许线性历史：合并时选 squash 或 rebase
+    { type: 'required_linear_history' },
+
+    {
+      type: 'pull_request',
+      parameters: {
+        //! 单人仓库写 0：GitHub 不允许给自己的 PR 点「通过」
+        //! 写 1 又没有别的成员时，自己的 PR 会永远合不进去
+        required_approving_review_count: 0,
+        dismiss_stale_reviews_on_push: true,
+        require_code_owner_review: false,
+        require_last_push_approval: false,
+        required_review_thread_resolution: false,
+        allowed_merge_methods: ['squash', 'rebase'],
+      },
+    },
+
+    {
+      type: 'required_status_checks',
+      parameters: {
+        // 要求 PR 分支先追上 main，避免「本地绿、合并后红」
+        strict_required_status_checks_policy: true,
+        required_status_checks: [
+          //! 必须和 job 的 name 完全一致，大小写、逗号、空格都算
+          { context: 'Type check, lint, test, build' },
+        ],
+      },
+    },
+  ],
+} as const
+
+// 提交规则集（PowerShell / Bash 都可用的 gh 命令）
+// gh api -X POST repos/$OWNER/$REPO/rulesets --input ruleset.json
+
+//! 不写 bypass_actors，管理员也绕不过；要留后门必须显式配置
+//! 私有免费仓库不支持这套功能，API 会返回 403，需要转公开或升级付费计划
+
+// --- 3. 验证门禁真的生效 ---
+
+// 查看当前分支命中的规则
+// gh api repos/$OWNER/$REPO/rules/branches/main
+
+// 直接推 main：应当被服务端拒绝
+// git push origin main
+// remote: error: GH013: Repository rule violations found for refs/heads/main.
+// remote: - Changes must be made through a pull request.
+// remote: - Required status check "Type check, lint, test, build" is expected.
+
+// 走 PR：红灯时合并会失败，绿灯后才能合并
+// gh pr create --base main --head feat/xxx
+// gh pr checks --watch
+// gh pr merge --squash --delete-branch
