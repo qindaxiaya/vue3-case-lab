@@ -1,7 +1,7 @@
 // ============================================================
-// 全站顶栏（VitePress 规格：64px 高 + 底部 1px 分隔线）
-// 左：站点名（回首页）+「案例」导航；右：搜索入口 + 暗色切换
-// 搜索为全局弹窗：点击入口或按 Ctrl / Cmd + K 打开
+// 全站顶栏（64px 高）
+// 左：品牌标记 + 站名 +「案例」导航；右：搜索入口 + 主题切换
+// 滚动后切半透明毛玻璃，让内容从顶栏下方「透」出来
 // ============================================================
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
@@ -11,6 +11,8 @@ import ThemeToggle from './ThemeToggle.vue'
 
 /** 搜索弹窗开关（本组件持有，弹窗与入口都受控） */
 const searchOpen = ref(false)
+/** 页面是否已滚离顶部：决定顶栏是否加毛玻璃与投影 */
+const scrolled = ref(false)
 
 /**
  * 全局快捷键：Ctrl + K（macOS 为 Cmd + K）打开搜索
@@ -23,27 +25,79 @@ function onGlobalKeydown(e: KeyboardEvent): void {
   }
 }
 
+/** 滚动监听只关心「是否离开顶部」，用 boolean 避免频繁触发更新 */
+function onScroll(): void {
+  scrolled.value = window.scrollY > 4
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
 <template>
-  <header class="app-header">
+  <header
+    class="app-header"
+    :class="{ 'app-header--scrolled': scrolled }"
+  >
     <div class="header-inner">
-      <!-- 站点名：VitePress 风格 logo 位 + 文字 -->
+      <!-- 品牌：自绘「层叠卡片」标记，比 emoji 在各系统上更稳定 -->
       <RouterLink
         to="/"
         class="site-brand"
+        aria-label="Vue 3 案例库首页"
       >
         <span
-          class="site-logo"
+          class="site-mark"
           aria-hidden="true"
-        >📦</span>
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <rect
+              x="3.5"
+              y="3.5"
+              width="7"
+              height="7"
+              rx="2"
+              fill="currentColor"
+            />
+            <rect
+              x="13.5"
+              y="3.5"
+              width="7"
+              height="7"
+              rx="2"
+              fill="currentColor"
+              opacity="0.55"
+            />
+            <rect
+              x="3.5"
+              y="13.5"
+              width="7"
+              height="7"
+              rx="2"
+              fill="currentColor"
+              opacity="0.55"
+            />
+            <rect
+              x="13.5"
+              y="13.5"
+              width="7"
+              height="7"
+              rx="2"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
         <span class="site-name">Vue 3 案例库</span>
       </RouterLink>
 
@@ -80,11 +134,26 @@ onBeforeUnmount(() => {
   /* 固定高 + 底部分隔线（VitePress nav 规格） */
   height: 64px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  background-color: var(--surface);
   position: sticky;
   top: 0;
   z-index: 20;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+/* 滚动后：半透明 + 毛玻璃，内容从顶栏下方透出层次 */
+.app-header--scrolled {
+  background-color: color-mix(in srgb, var(--surface) 82%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.06);
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: saturate(180%) blur(14px);
+  }
 }
 
 .header-inner {
@@ -106,7 +175,51 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 0.65rem;
+}
+
+/* ---------- 品牌 ---------- */
+
+.site-brand {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* 标记：主色渐变方块 + 层叠卡片线条，悬停轻抬 */
+.site-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--primary), #8b5cf6);
+  box-shadow: 0 3px 8px rgb(79 70 229 / 0.24);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.site-brand:hover {
+  color: var(--primary);
+  text-decoration: none;
+
+  .site-mark {
+    transform: translateY(-1px) rotate(-2deg);
+    box-shadow: 0 5px 12px rgb(79 70 229 / 0.3);
+  }
 }
 
 /* ---------- 主导航 ---------- */
@@ -121,10 +234,10 @@ onBeforeUnmount(() => {
   /* 顶栏高度内垂直居中、左右留白 */
   display: inline-flex;
   align-items: center;
-  height: 36px;
-  padding: 0 0.75rem;
+  height: 34px;
+  padding: 0 0.8rem;
   border-radius: var(--radius-btn);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
@@ -144,26 +257,9 @@ onBeforeUnmount(() => {
   background-color: var(--primary-soft);
 }
 
-.site-brand {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-}
+/* ---------- 窄屏 ---------- */
 
-.site-brand:hover {
-  color: var(--primary);
-  text-decoration: none;
-}
-
-.site-logo {
-  font-size: 1.25rem;
-}
-
-/* 窄屏（含 375px）：收紧留白并隐藏站点名文字，只保留 logo，
+/* 375px：收紧留白并隐藏站名文字，只保留标记，
    把宽度让给搜索框，避免顶栏横向溢出 */
 @media (max-width: 560px) {
   .header-inner {
@@ -175,8 +271,13 @@ onBeforeUnmount(() => {
     display: none;
   }
 
+  .site-mark {
+    width: 28px;
+    height: 28px;
+  }
+
   .header-tools {
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 }
 </style>
