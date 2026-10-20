@@ -97,6 +97,7 @@ function resetScroll(): void {
         <button
           class="seg-btn"
           :class="{ active: mode === 'virtual' }"
+          :aria-pressed="mode === 'virtual'"
           @click="mode = 'virtual'"
         >
           虚拟渲染
@@ -104,6 +105,7 @@ function resetScroll(): void {
         <button
           class="seg-btn"
           :class="{ active: mode === 'full' }"
+          :aria-pressed="mode === 'full'"
           @click="mode = 'full'"
         >
           全量渲染 {{ TOTAL }} 行

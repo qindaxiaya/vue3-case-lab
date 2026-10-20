@@ -134,6 +134,7 @@ onBeforeUnmount(() => {
         <button
           class="seg-btn"
           :class="{ active: mode === 'slice' }"
+          :aria-pressed="mode === 'slice'"
           :disabled="rendering"
           @click="renderSlice"
         >
@@ -142,6 +143,7 @@ onBeforeUnmount(() => {
         <button
           class="seg-btn"
           :class="{ active: mode === 'full' }"
+          :aria-pressed="mode === 'full'"
           :disabled="rendering"
           @click="renderFull"
         >
