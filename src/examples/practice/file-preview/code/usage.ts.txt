@@ -1,0 +1,69 @@
+// ============================================================
+// 多格式文件预览教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 判断类型：优先 MIME，再退回扩展名 ---
+
+function kindOf(file: File): 'image' | 'text' | 'pdf' | 'audio' | 'video' | 'other' {
+  const type = file.type.toLowerCase()
+
+  if (type.startsWith('image/')) return 'image'
+  if (type.startsWith('audio/')) return 'audio'
+  if (type.startsWith('video/')) return 'video'
+  //! 有些系统给 .md / .log 的 MIME 是空的，只能看扩展名
+  if (type === 'application/pdf' || file.name.endsWith('.pdf')) return 'pdf'
+  if (type.startsWith('text/') || /json|xml|csv|markdown/.test(type)) return 'text'
+
+  return 'other'
+}
+
+// --- 2. 非文本：一个 Blob URL 喂给原生组件 ---
+
+const url = URL.createObjectURL(file)
+
+// 图片
+//! <img :src="url">
+// 音频
+//! <audio :src="url" controls>
+// 视频
+//! <video :src="url" controls>
+// PDF
+//! <iframe :src="url">
+// 其他
+//! <a :href="url" :download="file.name">下载</a>
+
+// --- 3. 文本：直接读内容 ---
+
+const text = await file.text()
+//! 大文件要截断，别把 20MB 日志塞进 <pre>
+const preview = text.slice(0, 6000)
+
+// --- 4. 切换文件必须释放 ---
+
+function release(old: string | null): void {
+  //! ObjectURL 不会自动回收，页面开久了内存暴涨
+  if (old) URL.revokeObjectURL(old)
+}
+
+// --- 5. PDF 额外参数 ---
+
+//! #page=2&zoom=80：浏览器内置 PDF 查看器支持的部分参数
+const src = `${url}#page=2&zoom=80`
+
+// --- 6. 预览不了的格式怎么办 ---
+
+//! 1. Office（doc/xlsx/pptx）：需要服务端转换或第三方预览服务
+//! 2. HEIC：Safari 能看，Chrome 不行
+//! 3. 超大文本：Web Worker 里按行读取
+//! 4. 压缩包：只显示列表（jszip），别尝试解压展示
+//! 5. 未知类型：永远给下载入口，别让用户卡死
+
+// --- 踩坑清单 ---
+
+//! 1. file.type 可能是空字符串：一定要有扩展名兜底
+//! 2. 双击选择同一文件不触发 change：读完后 input.value = ''
+//! 3. revoke 太早会让正在播放的视频断掉：等切换或卸载时再释放
+//! 4. 拖拽要 preventDefault，否则浏览器直接打开文件、页面被替换
+//! 5. <iframe> 加载 PDF 在移动端支持很差，移动端改用 pdfjs-dist 渲染
+//! 6. 文本编码：file.text() 固定按 UTF-8 解码，GBK 文件会乱码

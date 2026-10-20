@@ -1,0 +1,95 @@
+// ============================================================
+// 大文件分片上传教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 文件指纹（秒传的前提） ---
+
+async function sha256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const digest = await crypto.subtle.digest('SHA-256', buffer)
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+//! 大文件不要在主线程读整个文件：放进 Web Worker，或按分片增量计算
+//! 只取指纹前 16 位也能用，但碰撞概率会升高，按业务取舍
+
+// --- 2. 先问服务端：这个文件存在吗 ---
+
+const { exists } = await fetch('/api/upload/check', {
+  method: 'POST',
+  body: JSON.stringify({ hash, name: file.name, size: file.size }),
+}).then((r) => r.json())
+
+//! 秒传：服务端已有完整文件，直接返回它的 URL，一个字节都不用传
+if (exists) return finishInstantly()
+
+//! 断点续传：服务端告诉前端「已收到哪些分片」
+const { uploaded } = await fetch(`/api/upload/status?hash=${hash}`).then((r) => r.json())
+const pending = chunks.filter((i) => !uploaded.includes(i))
+
+// --- 3. 切片 + 并发上传 ---
+
+const CHUNK_SIZE = 1024 * 1024
+const CONCURRENCY = 3
+
+function sliceFile(file: File): Blob[] {
+  const list: Blob[] = []
+  for (let start = 0; start < file.size; start += CHUNK_SIZE) {
+    //! 用 slice 而不是读进内存：Blob 是引用，不会复制数据
+    list.push(file.slice(start, start + CHUNK_SIZE))
+  }
+  return list
+}
+
+async function uploadWithLimit(parts: Blob[], hash: string): Promise<void> {
+  let cursor = 0
+
+  const worker = async (): Promise<void> => {
+    while (cursor < parts.length) {
+      const index = cursor++
+      const form = new FormData()
+      form.append('hash', hash)
+      form.append('index', String(index))
+      form.append('total', String(parts.length))
+      form.append('chunk', parts[index])
+
+      //! 每个 worker 串行取任务：天然限流，不需要信号量
+      await fetch('/api/upload/chunk', { method: 'POST', body: form })
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker))
+}
+
+// --- 4. 合并 ---
+
+await fetch('/api/upload/merge', {
+  method: 'POST',
+  body: JSON.stringify({ hash, name: file.name, total: parts.length }),
+})
+
+// --- 5. 暂停 / 续传 ---
+
+//! 暂停：把「已完成分片」记在内存（或 localStorage），停止调度新的
+//! 续传：重新请求 status 接口，只传缺的
+//! 页面刷新后也要能续：分片状态持久化到 localStorage（key = hash）
+//! 服务端必须提供「按 hash 查已上传分片」的接口，否则前端无从续起
+
+// --- 6. 并发与重试 ---
+
+//! 1. 并发 3~6 比较稳，太多会打满浏览器连接数（同域名约 6 个）
+//! 2. 单分片失败重试 2~3 次，指数退避
+//! 3. 全部分片完成后再调 merge，别每片都合并
+//! 4. 进度 = 已确认分片数 / 总片数（不要用字节数估算）
+
+// --- 踩坑清单 ---
+
+//! 1. 分片大小太小（如 64KB）→ 请求过多；太大（如 100MB）→ 失败代价高。1~5MB 常用
+//! 2. CORS：分片接口要允许 Content-Type: multipart/form-data 与自定义头
+//! 3. 服务端合并要按 index 排序，不能按到达顺序
+//! 4. 同名不同内容文件：只用文件名判断会串，必须用 hash
+//! 5. 计算 hash 也要显示进度，否则用户以为卡死
+//! 6. 浏览器关掉后内存里的分片状态全丢：要落 localStorage / IndexedDB

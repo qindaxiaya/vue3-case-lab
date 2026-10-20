@@ -1,0 +1,89 @@
+// ============================================================
+// 文件上传教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 校验：先拦掉，别等传完才报错 ---
+
+function validate(file: File): string | null {
+  const allowed = file.type.startsWith('image/') || file.type === 'application/pdf'
+
+  //! 服务端必须再校验一次：前端校验只是体验优化，能被绕过
+  if (!allowed) return `${file.name}：只支持图片或 PDF`
+  if (file.size > 2 * 1024 * 1024) return `${file.name}：超过 2MB`
+  return null
+}
+
+// --- 2. 真实上传：XHR 才能拿到进度 ---
+
+function upload(file: File, onProgress: (pct: number) => void): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const form = new FormData()
+    form.append('file', file)
+
+    //! fetch 没有上传进度事件（只有下载流的 reader），进度条只能用 XHR
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText)
+      else reject(new Error(`HTTP ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('网络错误'))
+    xhr.onabort = () => reject(new Error('canceled'))
+
+    xhr.open('POST', '/api/upload')
+    xhr.send(form)
+
+    //! 暴露取消方法给调用方
+    ;(xhr as XMLHttpRequest & { cancel?: () => void }).cancel = () => xhr.abort()
+  })
+}
+
+// --- 3. 并发队列：别一次发 50 个请求 ---
+
+const CONCURRENCY = 2
+const queue: File[] = []
+let running = 0
+
+function next(): void {
+  while (running < CONCURRENCY && queue.length) {
+    const file = queue.shift()!
+    running++
+
+    upload(file, (pct) => updateProgress(file, pct))
+      .then(() => markSuccess(file))
+      .catch((err) => markFailed(file, err.message))
+      .finally(() => {
+        running--
+        //! 一个结束就补位，保持并发数稳定
+        next()
+      })
+  }
+}
+
+// --- 4. 断点/重试：只重传失败项 ---
+
+//! 每个任务独立状态：pending / uploading / success / error / canceled
+//! 重试只把 error 改回 pending，不能重置已成功的
+//! 取消后要清定时器 / abort 请求，否则回调还会改状态
+
+// --- 5. 常见增强 ---
+
+//! 1. 秒传：先传 hash 问服务端「这个文件存在吗」
+//! 2. 分片上传：大文件切片 + 并发 + 续传（见 chunk-upload 案例）
+//! 3. 图片压缩：canvas 缩小后再传，移动端能省 80% 流量
+//! 4. 粘贴上传：监听 paste 事件拿 clipboardData.files
+//! 5. 拖拽：dragover/drop 都要 preventDefault，否则浏览器会直接打开文件
+//! 6. 上传前生成缩略图预览，用户体验更好
+
+// --- 踩坑清单 ---
+
+//! 1. 双击选同一文件不触发 change：input.value = ''
+//! 2. 大文件 + 内存：不要 file.arrayBuffer() 整个读进内存
+//! 3. 进度条到 100% 不等于服务端处理完：要等响应
+//! 4. 页面关闭时未完成的请求会丢：用 sendBeacon / 提示用户
+//! 5. 文件名要转义：服务端直接用 name 拼路径会有目录穿越风险
+//! 6. 断了就全量重传很浪费：记住已完成的分片（chunk-upload）
