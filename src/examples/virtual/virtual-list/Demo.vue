@@ -122,7 +122,7 @@ onUnmounted(() => {
   display: flex;
   gap: 1.25rem;
   flex-wrap: wrap;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -159,7 +159,7 @@ onUnmounted(() => {
   height: 32px;
   line-height: 32px;
   padding: 0 1rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-family: var(--font-mono);
   color: var(--text);
   border-bottom: 1px solid var(--border);

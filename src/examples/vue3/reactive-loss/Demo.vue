@@ -473,7 +473,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
   h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--text);
   }
@@ -488,7 +488,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   border-radius: 50%;
   background-color: var(--primary);
   color: #fff;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   margin-right: 0.25rem;
 }
 
@@ -503,7 +503,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
 .seg-btn {
   padding: 0.18rem 0.5rem;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   border: none;
   background-color: transparent;
   color: var(--text-secondary);
@@ -523,7 +523,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -546,7 +546,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -562,7 +562,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -573,7 +573,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 /* ---------- 指标 ---------- */
 
 .loss-metric {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -588,7 +588,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
 .loss-status {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 
   &.bad {
     color: var(--danger);
@@ -600,7 +600,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 }
 
 .badge-ok {
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   background-color: var(--success-soft);
@@ -620,21 +620,21 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
   h3 {
     margin: 0 0 0.2rem;
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 
   ul {
     margin: 0;
     padding-left: 1.1rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.9;
     color: var(--text-secondary);
   }
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

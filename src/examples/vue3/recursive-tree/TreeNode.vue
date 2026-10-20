@@ -95,7 +95,7 @@ const hasChildren = (): boolean => Boolean(props.node.children?.length)
   border: none;
   background: none;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   flex-shrink: 0;
 
@@ -116,7 +116,7 @@ const hasChildren = (): boolean => Boolean(props.node.children?.length)
 }
 
 .tree-label {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text);
 }
 </style>

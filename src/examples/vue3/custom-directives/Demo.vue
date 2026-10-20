@@ -295,18 +295,18 @@ onBeforeUnmount(() => {
 
   h3 {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
 
     code {
       font-family: var(--font-mono);
-      font-size: 0.76rem;
+      font-size: 0.8125rem;
       color: var(--primary);
     }
   }
 }
 
 .dir-tag {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -319,13 +319,13 @@ onBeforeUnmount(() => {
 
 .dir-note {
   margin: 0;
-  font-size: 0.71rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.67rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.22rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &.active {
@@ -356,7 +356,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -373,7 +373,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -428,7 +428,7 @@ onBeforeUnmount(() => {
   border: none;
   background: none;
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
 

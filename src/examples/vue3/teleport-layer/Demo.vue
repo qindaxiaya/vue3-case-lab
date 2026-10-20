@@ -167,7 +167,7 @@ function openPopover(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text);
   cursor: pointer;
 
@@ -182,7 +182,7 @@ function openPopover(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -197,7 +197,7 @@ function openPopover(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -220,14 +220,14 @@ function openPopover(): void {
 
 .stage-title {
   margin: 0 0 0.3rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .stage-desc {
   margin: 0 0 0.7rem;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   line-height: 1.65;
   color: var(--text-secondary);
 }
@@ -266,14 +266,14 @@ function openPopover(): void {
 
 .popover-title {
   margin: 0 0 0.35rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .popover-body {
   margin: 0 0 0.55rem;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -306,7 +306,7 @@ function openPopover(): void {
 
 .modal-body {
   margin: 0 0 0.8rem;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   color: var(--text-secondary);
 }

@@ -181,13 +181,13 @@ function resetAll(): void {
 }
 
 .cc-label {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .pill {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
   background-color: var(--code-bg);
@@ -215,7 +215,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0 0 0.2rem;
-    font-size: 0.78rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
   }
@@ -231,7 +231,7 @@ function resetAll(): void {
 
 .cc-count {
   margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -242,7 +242,7 @@ function resetAll(): void {
 
 .cc-note {
   margin: 0.25rem 0 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -261,7 +261,7 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -276,7 +276,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -286,7 +286,7 @@ function resetAll(): void {
 
 .cc-hint {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

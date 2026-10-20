@@ -214,7 +214,7 @@ function resetAll(): void {
 
 .scope-intro {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -244,7 +244,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 }
@@ -265,13 +265,13 @@ function resetAll(): void {
 
 .scope-desc {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -280,7 +280,7 @@ function resetAll(): void {
 
 .scope-meta {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -305,7 +305,7 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -320,7 +320,7 @@ function resetAll(): void {
   border: 1px dashed var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -335,7 +335,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -352,7 +352,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 5rem;
