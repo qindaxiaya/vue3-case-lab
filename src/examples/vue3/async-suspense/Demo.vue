@@ -6,7 +6,7 @@
 // - timeout 配置演示（超时走 errorComponent）
 // ============================================================
 <script setup lang="ts">
-/* eslint-disable vue/one-component-per-file -- 内联多子组件保证「可复制源码」自包含 */
+/* eslint-disable vue/one-component-per-file -- 内联多子组件保证「demo源码」自包含 */
 import {
   defineAsyncComponent,
   defineComponent,
@@ -15,7 +15,7 @@ import {
   ref,
 } from 'vue'
 
-// ---------- 内联子组件（render 函数，保证「可复制源码」自包含） ----------
+// ---------- 内联子组件（render 函数，保证「demo源码」自包含） ----------
 
 /** 模拟的重组件：真实场景是路由级/大图表 chunk */
 const SlowPanel = defineComponent({

@@ -30,9 +30,9 @@ export interface RegisteredCase {
   categoryId: string
   /** 演示组件（供 <component :is> 渲染） */
   demoComponent: Component
-  /** Demo.vue 完整源码文本（「可复制源码」tab 展示，复制即用） */
+  /** Demo.vue 完整源码文本（「demo源码」tab 展示，复制即用） */
   demoSource: string
-  /** 展示代码片段 tabs（code/*.txt，//! 标记重点行，按文件名排序） */
+  /** 核心代码片段 tabs（code/*.txt，//! 标记重点行，按文件名排序） */
   codeTabs: CodeTab[]
 }
 

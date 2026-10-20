@@ -8,7 +8,7 @@
 // - 每层「谁在读 / 谁在写」日志
 // ============================================================
 <script setup lang="ts">
-/* eslint-disable vue/one-component-per-file -- 内联三层子组件保证「可复制源码」自包含 */
+/* eslint-disable vue/one-component-per-file -- 内联三层子组件保证「demo源码」自包含 */
 import {
   computed,
   defineComponent,

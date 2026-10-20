@@ -13,37 +13,19 @@ import CodeWorkbench from '../components/CodeWorkbench.vue'
 const route = useRoute()
 const router = useRouter()
 
-// 演示 tab：集合由 Demo 组件 emit('tabs') 上报，当前 key 由本页持有
-// 每个标签 = 一套完整案例（演示 + 对应展示代码，代码区按同 key 过滤联动）
-// 无多演示的案例不上报，保持空数组（标题行不出 tab）
-const demoTabs = ref<{ key: string; label: string }[]>([])
-const activeDemoKey = ref('')
-
-/** Demo 上报 tab 集合：记录并定位到初始 key */
-function onDemoTabs(
-  tabs: { key: string; label: string }[],
-  initial: string,
-): void {
-  demoTabs.value = tabs
-  activeDemoKey.value = initial
-}
-
 // 路由参数查找案例（不存在渲染空状态）
 const item = computed(() =>
   getCase(String(route.params.categoryId), String(route.params.caseId)),
 )
 
 /**
- * 路由切换时重置演示 tab 与内容 tab 状态
+ * 路由切换时重置内容 tab
  * CasePage 在同一路由记录内复用（只换 params），组件不会重建；
- * 若不重置，上一个案例的 demoKey 会残留，代码区按旧 key 过滤后可能只剩「可复制源码」。
- * watch 默认 pre-flush：先清空，再由新 Demo 挂载时 emit('tabs') 重新上报。
+ * 不重置的话，从上一个案例的源码切过来会直接停在源码面板。
  */
 watch(
   () => route.fullPath,
   () => {
-    demoTabs.value = []
-    activeDemoKey.value = ''
     activeTab.value = 'explain'
   },
 )
@@ -227,38 +209,10 @@ const explainBlocks = computed(() => {
           {{ item.meta.summary }}
         </p>
       </header>
-      <!-- ① 演示区：标题行携带演示 tab（每个标签 = 一套演示+代码） -->
+      <!-- ① 演示区：直接展示可交互演示 -->
       <section aria-label="可交互演示">
-        <h2 class="section-title">
-          演示
-          <div
-            v-if="demoTabs.length"
-            class="demo-tab-list"
-            role="tablist"
-            aria-label="演示切换"
-          >
-            <button
-              v-for="tab in demoTabs"
-              :key="tab.key"
-              class="demo-tab"
-              :class="{ 'demo-tab--active': activeDemoKey === tab.key }"
-              type="button"
-              role="tab"
-              :aria-selected="activeDemoKey === tab.key"
-              @click="activeDemoKey = tab.key"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-        </h2>
-
-        <!-- 演示组件：@tabs 上报集合，demo-active 受控当前 key -->
         <div class="card demo-card">
-          <component
-            :is="item.demoComponent"
-            :demo-active="activeDemoKey"
-            @tabs="onDemoTabs"
-          />
+          <component :is="item.demoComponent" />
         </div>
       </section>
 
@@ -351,14 +305,10 @@ const explainBlocks = computed(() => {
                 </li>
               </ul>
             </template>
-
-            <p class="note-foot">
-              共 {{ item.codeTabs.length }} 段教学代码 · 难度 {{ difficultyLabel }} · 分类 {{ categoryName }}
-            </p>
           </div>
         </div>
 
-        <!-- 面板二：源码工作台（展示代码 / 可复制源码 两个子 tab） -->
+        <!-- 面板二：源码工作台（核心代码 / demo源码 两个子 tab） -->
         <div
           v-show="activeTab === 'code'"
           id="panel-code"
@@ -368,7 +318,6 @@ const explainBlocks = computed(() => {
           <CodeWorkbench
             :tabs="item.codeTabs"
             :demo-source="item.demoSource"
-            :demo-key="activeDemoKey"
           />
         </div>
       </section>
@@ -380,7 +329,7 @@ const explainBlocks = computed(() => {
 .case-page {
   /* width:100% 必须显式声明：父级是 flex column，仅靠 max-width + margin:auto
      会禁用 stretch 而退化为 fit-content——页面宽度将随代码行内容实时变化
-     （切「可复制源码」tab 时长行会把整页撑宽的根因） */
+     （切「demo源码」tab 时长行会把整页撑宽的根因） */
   width: 100%;
   max-width: 84rem;
   margin: 0 auto;
@@ -490,20 +439,6 @@ const explainBlocks = computed(() => {
   margin: 0;
 }
 
-/* 区块小标题（演示/说明/源码） */
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.1rem;
-}
-
-/* 源码展开/收起按钮（已由 tab 组替代，样式保留移除） */
-
 /* ---------- 说明 / 源码 tab 组 ---------- */
 
 .content-tabs {
@@ -542,38 +477,6 @@ const explainBlocks = computed(() => {
 
 .content-tab--active:hover {
   color: #fff;
-}
-
-/* ---------- 演示 tab（标题行内） ---------- */
-
-.demo-tab-list {
-  display: flex;
-  gap: 0.15rem;
-}
-
-.demo-tab {
-  padding: 0.25rem 0.7rem;
-  font-size: 0.8rem;
-  font-family: inherit;
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    color var(--transition),
-    background-color var(--transition);
-}
-
-.demo-tab:hover {
-  color: var(--text);
-  background-color: var(--bg);
-}
-
-.demo-tab--active {
-  color: var(--primary);
-  font-weight: 500;
-  background-color: var(--primary-soft);
 }
 
 /* 演示卡：宽屏下给足留白，避免显得局促 */
@@ -751,14 +654,6 @@ const explainBlocks = computed(() => {
       opacity: 0.6;
     }
   }
-}
-
-.note-foot {
-  margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px dashed var(--border);
-  font-size: 0.76rem;
-  color: var(--text-secondary);
 }
 
 /* ---------- 移动端 ---------- */

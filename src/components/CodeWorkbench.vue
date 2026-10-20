@@ -1,7 +1,7 @@
 // ============================================================
-// 代码工作台（2026-10-19：展示代码 + 可复制源码，均带语法高亮）
-// - 两个 tab：「展示代码」（code/*.txt，//! 标记重点行高亮）
-//             「可复制源码」（Demo.vue 全文，复制即用）
+// 代码工作台（核心代码 + demo 源码，均带语法高亮）
+// - 两个 tab：「核心代码」（code/*.txt，//! 标记重点行高亮）
+//             「demo源码」（Demo.vue 全文，复制即用）
 // - 重点行标记：code/*.txt 中行首 `//! ` 前缀的行会被高亮展示
 //   （渲染时去掉前缀，整行加主色浅背景 + 左侧色条——参照 VitePress line highlighting）
 // - vue 文件逐行高亮按段选语言（template→xml / script→ts / style→css），
@@ -31,11 +31,11 @@ hljs.registerLanguage('css', css)
 hljs.registerLanguage('json', json)
 
 const props = defineProps<{
-  /** 展示代码片段 tabs（code/*.txt，带 //! 重点行） */
+  /** 核心代码片段 tabs（code/*.txt，带 //! 重点行） */
   tabs: CodeTab[]
-  /** Demo.vue 完整源码（「可复制源码」tab） */
+  /** Demo.vue 完整源码（「demo源码」tab） */
   demoSource: string
-  /** 演示 tab key（Demo emit 上报）：变化时展示代码联动到同前缀的片段 */
+  /** 演示 tab key（Demo emit 上报）：变化时核心代码联动到同前缀的片段 */
   demoKey?: string
 }>()
 
@@ -69,24 +69,24 @@ const activeKey = ref('')
 
 /**
  * 全部 tab：
- * - 展示代码（demoKey 非空时只显示当前演示这一套——标签 ↔ 演示 ↔ 代码一一对应）
- * - 可复制源码（Demo.vue 全文，复制即用）
+ * - 核心代码（demoKey 非空时只显示当前演示这一套——标签 ↔ 演示 ↔ 代码一一对应）
+ * - demo源码（Demo.vue 全文，复制即用）
  */
 const allTabs = computed(() => {
-  // 按演示 key 过滤展示片段（约定：code/<key>.*.txt；无 key 显示全部）
+  // 按演示 key 过滤核心代码片段（约定：code/<key>.*.txt；无 key 显示全部）
   const keyedTabs = props.demoKey
     ? props.tabs.filter((t) => t.name.startsWith(props.demoKey!))
     : props.tabs
   // 防御：demoKey 有值但没有任何片段匹配（命名不一致/状态残留）时回退全部，
-  // 避免代码区只剩「可复制源码」，让内容仍可查阅。
+  // 避免代码区只剩「demo源码」，让内容仍可查阅。
   const sourceTabs = keyedTabs.length > 0 ? keyedTabs : props.tabs
   const coreTabs = sourceTabs.map((t, i) => ({
     key: `core:${t.name}`,
-    // 单套直接叫「展示代码」；多套时带文件名区分，避免同名 tab 无法分辨
+    // 单套直接叫「核心代码」；多套时带文件名区分，避免同名 tab 无法分辨
     label:
       sourceTabs.length > 1
-        ? `展示代码 · ${t.name.replace(/\.txt$/, '').replace(/\.\w+$/, '')}`
-        : '展示代码',
+        ? `核心代码 · ${t.name.replace(/\.txt$/, '').replace(/\.\w+$/, '')}`
+        : '核心代码',
     lang: t.lang,
     content: t.content,
     // 首个展示片段排最前（i 仅用于稳定排序，无视觉用途）
@@ -96,7 +96,7 @@ const allTabs = computed(() => {
     ...coreTabs,
     {
       key: 'source:Demo.vue',
-      label: '可复制源码',
+      label: 'demo源码',
       lang: 'vue',
       content: props.demoSource,
       _i: coreTabs.length,
@@ -125,7 +125,7 @@ watch(
   (key) => {
     // 无 key（案例没有多演示）不联动
     if (!key) return
-    // 用户正在看「可复制源码」时不打断（避免复制途中被切走）
+    // 用户正在看「demo源码」时不打断（避免复制途中被切走）
     if (activeKey.value.startsWith('source:')) return
     // 找 name 以 key 开头的展示片段（约定：code/<key>.<label>.txt）
     const hit = allTabs.value.find(
@@ -225,11 +225,6 @@ const renderedLines = computed<CodeLine[]>(() => {
   })
 })
 
-/** 当前 tab 是否有重点行（tab 标签旁的 ★ 提示） */
-function tabHasHighlight(tab: { content: string }): boolean {
-  return tab.content.split('\n').some((l) => /^\s*\/\/!\s?/.test(l))
-}
-
 // ---------- 复制（去掉 //! 标记，输出可直接使用的代码） ----------
 const copied = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | null = null
@@ -271,12 +266,6 @@ async function copyCode(): Promise<void> {
           :aria-selected="tab.key === activeKey"
           @click="activeKey = tab.key"
         >
-          <!-- 含重点行的 tab 加 ★ 提示 -->
-          <span
-            v-if="tabHasHighlight(tab)"
-            class="tab-star"
-            aria-hidden="true"
-          >★</span>
           {{ tab.label }}
         </button>
       </div>
@@ -320,7 +309,7 @@ async function copyCode(): Promise<void> {
 
 <style scoped>
 .code-workbench {
-  /* 显式占满父列：切「可复制源码」时长行不得撑宽页面 */
+  /* 显式占满父列：切「demo源码」时长行不得撑宽页面 */
   width: 100%;
   overflow: hidden;
 }
@@ -366,12 +355,6 @@ async function copyCode(): Promise<void> {
 .tab-btn--active {
   color: var(--primary);
   font-weight: 500;
-}
-
-/* 含重点行的 tab 星标 */
-.tab-star {
-  color: var(--warning);
-  font-size: 0.7rem;
 }
 
 .copy-btn {
