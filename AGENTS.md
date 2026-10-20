@@ -25,7 +25,7 @@
   ```
   src/examples/<category>/<case-id>/
   ├── Demo.vue        # 可交互演示（scoped SCSS、内部关键逻辑中文注释、不引用站点内部组件）
-  ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary/sell）
+  ├── meta.ts         # default export 满足 CaseMeta（title/难度/tags/summary/sell/explain）
   ├── notes.md        # 五段式案例资料（不参与 registry、不展示；模板见 docs/templates/notes.md）
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
@@ -75,8 +75,9 @@
   - ✅ spec 扩展批 6（practice 5）：drag-sort / slider-captcha / tracking-sdk / vite-split / vitest-gate
 - ✅ 2026-10-20 质量批次 1：完成标准 DoD + notes 模板落盘；CaseMeta 增加 `sell`，54 个案例一次补齐
 - ✅ 2026-10-20 质量批次 2：路由切换重置演示状态；暗色代码主题改用 `?url` 导入并验证构建产物（github-dark css 1.06 kB）
+- ✅ 2026-10-20 质量批次 3：详情页返回按钮 + 滚动位置恢复、列表筛选会话内保留、搜索跨页跳转、筛选自动校正、主题持久化不覆盖「跟随系统」、375px 顶栏收缩
+- ✅ 2026-10-20 详情页说明改 SBAC（场景/背景/做法/结论），54 个案例全部补齐；源码区默认收起，先看演示与说明
 - 待做（2026-10-20 质量批次）：
-  - 批次 3：详情页搜索跳转、分类筛选校正、主题持久化、375px 顶栏
   - 批次 4：存量教学代码纠错（pinia / history / route-*）
   - 批次 5：新案例 notes.md + 对比 + 实测验收
   - 批次 6：其余 50 个存量案例的 notes.md 渐进补齐
@@ -110,3 +111,5 @@
 | 2026-10-20 | **案例完成标准 DoD 固化** | 7 类标准写入 `docs/case-definition-of-done.md`：Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程；新案例严格执行、存量渐进；豁免写 notes 第 5 段 |
 | 2026-10-20 | **notes.md 五段式，且不接入页面** | 现象/场景 → 原理 → 关键代码（标 3 处为什么）→ 数据对比（实测+方法）→ 追问与边界；作为案例资料存放在案例目录，不参与 registry；非性能案例第 4 段允许行为指标替代 |
 | 2026-10-20 | **CaseMeta 增加 sell 必填** | ≤30 字，包含「解决什么问题 + 为什么选它」，20 秒可口述；54 个存量 meta 一次补齐 |
+| 2026-10-20 | **案例说明统一 SBAC 四段** | 场景（新手真实遇到）/ 背景（大白话讲原理）/ 做法（案例怎么解决）/ 结论（记住什么、何时用）；写在 meta.explain，每段 1–3 句、少术语多类比；54 个案例全部补齐，未填时回退到 sell + 代码要点 |
+| 2026-10-20 | **详情页源码默认收起** | 先看演示与 SBAC 说明，需要时再展开；避免一进页就被几百行代码劝退 |
