@@ -58,19 +58,6 @@
 ## 当前进度
 
 - **阶段**：共 56 案例 / 6 分类（composables 1 · observer 4 · virtual 2 · performance 10 · vue3 16 · practice 23）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
-- **⏸ 未合并分支与续工指引（2026-10-20 晚，回家继续从这里开始）**：
-  - 进行中 PR（均 CI 绿，未合并，等人工走查）：
-    - `#7 feat/element-plus`（OPEN）：接入 Element Plus 2.14.7，`unplugin-vue-components` 按需引入（禁止整包注册）；新增 `src/styles/_element.scss` 主题适配层；试点 3 案例表单控件：`vitest-gate`（el-select）、`debounce-throttle`（el-input）、`json-viewer`（el-input textarea）。实测 1200/375 无溢出、下拉在视口内、控件 40px
-    - `#8 feat/demo-sizing`（DRAFT，本分支）：统一 Demo 尺寸/字号，61 文件 / 4 commit，覆盖 54/56。新增 `--demo-*` token；`.demo-card` 控件桌面 36px / 移动 40px；`CasePage` 外卡留白与行高调整；字号按 13/14/15/16 分层放大。分批 CDP 实测 53 路由 × 1200/375 无横向溢出、无控制台错误
-  - 剩余 2 案例：`practice/debounce-throttle`、`practice/json-viewer`（在 #7 中改用 EP 控件，故意留到 #7 合并后再补，避免冲突）
-  - 续工步骤（新会话 / 新设备）：
-    1. `git fetch --all`；`git switch feat/demo-sizing`（worktree `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-demo-size`，不存在则 `git worktree add` 重建）
-    2. 确认 `#9` 文档已合并（本指引已在 main）；再评审并合并 `#7`，然后把本分支 rebase 到最新 `main`（`git rebase origin/main`），解决 `vitest-gate` 冲突
-    3. 给剩余 2 个 Demo 的 EP 控件补尺寸/字号（`:deep` 内层高度与字号），逐条过 `docs/case-definition-of-done.md`
-    4. 机器复验：`npx vitest run` → `npm run type-check` → `npm run lint` → `npm run build`；CDP 抽查 3 个 EP 案例 + 代表性尺寸案例 1200/375
-    5. `gh pr ready 8`；确认 `main-merge-gate` 绿灯后按线性历史合并；合并后更新本段「当前进度」并删除此续工块
-  - 合并顺序：`#9` 文档（先合，主分支才有本指引）→ `#7` Element Plus → rebase `#8` 并补齐 2 案例（`#7`、`#8` 都改 `vitest-gate`，必须 7 在前）
-  - 审计资产：尺寸截图/脚本 `C:\Users\qw156\AppData\Local\Temp\opencode\demo-batch-a-audit\`；EP 截图/脚本 `C:\Users\qw156\AppData\Local\Temp\opencode\element-plus-audit\`
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -109,8 +96,8 @@
 - ✅ 2026-10-20 顶栏精修：品牌标记、搜索与主题图标全部改为自绘 SVG；搜索框收窄到 18.5rem、快捷键按平台显示；滚动 4px 后切半透明毛玻璃 + 轻投影；移动端只留标记并补 `aria-label`。实测 1200 / 375 / 320 均无横向溢出，亮暗色正常、控制台无报错
 - ✅ 2026-10-20 详情页新增「深入」tab：`notes.md` 经 `import.meta.glob` 懒加载 + Promise 缓存，marked 渲染五段、highlight.js 高亮代码块（新增 bash/yaml，vue/html 按 xml），含骨架屏/失败重试/空态；首个 H1 隐藏，三个 tab 支持左右键循环。机器验收：vitest 25/25（含全案例 notes 加载器用例）、type-check、lint、build；Chrome CDP 实测 raf-loop / teleport-layer 五段齐全、代码高亮、暗色代码主题生效、375px 表格内部横滚且页面无溢出、控制台零错误
 - ✅ 2026-10-20 Element Plus 试点：接入 unplugin-vue-components 按需引入（不整包注册），新增主题适配层 `_element.scss`（主色/字体/圆角/边框/背景对齐站点 token，含暗色与 Select 弹层）；3 个样板案例改用统一大号表单控件：vitest-gate（el-select）、debounce-throttle（el-input）、json-viewer（el-input textarea）
+- ✅ 2026-10-20 收尾合并：#9 文档 → #7 Element Plus → #8 Demo 尺寸（rebase 解决 `vitest-gate` / `AGENTS.md` 冲突）；56/56 案例完成尺寸统一，`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补 14px 字号与 40px 高度；CDP 1200/375 抽查 5 路由 + 下拉弹层 + 路由往返，无横向溢出与 console 错误
 - dev 地址：主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
-- 续工 worktree：尺寸 `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-demo-size`（dev `5174` / CDP `9333`）；Element Plus `C:\Users\qw156\AppData\Local\Temp\opencode\moyu-element-plus`（dev `5175` / CDP `9334`）
 
 ## 决策记录
 
@@ -153,5 +140,5 @@
 | 2026-10-20 | **返回列表滚动恢复读原始 history state** | out-in 过渡期间浏览器会按旧详情页高度把 1200px 截断成 490px，Vue Router 的 savedPosition 已被污染；改读 `history.state.scroll`，并等新页面可滚动高度足够后以 `behavior:'instant'` 恢复 |
 | 2026-10-20 | **CI 门禁用单 job 顺序跑四项检查** | GitHub Actions Ubuntu + Node 22 LTS；push main / PR / 手动触发，`npm ci` 后依次 type-check、lint、vitest、build；不拆多 job 以免重复安装依赖，保持配置简单 |
 | 2026-10-20 | **仓库转公开 + ruleset 硬门禁** | 私有免费仓库不支持分支保护/ruleset（API 403）；转公开后创建 `main-merge-gate`：必须 PR、必需检查 `Type check, lint, test, build`、禁强推/删除、线性历史、审批 0（单人不能自批）、无 bypass；管理员直推同样被 GH013 拒绝 |
-| 2026-10-20 | **Demo 尺寸统一走 token + 全局兜底** | `_tokens.scss` 新增 `--demo-*`；`.demo-card` 控件桌面 ≥36px / 移动 ≥40px 由 `_components.scss` 兜底；字号按 13/14/15/16 分层，避免统一大字号压平层级；`CasePage` 外卡桌面 `2.25rem 2.5rem`、移动 `1.25rem`。覆盖 54/56，剩 `debounce-throttle`、`json-viewer` 等 Element Plus PR #7 合并后再补 |
+| 2026-10-20 | **Demo 尺寸统一走 token + 全局兜底** | `_tokens.scss` 新增 `--demo-*`；`.demo-card` 控件桌面 ≥36px / 移动 ≥40px 由 `_components.scss` 兜底；字号按 13/14/15/16 分层，避免统一大字号压平层级；`CasePage` 外卡桌面 `2.25rem 2.5rem`、移动 `1.25rem`。覆盖 56/56；`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补内层字号与 40px 高度 |
 | 2026-10-20 | **Element Plus 仅限通用表单控件试点，按需引入，站点壳不换皮** | 用户拍板试点：用 unplugin-vue-components + ElementPlusResolver（`importStyle: false`）按需引入，样式由 main.ts 引入官方完整主题，再用 `_element.scss` 把主色/字体/圆角/边框/背景/暗色与 Select 弹层映射到站点 token；禁止整包 `app.use(ElementPlus)`；站点壳与教学型组件仍自建，Pinia 仍禁止 |
