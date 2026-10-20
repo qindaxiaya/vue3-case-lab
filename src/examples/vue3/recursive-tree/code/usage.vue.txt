@@ -1,0 +1,58 @@
+// ============================================================
+// 递归组件教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 递归组件：文件名即组件名 ---
+
+// TreeNode.vue：
+// <script setup lang="ts">
+// //! <script setup> 内可直接引用自身（组件名 = 文件名）
+// defineProps<{ node: TreeNodeData; depth: number }>()
+// </script>
+//
+// <template>
+//   <li>
+//     <slot :node="node" :depth="depth" />
+//     <ul v-if="node.children?.length">
+//       <!-- //! 自己渲染自己，children 为空时自然终止 -->
+//       <TreeNode
+//         v-for="child in node.children"
+//         :key="child.label"
+//         :node="child"
+//         :depth="depth + 1"
+//       />
+//     </ul>
+//   </li>
+// </template>
+
+// --- 作用域插槽：把渲染权交回父级 ---
+
+// 父级：
+// <TreeNode :node="tree" :depth="0">
+//!   <template #default="{ node, depth }">
+//     <span :style="{ paddingLeft: depth * 8 + 'px' }">
+//       {{ node.label }}
+//     </span>
+//   </template>
+// </TreeNode>
+
+//! 递归时要把插槽继续向下透传，否则只有第一层能自定义：
+// <TreeNode ...>
+//   <template #default="slotProps">
+//     <slot v-bind="slotProps" />
+//   </template>
+// </TreeNode>
+
+// --- 展开状态的两个思路 ---
+
+// 1. 节点内部 ref（本例）：每个节点自己管 open；父级无法统一控制
+//! 2. 受控展开：父级维护 expandedKeys: Set<string>，通过 props 传入 → 可「全部展开/折叠」
+//! 3. 需要外部重置时用 :key 重建（代价是全部状态丢失）
+
+// --- 性能与边界 ---
+
+//! 1. 深层树（几千节点）不要全量渲染：配合虚拟列表或懒加载子节点
+//! 2. key 避免用 index——拖拽排序/增删会错位
+//! 3. 递归深度默认受调用栈限制，正常业务（< 50 层）无需担心
+//! 4. 不要在递归组件里对父级 props 做深拷贝（每层复制一次，指数级开销）

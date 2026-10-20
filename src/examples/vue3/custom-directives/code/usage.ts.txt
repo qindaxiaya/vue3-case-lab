@@ -1,0 +1,85 @@
+// ============================================================
+// 自定义指令三件套教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 指令签名 ---
+
+//! 第二个泛型是绑定值类型（binding.value）
+const vPermission: Directive<HTMLElement, string[]> = {
+  // 挂载：首次应用
+  mounted(el, binding) {
+    apply(el, binding.value)
+  },
+  // 更新：组件重渲染 / 绑定值变化时重新应用
+  updated(el, binding) {
+    apply(el, binding.value)
+  },
+}
+
+function apply(el: HTMLElement, allowed: string[]): void {
+  //! 用 display 控制显隐（不销毁元素，适合按钮级权限）
+  el.style.display = allowed.includes(currentRole.value) ? '' : 'none'
+}
+
+// --- 1. v-permission：按钮级权限 ---
+
+// 模板：<button v-permission="['admin']">删除</button>
+//! 指令里必须能读到“当前角色”这个响应式源，组件重渲染时 updated 会重跑
+
+// --- 2. v-lazy：图片懒加载 ---
+
+const ioMap = new WeakMap<HTMLElement, IntersectionObserver>()
+
+const vLazy: Directive<HTMLElement, string> = {
+  mounted(el, binding) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          el.setAttribute('src', binding.value)
+          //! 加载后立即断开，避免重复触发
+          io.disconnect()
+          ioMap.delete(el)
+        }
+      },
+      // 提前 80px 预加载
+      { rootMargin: '80px' },
+    )
+    io.observe(el)
+    ioMap.set(el, io)
+  },
+  //! 卸载时必须 disconnect，否则观察器泄漏
+  unmounted(el) {
+    ioMap.get(el)?.disconnect()
+    ioMap.delete(el)
+  },
+}
+
+// --- 3. v-click-outside：点外部关闭 ---
+
+const handlerMap = new WeakMap<HTMLElement, (e: PointerEvent) => void>()
+
+const vClickOutside: Directive<HTMLElement, () => void> = {
+  mounted(el, binding) {
+    const handler = (e: PointerEvent): void => {
+      //! contains 判断点击是否落在元素内部（含子节点）
+      if (!el.contains(e.target as Node)) binding.value()
+    }
+    handlerMap.set(el, handler)
+    // 捕获阶段监听，避免被内部 stopPropagation 破坏
+    document.addEventListener('pointerdown', handler, true)
+  },
+  unmounted(el) {
+    const handler = handlerMap.get(el)
+    if (handler) document.removeEventListener('pointerdown', handler, true)
+    handlerMap.delete(el)
+  },
+}
+
+// --- 使用注意 ---
+
+//! 1. 局部指令命名必须 vXxx（script setup 自动注册），模板写 v-xxx
+//! 2. 指令绑定值变化才会触发 updated；依赖外部状态时要保证组件重渲染
+//! 3. 需要在 beforeUnmount/unmounted 清理观察器、事件、定时器
+//! 4. 指令不适合复杂状态（一堆状态就写组件/组合式函数）
+//! 5. SSR 下 mounted 才执行，别在 setup 阶段依赖 DOM

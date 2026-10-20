@@ -1,0 +1,58 @@
+// ============================================================
+// 主题切换教学片段（三态 + 无闪烁）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 三态模型 ---
+
+type Mode = 'light' | 'dark' | 'auto'
+
+const mode = ref<Mode>('auto')
+const systemDark = ref(matchMedia('(prefers-color-scheme: dark)').matches)
+
+//! auto 只是“跟随系统”的别名，最终生效值仍要收敛成 light / dark
+const resolved = computed(() =>
+  mode.value === 'auto' ? (systemDark.value ? 'dark' : 'light') : mode.value,
+)
+
+// --- 2. 监听系统偏好变化 ---
+
+const mql = matchMedia('(prefers-color-scheme: dark)')
+
+//! 系统主题会在用户改设置/日落时变化（无需刷新）
+mql.addEventListener('change', (e) => {
+  systemDark.value = e.matches
+})
+
+// 组件卸载时移除（组合式函数里用 onScopeDispose 统一收）
+
+// --- 3. 应用主题：class 策略 + CSS 变量 ---
+
+// <html class="dark">
+//! 所有颜色走 CSS 变量，暗色只换变量值，组件样式零改动
+// :root { --bg: #fff; --text: #1f2430; }
+// .dark { --bg: #14161c; --text: #eef1f7; }
+
+watchEffect(() => {
+  document.documentElement.classList.toggle('dark', resolved.value === 'dark')
+})
+
+// --- 4. 持久化 + 首帧不闪白（关键） ---
+
+// index.html 的 <head> 内、样式之前：
+// <script>
+//!   const saved = localStorage.getItem('theme')
+//!   const dark = saved ? saved === 'dark'
+//!     : matchMedia('(prefers-color-scheme: dark)').matches
+//!   document.documentElement.classList.toggle('dark', dark)
+// </script>
+
+//! 这段必须阻塞执行（内联、无 defer）：Vue 挂载后再加 class，首帧已经画完 → 闪白
+
+// --- 5. 避坑 ---
+
+//! 1. localStorage 被禁用（隐私模式）要 try/catch，否则脚本中断
+//! 2. 只存 'light' / 'dark' / 'auto'，别存解析后的值（否则系统偏好变化失效）
+//! 3. 暗色下图片/阴影/描边要单独调（纯变量替换不够）
+//! 4. SSR 场景需要服务端读 cookie 或用 useHead 注入脚本
+//! 5. 记得同步 <meta name="theme-color">（移动端地址栏颜色）

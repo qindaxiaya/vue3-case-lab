@@ -1,0 +1,85 @@
+// ============================================================
+// Teleport 弹层教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 基础：挂到 body（逃离父级 overflow / z-index） ---
+
+// <Teleport to="body">
+//!  <div v-if="open" class="mask" @click.self="close">
+//     <div role="dialog" aria-modal="true">…</div>
+//   </div>
+// </Teleport>
+
+// --- 2. 滚动锁：记录原值，关闭还原 ---
+
+let prevOverflow = ''
+
+function openModal(): void {
+  prevOverflow = document.body.style.overflow
+  //! 不能直接写 ''：页面/其他组件可能已经设了 hidden
+  document.body.style.overflow = 'hidden'
+}
+
+function closeModal(): void {
+  document.body.style.overflow = prevOverflow
+}
+
+// --- 3. Esc 关闭 + 焦点陷阱 ---
+
+const FOCUSABLE =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') return closeModal()
+  if (e.key !== 'Tab') return
+
+  const list = Array.from(modalEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])
+  if (!list.length) return
+
+  const first = list[0]
+  const last = list[list.length - 1]
+  const active = document.activeElement
+
+  //! Tab 到底回开头；Shift+Tab 到顶去结尾 → 焦点永远不出弹窗
+  if (!e.shiftKey && active === last) {
+    e.preventDefault()
+    first.focus()
+  } else if (e.shiftKey && active === first) {
+    e.preventDefault()
+    last.focus()
+  }
+}
+
+// --- 4. 焦点归还 ---
+
+function openWithFocus(): void {
+  prevActive = document.activeElement as HTMLElement | null
+  open.value = true
+  nextTick(() => {
+    //! 打开后把焦点送进弹窗
+    modalEl.value?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+  })
+}
+
+function closeWithFocus(): void {
+  open.value = false
+  //! 关闭后还给触发按钮（无障碍与键盘用户必需）
+  ;(triggerEl.value ?? prevActive)?.focus()
+}
+
+// --- 事件绑定时机 ---
+
+//! 用 watch(open) 在打开时 addEventListener、关闭时 remove，
+//! 不要无条件挂在 document 上（全站常驻监听会拖慢键盘事件）
+watch(open, (v) => {
+  if (v) document.addEventListener('keydown', onKeydown)
+  else document.removeEventListener('keydown', onKeydown)
+})
+
+// --- 生产建议 ---
+
+//! 1. 复杂场景（多层弹窗、拖拽、动画）直接用 reka-ui / radix-vue 的 Dialog
+//! 2. 给遮罩加 @click.self，避免点弹窗内部误关
+//! 3. 移动端 iOS 滚动锁要额外处理 body position: fixed（overflow 无效）
+//! 4. 动画结束再卸载内容（<Transition> + v-if），否则收起动画被跳过

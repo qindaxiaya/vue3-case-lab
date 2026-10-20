@@ -1,0 +1,82 @@
+// ============================================================
+// 可编辑表格教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+// --- 1. 单元格状态机：同一时间只允许一个格子在编辑 ---
+
+type EditableField = 'name' | 'price' | 'stock'
+
+const editing = ref<{ id: number; field: EditableField } | null>(null)
+const draft = ref('')
+
+function startEdit(row: Row, field: EditableField): void {
+  //! 不做「多格同时编辑」：校验与提交会互相打架
+  editing.value = { id: row.id, field }
+  draft.value = String(row[field])
+}
+
+function isEditing(row: Row, field: EditableField): boolean {
+  return editing.value?.id === row.id && editing.value.field === field
+}
+
+// --- 2. 提交（带校验） ---
+
+function commit(row: Row, field: EditableField): boolean {
+  const raw = draft.value.trim()
+
+  if (field === 'name' && !raw) return fail('名称不能为空')
+
+  if (field !== 'name') {
+    //! Number('') === 0，空串必须单独拦
+    const num = Number(raw)
+    if (!raw || !Number.isFinite(num)) return fail('请输入数字')
+    if (field === 'price' && num <= 0) return fail('价格必须大于 0')
+    if (field === 'stock' && (!Number.isInteger(num) || num < 0)) {
+      return fail('库存必须是非负整数')
+    }
+    row[field] = num
+  } else {
+    row.name = raw
+  }
+
+  editing.value = null
+  return true
+}
+
+// --- 3. 三种退出方式 ---
+
+// Enter：保存
+//! Esc：取消（先 preventDefault，再清状态）
+//! 失焦：保存——但必须先判断「是否还在编辑」，否则 Esc/切换格子会误提交
+function onBlur(row: Row, field: EditableField): void {
+  if (!isEditing(row, field)) return
+  commit(row, field)
+}
+
+// --- 4. 失焦校验失败怎么办 ---
+
+//! 不要直接丢弃输入：保持编辑态 + 红框 + 重新聚焦
+//! （nextTick 后再 focus，等 DOM 更新完成）
+if (!commit(row, field)) {
+  nextTick(() => {
+    document.querySelector<HTMLInputElement>('.cell-input')?.focus()
+  })
+}
+
+// --- 5. 自动聚焦 ---
+
+const vFocus: Directive<HTMLInputElement> = {
+  mounted(el) {
+    el.focus()
+    el.select() // 双击进来通常想整体替换
+  },
+}
+
+// --- 边界 ---
+
+//! 1. 移动端没有 dblclick：用单击/长按进入编辑，或常驻输入框
+//! 2. 大表格（1000+ 行）逐格 ref 太占内存，用事件委托 + data 属性
+//! 3. 服务端保存失败要把单元格回滚到旧值（保存前先备份 original）
+//! 4. 删除行时若正在编辑该行，记得清 editing 状态，避免悬空引用
+//! 5. 表格列多时用 CSS Grid 或虚拟滚动，别让横向滚动条失控
