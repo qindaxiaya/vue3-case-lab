@@ -98,21 +98,26 @@ const statusIcon: Record<StepStatus, string> = {
       >
         重置
       </button>
-      <label class="vg-select">
-        注入失败
-        <select v-model="failOn">
-          <option value="none">
-            不注入
-          </option>
-          <option
+      <div class="vg-select">
+        <span class="vg-select-label">注入失败</span>
+        <el-select
+          v-model="failOn"
+          class="vg-select-control"
+          size="large"
+          aria-label="注入失败步骤"
+        >
+          <el-option
+            label="不注入"
+            value="none"
+          />
+          <el-option
             v-for="s in steps"
             :key="s.id"
+            :label="s.label"
             :value="s.id"
-          >
-            {{ s.label }}
-          </option>
-        </select>
-      </label>
+          />
+        </el-select>
+      </div>
       <span
         v-if="totalMs !== null"
         class="vg-kv"
@@ -239,18 +244,19 @@ steps:
 .vg-select {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4rem;
   font-size: 0.7rem;
   color: var(--text-secondary);
+}
 
-  select {
-    padding: 0.14rem 0.3rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background-color: var(--bg);
-    color: var(--text);
-    font-size: 0.7rem;
-  }
+/* 大号下拉固定约 10.5rem，375px 下与按钮同排也不挤出卡片 */
+.vg-select-control {
+  width: 10.5rem;
+}
+
+.vg-select-label {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .vg-kv {

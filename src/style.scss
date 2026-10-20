@@ -11,3 +11,6 @@
 
 // 自建组件类（btn / card / tag）
 @use 'styles/components';
+
+// Element Plus 主题覆盖：必须最后加载，才能压过官方样式
+@use 'styles/element';

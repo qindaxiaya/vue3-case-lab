@@ -1,4 +1,7 @@
-// 应用入口：全局样式最先引入 → 挂载路由 → 创建并挂载根组件
+// 应用入口：Element Plus 主题 → 站点样式 → 挂载路由 → 创建并挂载根组件
+// Element Plus 只用于 Demo 通用表单控件，不做整包注册（组件由 unplugin 按需引入）
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import './style.scss'
 import { createApp } from 'vue'
 import App from './App.vue'

@@ -214,9 +214,12 @@ function preview(row: Row): string {
             载入示例
           </button>
         </div>
-        <textarea
+        <el-input
           v-model="source"
           class="json-input"
+          type="textarea"
+          size="large"
+          :rows="16"
           spellcheck="false"
           aria-label="JSON 源码"
         />
@@ -387,19 +390,34 @@ function preview(row: Row): string {
 
 /* ---------- 输入区 ---------- */
 
+/* Element Plus 多行输入：铺满面板剩余高度，保留等宽字体与内部滚动 */
 .json-input {
   flex: 1;
   min-height: 340px;
-  resize: none;
-  border: none;
-  outline: none;
-  padding: 0.7rem;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  line-height: 1.7;
-  background-color: var(--code-bg);
-  color: var(--text);
-  tab-size: 2;
+  display: flex;
+  flex-direction: column;
+
+  :deep(.el-textarea__inner) {
+    flex: 1;
+    min-height: 340px;
+    padding: 0.7rem;
+    resize: none;
+    border: none;
+    border-radius: 0;
+    outline: none;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1.7;
+    background-color: var(--code-bg);
+    color: var(--text);
+    box-shadow: none;
+    tab-size: 2;
+  }
+
+  /* 焦点仍要可见：内描边主色，替代默认的外阴影 */
+  :deep(.el-textarea__inner:focus) {
+    box-shadow: inset 0 0 0 1px var(--primary);
+  }
 }
 
 .parse-error {
