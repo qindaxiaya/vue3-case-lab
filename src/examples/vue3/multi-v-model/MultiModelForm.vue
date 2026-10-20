@@ -73,7 +73,7 @@ const visible = defineModel<boolean>('visible', { default: false })
 }
 
 .mm-label {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   font-family: var(--font-mono);
 }
@@ -84,7 +84,7 @@ const visible = defineModel<boolean>('visible', { default: false })
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
 
   &:focus {
     outline: none;
@@ -107,7 +107,7 @@ const visible = defineModel<boolean>('visible', { default: false })
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &[aria-pressed='true'] {
@@ -121,6 +121,6 @@ const visible = defineModel<boolean>('visible', { default: false })
   border-radius: var(--radius-sm);
   background-color: var(--primary-soft);
   color: var(--primary-soft-text);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 </style>

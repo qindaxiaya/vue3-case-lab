@@ -36,7 +36,7 @@ function onInput(e: Event): void {
 }
 
 .demo-input__label {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -46,7 +46,7 @@ function onInput(e: Event): void {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
 
   &:focus {
     outline: none;

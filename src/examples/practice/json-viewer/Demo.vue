@@ -363,7 +363,7 @@ function preview(row: Row): string {
 }
 
 .pane-title {
-  font-size: 0.76rem;
+  font-size: var(--demo-text-sm);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -374,12 +374,12 @@ function preview(row: Row): string {
 }
 
 .btn-mini {
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--demo-radius);
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: var(--demo-text-xs);
   cursor: pointer;
 
   &:hover {
@@ -406,7 +406,7 @@ function preview(row: Row): string {
     border-radius: 0;
     outline: none;
     font-family: var(--font-mono);
-    font-size: 0.76rem;
+    font-size: var(--demo-text-md);
     line-height: 1.7;
     background-color: var(--code-bg);
     color: var(--text);
@@ -423,7 +423,7 @@ function preview(row: Row): string {
 .parse-error {
   margin: 0;
   padding: 0.45rem 0.7rem;
-  font-size: 0.74rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
   background-color: color-mix(in srgb, var(--danger) 10%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
@@ -432,7 +432,7 @@ function preview(row: Row): string {
 .parse-ok {
   margin: 0;
   padding: 0.45rem 0.7rem;
-  font-size: 0.74rem;
+  font-size: var(--demo-text-sm);
   color: var(--success);
   border-top: 1px solid var(--border);
 }
@@ -442,7 +442,7 @@ function preview(row: Row): string {
 .copied {
   margin: 0;
   padding: 0.4rem 0.7rem;
-  font-size: 0.72rem;
+  font-size: var(--demo-text-xs);
   color: var(--primary);
   background-color: color-mix(in srgb, var(--primary) 8%, transparent);
 
@@ -461,9 +461,9 @@ function preview(row: Row): string {
 .tree-row {
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 26px;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
   border-radius: var(--radius-sm);
   white-space: nowrap;
@@ -479,11 +479,11 @@ function preview(row: Row): string {
 
 .caret {
   flex-shrink: 0;
-  width: 1.05rem;
+  width: 1.1rem;
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.65rem;
+  font-size: var(--demo-text-xs);
   cursor: pointer;
   padding: 0;
   transition: transform 0.15s;
@@ -537,13 +537,13 @@ function preview(row: Row): string {
 .folded-hint {
   margin-left: 0.44rem;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: var(--demo-text-xs);
 }
 
 .tree-empty {
   margin: 1.5rem auto;
   text-align: center;
-  font-size: 0.78rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 

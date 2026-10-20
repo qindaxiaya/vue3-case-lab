@@ -212,14 +212,14 @@ const themeEcho = computed(() => theme.value)
 
 :deep(.ri-layer) {
   margin: 0 0 0.4rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 :deep(.ri-state) {
   margin: 0.2rem 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text);
 
   b {
@@ -230,13 +230,13 @@ const themeEcho = computed(() => theme.value)
 
 :deep(.ri-readonly) {
   margin: 0.35rem 0 0;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 :deep(.ri-hint) {
   margin: 0.4rem 0 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -247,7 +247,7 @@ const themeEcho = computed(() => theme.value)
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -279,7 +279,7 @@ const themeEcho = computed(() => theme.value)
 
 .log-title {
   margin: 0 0 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -289,7 +289,7 @@ const themeEcho = computed(() => theme.value)
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   line-height: 1.9;
   color: var(--text-secondary);
 }

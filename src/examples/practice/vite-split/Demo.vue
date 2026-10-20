@@ -178,7 +178,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 .vs-label {
   width: 6.5rem;
   flex-shrink: 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -209,18 +209,18 @@ hljs.registerLanguage('typescript', ts)</code></pre>
   width: 7rem;
   text-align: right;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .vs-note {
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.64rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.2rem;
     background-color: var(--code-bg);
     border-radius: 3px;
@@ -265,19 +265,19 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 }
 
 .vs-opt-label {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text);
 }
 
 .vs-opt-desc {
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .vs-save {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   flex-shrink: 0;
 }
@@ -293,7 +293,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
   border-radius: var(--radius-btn);
   background-color: var(--code-bg);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre;
@@ -301,7 +301,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 
 .vs-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

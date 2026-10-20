@@ -207,7 +207,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &.active {
@@ -223,13 +223,13 @@ function resetAll(): void {
 }
 
 .i18n-loading {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--warning);
 }
 
 .i18n-size {
   margin-left: auto;
-  font-size: 0.71rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -239,7 +239,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -263,7 +263,7 @@ function resetAll(): void {
 
 .i18n-feature {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.7;
 }
@@ -275,13 +275,13 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: var(--primary);
   color: #fff;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .i18n-note {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -295,14 +295,14 @@ function resetAll(): void {
 
   h4 {
     margin: 0 0 0.3rem;
-    font-size: 0.76rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
   }
 
   th {
@@ -332,7 +332,7 @@ function resetAll(): void {
 
 .i18n-chip {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   padding: 0.08rem 0.42rem;
   border-radius: 999px;
   background-color: var(--code-bg);
@@ -346,7 +346,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.85;
   color: var(--text-secondary);
   min-height: 4.4rem;
@@ -354,7 +354,7 @@ function resetAll(): void {
 
 .i18n-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

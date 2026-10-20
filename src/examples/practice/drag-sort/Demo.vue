@@ -199,7 +199,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 
 .ds-stat {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   flex: 1;
   min-width: 10rem;
@@ -212,7 +212,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 .btn-ghost {
   padding: 0.22rem 0.55rem;
   border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   border: 1px solid var(--border);
   background-color: transparent;
@@ -260,7 +260,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 }
 
 .ds-handle {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   letter-spacing: -2px;
 }
@@ -273,7 +273,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 }
 
 .ds-label {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--text);
   flex: 1;
   overflow: hidden;
@@ -283,13 +283,13 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 
 .ds-index {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .ds-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

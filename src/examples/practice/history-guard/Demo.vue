@@ -202,13 +202,13 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.84rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 }
 
 .hg-flag {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--success);
 
   &.dirty {
@@ -222,7 +222,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   line-height: 1.6;
   resize: vertical;
 
@@ -244,7 +244,7 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -279,7 +279,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -304,13 +304,13 @@ function resetAll(): void {
 
   h4 {
     margin: 0 0 0.25rem;
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 
   p {
     margin: 0 0 0.55rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
   }
 }
@@ -330,7 +330,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 4.6rem;
@@ -346,21 +346,21 @@ function resetAll(): void {
 
   h3 {
     margin: 0 0 0.3rem;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: var(--text);
   }
 
   ol {
     margin: 0;
     padding-left: 1.1rem;
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
     line-height: 1.9;
     color: var(--text-secondary);
   }
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -369,7 +369,7 @@ function resetAll(): void {
 
 .hg-warn {
   margin: 0.4rem 0 0;
-  font-size: 0.71rem;
+  font-size: 0.8125rem;
   color: var(--warning);
   line-height: 1.6;
 }

@@ -289,20 +289,20 @@ const prLabel = computed(() => {
 .bp-demo {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.85rem;
 }
 
 .bp-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .bp-switches {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -310,16 +310,16 @@ const prLabel = computed(() => {
 .bp-reset,
 .bp-action {
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: var(--demo-text-md);
   cursor: pointer;
   transition: border-color 0.15s, background-color 0.15s, color 0.15s;
 }
 
 .bp-chip {
-  padding: 0.28rem 0.55rem;
+  padding: 0.45rem 0.75rem;
 
   &::before {
     content: '○ ';
@@ -338,7 +338,7 @@ const prLabel = computed(() => {
 }
 
 .bp-reset {
-  padding: 0.26rem 0.55rem;
+  padding: 0.45rem 0.75rem;
 
   &:hover {
     background-color: var(--code-bg);
@@ -349,24 +349,24 @@ const prLabel = computed(() => {
 .bp-branch {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
-  padding: 0.5rem 0.6rem;
+  padding: var(--demo-panel-pad);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: var(--code-bg);
 }
 
 .bp-branch-name {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
 .bp-badge {
-  padding: 0.08rem 0.42rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.64rem;
+  font-size: var(--demo-text-xs);
   font-weight: 600;
 
   &.bp-badge--protected {
@@ -382,7 +382,7 @@ const prLabel = computed(() => {
 
 .bp-main-state {
   margin-left: auto;
-  font-size: 0.68rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   &.bp-main-state--done {
@@ -392,13 +392,13 @@ const prLabel = computed(() => {
 
 .bp-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .bp-action {
-  flex: 1 1 8rem;
-  padding: 0.38rem 0.5rem;
+  flex: 1 1 9rem;
+  padding: var(--demo-control-py) var(--demo-control-px);
 
   &:hover:not(:disabled) {
     background-color: var(--code-bg);
@@ -434,16 +434,16 @@ const prLabel = computed(() => {
 .bp-flow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.35rem;
+  gap: 0.6rem;
 }
 
 .bp-step {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
-  padding: 0.4rem 0.45rem;
+  gap: 0.3rem;
+  padding: 0.75rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: var(--bg);
   min-width: 0;
 
@@ -468,18 +468,18 @@ const prLabel = computed(() => {
 
 .bp-step-no {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
 }
 
 .bp-step-label {
-  font-size: 0.7rem;
+  font-size: var(--demo-text-md);
   color: var(--text);
   white-space: nowrap;
 }
 
 .bp-step-state {
-  font-size: 0.62rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -489,21 +489,21 @@ const prLabel = computed(() => {
 .bp-log {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
-  min-height: 4.2rem;
-  max-height: 7rem;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  max-height: 9rem;
   overflow: auto;
-  padding: 0.45rem 0.55rem;
+  padding: 0.8rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: var(--code-bg);
 }
 
 .bp-log-line {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
-  line-height: 1.55;
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
 
@@ -518,8 +518,8 @@ const prLabel = computed(() => {
 
 .bp-hint {
   margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.6;
+  font-size: var(--demo-text-sm);
+  line-height: 1.7;
   color: var(--text-secondary);
 
   b {
@@ -527,7 +527,7 @@ const prLabel = computed(() => {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .bp-flow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

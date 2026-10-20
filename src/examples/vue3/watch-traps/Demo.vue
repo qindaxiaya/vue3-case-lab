@@ -292,7 +292,7 @@ onUnmounted(() => {
   justify-content: space-between;
 
   h3 {
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--text);
     margin: 0;
@@ -300,14 +300,14 @@ onUnmounted(() => {
 }
 
 .exp-desc {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
     padding: 0.05rem 0.3rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -322,7 +322,7 @@ onUnmounted(() => {
 }
 
 .metric {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -339,7 +339,7 @@ onUnmounted(() => {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -354,7 +354,7 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -373,7 +373,7 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 
   &:focus {
     outline: none;
@@ -390,7 +390,7 @@ onUnmounted(() => {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 5.4rem;

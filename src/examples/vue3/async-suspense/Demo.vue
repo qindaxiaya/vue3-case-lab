@@ -138,7 +138,7 @@ function retry(): void {
   border-radius: var(--radius-btn);
   color: var(--text-secondary);
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   animation: async-pulse 1.2s ease-in-out infinite;
 }
 
@@ -160,7 +160,7 @@ function retry(): void {
   border-radius: var(--radius-btn);
   color: var(--danger);
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
 }
 
 .async-panel {
@@ -178,7 +178,7 @@ function retry(): void {
 
 .async-panel__desc {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 }
 </style>
@@ -201,7 +201,7 @@ function retry(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text);
 
   input[type='range'] {
@@ -211,7 +211,7 @@ function retry(): void {
 
 .ctl-val {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--primary);
   min-width: 3.2em;
 }
@@ -220,7 +220,7 @@ function retry(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text);
   cursor: pointer;
 
@@ -235,7 +235,7 @@ function retry(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -245,13 +245,13 @@ function retry(): void {
 }
 
 .attempt {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
 .hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 </style>

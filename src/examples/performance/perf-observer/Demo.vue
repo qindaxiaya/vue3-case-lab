@@ -231,7 +231,7 @@ function makeLayoutShift(): void {
   if (!host) return
   const block = document.createElement('div')
   block.style.cssText =
-    'height:60px;border-radius:8px;background:var(--warning-soft);margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:0.85rem;'
+    'height:60px;border-radius:8px;background:var(--warning-soft);margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:0.9375rem;'
   block.textContent = '布局偏移演示块（CLS +）'
   host.appendChild(block)
   pushLog('已注入偏移块（CLS 上升）')
@@ -447,7 +447,7 @@ function fpsLevel(fps: number): string {
 }
 
 .live-name {
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
@@ -463,7 +463,7 @@ function fpsLevel(fps: number): string {
 }
 
 .live-sub {
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -518,7 +518,7 @@ function fpsLevel(fps: number): string {
 }
 
 .metric-name {
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
@@ -539,7 +539,7 @@ function fpsLevel(fps: number): string {
 }
 
 .actions-hint {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin-bottom: 0.65rem;
 }
@@ -555,7 +555,7 @@ function fpsLevel(fps: number): string {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   color: var(--text);
 
   input[type='range'] {
@@ -566,7 +566,7 @@ function fpsLevel(fps: number): string {
 
 .block-ms {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   color: var(--primary);
   min-width: 3rem;
 }
@@ -584,14 +584,14 @@ function fpsLevel(fps: number): string {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
 }
 
 .log-empty {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -601,7 +601,7 @@ function fpsLevel(fps: number): string {
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.8;
 }
 

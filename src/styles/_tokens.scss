@@ -58,6 +58,20 @@ $font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
   --font-sans: #{$font-sans};
   --font-mono: #{$font-mono};
 
+  // Demo 尺寸基线：案例演示区单独一套，避免每个案例各写一套小字号
+  // 正文 14–15px、辅助文字 12px、按钮 36/40px，375px 下仍然可点可读
+  --demo-text-xs: 0.75rem; // 12px 图表刻度/极小标签
+  --demo-text-sm: 0.8125rem; // 13px 次要说明
+  --demo-text-md: 0.875rem; // 14px 正文/按钮
+  --demo-text-lg: 0.9375rem; // 15px 重点正文
+  --demo-control-h: 2.25rem; // 36px 桌面控件最小高度
+  --demo-control-h-touch: 2.5rem; // 40px 触屏控件最小高度
+  --demo-control-px: 0.9rem; // 按钮横向内边距
+  --demo-control-py: 0.5rem; // 按钮纵向内边距
+  --demo-panel-pad: 0.8rem 0.95rem; // 内部卡片/面板内边距
+  --demo-panel-gap: 0.7rem; // 面板之间的间距
+  --demo-radius: 0.5rem; // 面板圆角
+
   // 代码高亮主题变量（highlight.js 两主题切换时引用）
   --code-bg: #f6f8fa; // 代码块底色
 }

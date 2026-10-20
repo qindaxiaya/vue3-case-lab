@@ -110,19 +110,19 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 }
 
 .dm-sub {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -131,7 +131,7 @@ function resetAll(): void {
 
 .dm-value {
   margin: 0.2rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -154,7 +154,7 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -169,7 +169,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -178,7 +178,7 @@ function resetAll(): void {
 }
 
 .dm-count {
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -189,7 +189,7 @@ function resetAll(): void {
 
 .dm-hint {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }

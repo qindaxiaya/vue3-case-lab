@@ -147,7 +147,7 @@ function resetCounts(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -172,7 +172,7 @@ function resetCounts(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -182,7 +182,7 @@ function resetCounts(): void {
 }
 
 .stat {
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -209,7 +209,7 @@ function resetCounts(): void {
   gap: 0.8rem;
   height: 28px;
   padding: 0 0.6rem;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -230,13 +230,13 @@ function resetCounts(): void {
 
 .row-count {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--primary);
 }
 
 .footnote {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 

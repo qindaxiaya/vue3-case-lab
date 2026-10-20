@@ -203,7 +203,7 @@ function resetAll(): void {
 }
 
 .rbac-label {
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -213,7 +213,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &.active {
@@ -225,7 +225,7 @@ function resetAll(): void {
 
 .rbac-count {
   margin-left: auto;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -240,7 +240,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -271,7 +271,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background: none;
   color: var(--text);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   text-align: left;
 
@@ -295,7 +295,7 @@ function resetAll(): void {
 }
 
 .rbac-lock {
-  font-size: 0.66rem;
+  font-size: 0.8125rem;
 }
 
 .rbac-page {
@@ -306,7 +306,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0.2rem 0 0.35rem;
-    font-size: 0.86rem;
+    font-size: 0.9375rem;
     color: var(--text);
   }
 }
@@ -314,14 +314,14 @@ function resetAll(): void {
 .rbac-path {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .rbac-desc,
 .rbac-note {
   margin: 0 0 0.3rem;
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 
@@ -332,7 +332,7 @@ function resetAll(): void {
 }
 
 .rbac-note {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   opacity: 0.85;
 }
 
@@ -345,7 +345,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 4.8rem;

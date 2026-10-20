@@ -264,7 +264,7 @@ function resetAll(): void {
 .chat-demo {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 /* ---------- 控制 ---------- */
@@ -272,12 +272,12 @@ function resetAll(): void {
 .chat-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
 }
 
 .chat-flag {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--warning);
 
   &.stuck {
@@ -286,7 +286,7 @@ function resetAll(): void {
 }
 
 .chat-stat {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -298,20 +298,20 @@ function resetAll(): void {
 .chat-auto {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.72rem;
+  gap: 0.4rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   cursor: pointer;
 }
 
 .btn-reset {
   margin-left: auto;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -325,17 +325,17 @@ function resetAll(): void {
   height: 320px;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--demo-radius);
   background-color: var(--bg);
-  padding: 0.5rem;
+  padding: 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.55rem;
 }
 
 .chat-loading {
   text-align: center;
-  font-size: 0.68rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   padding: 0.2rem 0;
   flex-shrink: 0;
@@ -352,9 +352,9 @@ function resetAll(): void {
 
 .chat-bubble {
   max-width: 78%;
-  padding: 0.42rem 0.6rem;
-  border-radius: var(--radius-btn);
-  font-size: 0.76rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--demo-radius);
+  font-size: 0.875rem;
   line-height: 1.6;
   background-color: var(--code-bg);
   color: var(--text);
@@ -375,12 +375,12 @@ function resetAll(): void {
   position: absolute;
   right: 0.6rem;
   bottom: 0.6rem;
-  padding: 0.3rem 0.65rem;
+  padding: 0.45rem 0.8rem;
   border-radius: 999px;
   border: 1px solid var(--primary);
   background-color: var(--bg);
   color: var(--primary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   cursor: pointer;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
 }
@@ -389,19 +389,19 @@ function resetAll(): void {
 
 .chat-input-row {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .chat-input {
   flex: 1;
   min-width: 10rem;
-  padding: 0.3rem 0.55rem;
+  padding: 0.5rem 0.65rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
 
   &:focus {
     outline: none;
@@ -410,12 +410,12 @@ function resetAll(): void {
 }
 
 .btn-act {
-  padding: 0.28rem 0.6rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.74rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -426,8 +426,8 @@ function resetAll(): void {
 
 .chat-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 </style>

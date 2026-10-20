@@ -202,7 +202,7 @@ function resetScroll(): void {
   border: none;
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &.active {
@@ -212,7 +212,7 @@ function resetScroll(): void {
 }
 
 .vv-stat {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -228,7 +228,7 @@ function resetScroll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -267,26 +267,26 @@ function resetScroll(): void {
 
 .vv-id {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   flex-shrink: 0;
 }
 
 .vv-text {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--text-secondary);
 }
 
 .vv-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.8125rem;
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

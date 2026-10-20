@@ -367,7 +367,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text);
 
   input[type='range'] {
@@ -378,7 +378,7 @@ onUnmounted(() => {
 
 .ctl-val {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--primary);
   min-width: 3.4em;
 }
@@ -389,7 +389,7 @@ onUnmounted(() => {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -403,7 +403,7 @@ onUnmounted(() => {
 }
 
 .hint {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -414,7 +414,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 1.2rem;
   flex-wrap: wrap;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 
   b {
@@ -491,7 +491,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #374151;
 }
 
@@ -500,7 +500,7 @@ onUnmounted(() => {
   position: absolute;
   bottom: 0.6rem;
   z-index: 3;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-family: var(--font-mono);
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
@@ -518,13 +518,13 @@ onUnmounted(() => {
 
 .footnote {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     padding: 0.05rem 0.3rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

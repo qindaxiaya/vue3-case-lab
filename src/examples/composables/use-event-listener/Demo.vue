@@ -193,7 +193,7 @@ function resetCounters(): void {
 .stats {
   display: flex;
   gap: 1.1rem;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -228,7 +228,7 @@ function resetCounters(): void {
   top: 0.7rem;
   left: 0.9rem;
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -239,7 +239,7 @@ function resetCounters(): void {
   left: 0.9rem;
   right: 0.9rem;
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -271,7 +271,7 @@ function resetCounters(): void {
 
 .panel-title {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -303,7 +303,7 @@ function resetCounters(): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -318,7 +318,7 @@ function resetCounters(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -329,7 +329,7 @@ function resetCounters(): void {
 
 .panel-note {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--text-secondary);
 }

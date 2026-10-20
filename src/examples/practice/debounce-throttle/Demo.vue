@@ -194,7 +194,7 @@ function resetAll(): void {
 
 .wave-empty {
   margin: auto;
-  font-size: 0.75rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
 }
 
@@ -236,7 +236,7 @@ function resetAll(): void {
 
 .scene {
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--demo-radius);
   padding: 0.75rem;
   background-color: var(--bg);
   display: flex;
@@ -251,21 +251,30 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--demo-text-lg);
     font-weight: 600;
     color: var(--text);
   }
 }
 
 .ratio {
-  font-size: 0.72rem;
+  font-size: var(--demo-text-xs);
   font-family: var(--font-mono);
   color: var(--primary);
 }
 
-/* Element Plus 输入框只保留铺满宽度，颜色/圆角/焦点由全局主题适配层统一 */
+/* Element Plus 输入框：铺满宽度，内层字号/高度跟随站点 demo token */
 .input {
   width: 100%;
+
+  :deep(.el-input__wrapper) {
+    height: var(--demo-control-h);
+    box-sizing: border-box;
+  }
+
+  :deep(.el-input__inner) {
+    font-size: var(--demo-text-md);
+  }
 }
 
 .scroll-box {
@@ -278,14 +287,14 @@ function resetAll(): void {
 
 .scroll-item {
   padding: 0.4rem 0.7rem;
-  font-size: 0.76rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
 }
 
 .scene-note {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.6;
   color: var(--text-secondary);
 
@@ -297,12 +306,12 @@ function resetAll(): void {
 
 .btn-reset {
   align-self: flex-start;
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-sm);
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: var(--demo-text-md);
   cursor: pointer;
 
   &:hover {
@@ -314,6 +323,11 @@ function resetAll(): void {
 @media (max-width: 768px) {
   .body {
     grid-template-columns: 1fr;
+  }
+
+  /* 触屏下输入框抬到 40px，和全局按钮的触控高度一致 */
+  .input :deep(.el-input__wrapper) {
+    height: var(--demo-control-h-touch);
   }
 }
 </style>

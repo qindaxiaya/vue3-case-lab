@@ -398,7 +398,7 @@ function applyHex(hexStr: string): void {
 
 .preview-hex {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -492,7 +492,7 @@ function applyHex(hexStr: string): void {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   cursor: pointer;
 
   &:hover {
@@ -503,7 +503,7 @@ function applyHex(hexStr: string): void {
 
 .eye-note {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -537,27 +537,27 @@ function applyHex(hexStr: string): void {
 }
 
 .value-label {
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .value-text {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   color: var(--text);
 }
 
 .value-hint {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .copied {
   margin: 0;
   min-height: 1.2em;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--success);
 }
 
@@ -571,7 +571,7 @@ function applyHex(hexStr: string): void {
 
 .recent-title {
   margin: 0 0 0.35rem;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -596,7 +596,7 @@ function applyHex(hexStr: string): void {
 }
 
 .recent-empty {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 

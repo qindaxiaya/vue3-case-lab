@@ -344,13 +344,13 @@ const vFocus: Directive<HTMLInputElement> = {
 }
 
 .et-meta {
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .et-stat {
   margin-left: auto;
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 
   b {
@@ -369,7 +369,7 @@ const vFocus: Directive<HTMLInputElement> = {
   border: 1px solid var(--primary);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -384,7 +384,7 @@ const vFocus: Directive<HTMLInputElement> = {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -403,14 +403,14 @@ const vFocus: Directive<HTMLInputElement> = {
 .et-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
 
   th {
     text-align: left;
     padding: 0.45rem 0.6rem;
     background-color: var(--code-bg);
     color: var(--text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     white-space: nowrap;
   }
@@ -453,7 +453,7 @@ const vFocus: Directive<HTMLInputElement> = {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-family: inherit;
 
   &:focus {
@@ -469,7 +469,7 @@ const vFocus: Directive<HTMLInputElement> = {
   border: none;
   background: none;
   color: var(--danger);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 
   &:hover {
@@ -482,7 +482,7 @@ const vFocus: Directive<HTMLInputElement> = {
 .et-error {
   margin: 0;
   min-height: 1.2rem;
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   color: var(--danger);
 }
 

@@ -252,7 +252,7 @@ onUnmounted(() => {
 }
 
 .heart-label {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   color: var(--text);
 
   b {
@@ -262,7 +262,7 @@ onUnmounted(() => {
 }
 
 .heart-hint {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -291,14 +291,14 @@ onUnmounted(() => {
 
   h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--text);
   }
 }
 
 .badge {
-  font-size: 0.68rem;
+  font-size: 0.875rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
 }
@@ -315,7 +315,7 @@ onUnmounted(() => {
 
 .path-desc {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: 0.875rem;
   line-height: 1.65;
   color: var(--text-secondary);
 
@@ -330,7 +330,7 @@ onUnmounted(() => {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background-color: transparent;
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   cursor: pointer;
 
   &:disabled {
@@ -365,7 +365,7 @@ onUnmounted(() => {
   padding: 0.45rem 0.6rem;
   border-radius: var(--radius-sm);
   background-color: var(--code-bg);
-  font-size: 0.74rem;
+  font-size: 0.875rem;
   line-height: 1.9;
   color: var(--text-secondary);
 
@@ -377,7 +377,7 @@ onUnmounted(() => {
 
 .footnote {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   color: var(--text-secondary);
 

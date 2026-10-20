@@ -184,7 +184,7 @@ onUnmounted(() => {
 .stats {
   display: flex;
   gap: 1.1rem;
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
 
   b {
@@ -220,7 +220,7 @@ onUnmounted(() => {
 .list-item {
   flex-shrink: 0;
   padding: 0.45rem 0.7rem;
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -230,7 +230,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   text-align: center;
   padding: 0.5rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -241,7 +241,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -258,14 +258,14 @@ onUnmounted(() => {
 
 .log-title {
   margin: 0 0 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .log-empty {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -274,7 +274,7 @@ onUnmounted(() => {
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   line-height: 1.9;
   color: var(--text-secondary);
 }
