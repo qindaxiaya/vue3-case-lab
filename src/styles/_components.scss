@@ -148,3 +148,16 @@
     border-color: transparent;
   }
 }
+
+// ---------- 案例演示区控件基线 ----------
+// 各案例的 scoped 样式仍可覆盖字号/内边距；这里只兜底最小点击高度，
+// 避免小图标按钮和紧凑表单在桌面/触屏上过小。
+.demo-card :where(button, input, select, textarea) {
+  min-height: var(--demo-control-h);
+}
+
+@media (max-width: 768px) {
+  .demo-card :where(button, input, select, textarea) {
+    min-height: var(--demo-control-h-touch);
+  }
+}

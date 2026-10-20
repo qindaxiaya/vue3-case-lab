@@ -198,7 +198,7 @@ steps:
 .vg-demo {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.8rem;
 }
 
 /* ---------- 控制 ---------- */
@@ -206,15 +206,15 @@ steps:
 .vg-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .btn-act,
 .btn-ghost {
-  padding: 0.22rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  padding: var(--demo-control-py) var(--demo-control-px);
+  border-radius: var(--demo-radius);
+  font-size: var(--demo-text-md);
   cursor: pointer;
   border: 1px solid var(--primary);
   background-color: transparent;
@@ -245,7 +245,7 @@ steps:
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -260,7 +260,7 @@ steps:
 }
 
 .vg-kv {
-  font-size: 0.72rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -272,10 +272,11 @@ steps:
 /* ---------- 结果 ---------- */
 
 .vg-verdict {
-  padding: 0.45rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.76rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--demo-radius);
+  font-size: var(--demo-text-md);
   font-weight: 600;
+  line-height: 1.6;
 
   &.pass {
     background-color: color-mix(in srgb, var(--success) 14%, transparent);
@@ -293,16 +294,16 @@ steps:
 .vg-steps {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.55rem;
 }
 
 .vg-step {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--demo-radius);
   background-color: var(--bg);
   transition: border-color 0.15s, background-color 0.15s;
 
@@ -322,9 +323,9 @@ steps:
 }
 
 .vg-icon {
-  width: 1rem;
+  width: 1.2rem;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
 
   .running & {
@@ -350,40 +351,41 @@ steps:
 .vg-step-main {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0.6rem;
   flex: 1;
   min-width: 0;
   flex-wrap: wrap;
 }
 
 .vg-step-label {
-  font-size: 0.76rem;
+  font-size: var(--demo-text-md);
   color: var(--text);
 }
 
 .vg-cmd {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
   background-color: var(--code-bg);
-  padding: 0.02rem 0.28rem;
-  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
 }
 
 .vg-status {
-  font-size: 0.68rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .vg-current {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: var(--demo-text-xs);
     color: var(--primary);
   }
 }
@@ -392,23 +394,23 @@ steps:
 
 .vg-code {
   margin: 0;
-  padding: 0.6rem;
-  max-height: 16rem;
+  padding: 0.9rem;
+  max-height: 18rem;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--demo-radius);
   background-color: var(--code-bg);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  line-height: 1.7;
+  font-size: var(--demo-text-xs);
+  line-height: 1.75;
   color: var(--text-secondary);
   white-space: pre;
 }
 
 .vg-hint {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 </style>

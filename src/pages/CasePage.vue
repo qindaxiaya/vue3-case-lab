@@ -797,7 +797,10 @@ const explainBlocks = computed(() => {
 
 /* 演示卡：宽屏下给足留白，避免显得局促 */
 .demo-card {
-  padding: 2rem 2.25rem;
+  padding: 2.25rem 2.5rem;
+  /* 演示区正文统一到 15px，内部细节再用 --demo-text-* 收敛 */
+  font-size: var(--demo-text-lg);
+  line-height: 1.65;
 }
 
 /* ---------- 说明卡 ---------- */
@@ -1099,7 +1102,7 @@ const explainBlocks = computed(() => {
   }
 
   .demo-card {
-    padding: 1.15rem;
+    padding: 1.25rem;
   }
 
   .note-card {
