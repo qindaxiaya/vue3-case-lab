@@ -52,7 +52,7 @@
   3. `npm run type-check`、`npm run lint`、`npm run build`
   4. dev 页面实测：案例页可交互、刷新无控制台告警、路由往返状态正确
   5. 有页面交互变化时，dev 地址交用户人工走查（机器验证不能替代）
-  6. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（verification-before-completion skill）
+  6. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（已通过全局 superpowers 插件提供，用 skill 工具加载 `verification-before-completion`）
 - 每任务收尾必更新本文件「当前进度」段；重大取舍记入「决策记录」
 
 ## 当前进度
@@ -98,6 +98,7 @@
 - ✅ 2026-10-20 Element Plus 试点：接入 unplugin-vue-components 按需引入（不整包注册），新增主题适配层 `_element.scss`（主色/字体/圆角/边框/背景对齐站点 token，含暗色与 Select 弹层）；3 个样板案例改用统一大号表单控件：vitest-gate（el-select）、debounce-throttle（el-input）、json-viewer（el-input textarea）
 - ✅ 2026-10-20 收尾合并：#9 文档 → #7 Element Plus → #8 Demo 尺寸（rebase 解决 `vitest-gate` / `AGENTS.md` 冲突）；56/56 案例完成尺寸统一，`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补 14px 字号与 40px 高度；CDP 1200/375 抽查 5 路由 + 下拉弹层 + 路由往返，无横向溢出与 console 错误
 - ✅ 2026-10-20 批次 8（6 案例）：交叉观察器曝光统计 / 过渡组列表动画 / content-visibility 长列表 / 请求竞态与取消 / 乐观更新与回滚 / 虚拟网格；全部含 Demo + code + notes 五段。实测：IO 布局读取 888→0、回调 28；过渡组打乱耗时 360ms vs 普通替换 2ms；content-visibility 3000 条重建 99.4→49.9ms（1.99×，节点仍 3000）；请求竞态旧响应覆盖 2→0、最终结果串台→正确；乐观更新点击后 40ms 即变、失败约 300ms 回滚；虚拟网格 5000→44 节点、重建 97.5→14ms。vitest 25/25、type-check、lint、build 通过；1200/375 六路由无横向溢出、无 console 错误
+- ✅ 2026-10-20 Agent Skills 接入：opencode 1.19.3 通过全局 `plugin` 安装 superpowers v7，`opencode debug skill` 列出 16 个（15 superpowers + 1 内置），bootstrap 实测注入；Claude Code 侧同步升级到 v7（15 skills，user + project scope 均 enabled）
 - dev 地址：当前主工作区 `http://localhost:5174/`（5173 被其他项目占用），列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -143,3 +144,4 @@
 | 2026-10-20 | **仓库转公开 + ruleset 硬门禁** | 私有免费仓库不支持分支保护/ruleset（API 403）；转公开后创建 `main-merge-gate`：必须 PR、必需检查 `Type check, lint, test, build`、禁强推/删除、线性历史、审批 0（单人不能自批）、无 bypass；管理员直推同样被 GH013 拒绝 |
 | 2026-10-20 | **Demo 尺寸统一走 token + 全局兜底** | `_tokens.scss` 新增 `--demo-*`；`.demo-card` 控件桌面 ≥36px / 移动 ≥40px 由 `_components.scss` 兜底；字号按 13/14/15/16 分层，避免统一大字号压平层级；`CasePage` 外卡桌面 `2.25rem 2.5rem`、移动 `1.25rem`。覆盖 56/56；`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补内层字号与 40px 高度 |
 | 2026-10-20 | **Element Plus 仅限通用表单控件试点，按需引入，站点壳不换皮** | 用户拍板试点：用 unplugin-vue-components + ElementPlusResolver（`importStyle: false`）按需引入，样式由 main.ts 引入官方完整主题，再用 `_element.scss` 把主色/字体/圆角/边框/背景/暗色与 Select 弹层映射到站点 token；禁止整包 `app.use(ElementPlus)`；站点壳与教学型组件仍自建，Pinia 仍禁止 |
+| 2026-10-20 | **skills 统一走 superpowers v7 官方插件** | opencode 1.19.3 用全局 V1 `plugin` 键安装 git 源（插件自动注入 `skills.paths` 与 bootstrap，16 个 skill 实测可加载）；Claude Code 侧因 github.com 的 git 协议不可达，改用 codeload tarball 手工落缓存并同步 `installed_plugins.json` / marketplace sha 到 v7；将来升 OpenCode 2 时改用 V2 `plugins` 键（v7 已支持 2.0.4+） |
