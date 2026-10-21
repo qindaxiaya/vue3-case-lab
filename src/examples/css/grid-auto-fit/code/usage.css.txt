@@ -1,0 +1,63 @@
+// ============================================================
+// auto-fit 自适应卡片网格教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+/* ---------- 新做法：一行声明替代整张断点表 ---------- */
+
+.auto-grid {
+  display: grid;
+
+  //! auto-fit：塞得下几张「不小于 160px」的列就开几列，塞不下自动减列
+  //! 好处 1：断点由引擎按容器宽度现算，手写断点表整张作废（0 条媒体查询）
+  //! 好处 2：1fr 把富余空间平均分给现有列，断点之间不会出现大片空白
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+/* ---------- 旧做法：flex + 手写媒体查询（节选，共 5 条起） ---------- */
+/* 痛点：改卡片最小宽度 / 改列数，整张表都要重算；漏一个宽度区间就露馅 */
+
+.card-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.card-list > .card {
+  flex: 1 1 160px; /* 还要再跟一堆 max-width 才能避免拉伸过宽 */
+}
+
+//! @media 只能跟视口走：侧栏挤压、弹窗内嵌时整张表全部失效
+//! （容器自适应请配合 container query 或直接用 auto-fit）
+@media (min-width: 720px) {
+  .card-list { --cols: 5; }
+}
+
+@media (min-width: 600px) {
+  .card-list { --cols: 4; }
+}
+
+@media (min-width: 480px) {
+  .card-list { --cols: 3; }
+}
+
+@media (min-width: 360px) {
+  .card-list { --cols: 2; }
+}
+
+/* ---------- 配套细节 ---------- */
+
+.auto-grid > .card {
+  /* minmax(0, 1fr) 等价写法已由 minmax(160px, 1fr) 覆盖；
+     内容超出列宽时靠 min-width: 0 让文本正常换行而不是撑破网格 */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 何时不用 auto-fit ---------- */
+
+// 1. 需要网格与页面其他元素严格对齐（对齐栅格）→ 用固定 repeat(N, minmax(0, 1fr)) + 断点
+// 2. 最后一行要「占满整行」的语义（如用户头像墙补位）→ auto-fit 会把空列拉宽填满，
+//    配 auto-fill 或手动 span 处理
+// 3. 极老浏览器（不支持 grid）→ 降级方案另谈
