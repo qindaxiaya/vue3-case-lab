@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "check:ui": "node scripts/check-ui.mjs",
     "preview": "vite preview",
     "type-check": "vue-tsc -b",
     "lint": "eslint . --max-warnings 0"
