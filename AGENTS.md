@@ -12,6 +12,7 @@
   - `npm run lint` — ESLint 检查（全量，收尾/合并前用）
   - `npx eslint <改动文件> --max-warnings 0` — 只查改动文件（L0/L1 默认用法）
   - `npx vitest run` — 运行测试
+  - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
@@ -123,6 +124,7 @@
   - 新增 `src/composables/useNotesIndex.ts`：首次打开搜索弹窗后 `requestIdleCallback` 构建，62 篇并发 6 分批读、模块级单例缓存、每读完一篇增量刷新结果
   - `SearchModal.vue`：结果行加「正文」标记与 `<mark>` 高亮片段（不用 `v-html` 防注入），正文索引加载中/不可用有提示；键盘选择不再被增量结果打断
   - 机器验收（Chrome CDP）：搜「微任务」3 条全部来自正文、搜「虚拟列表」元数据优先 + 6 条正文追加、`structuredClone` 1 条仅正文命中；↑↓ + 回车跳转 `/cases/vue3/reactive-loss`；375px `scrollWidth=375`、面板 351px；零 console 错误；vitest 45/45（新增 16 条）、type-check、lint、build 通过
+- ✅ 2026-10-21 浏览器验收脚本统一（`npm run check:ui`）：此前各会话各写临时 CDP 脚本，跑完只 kill 父进程、`--headless` 有的加有的没加、每轮新建 profile，累计 **111 个 chrome 进程 + 41 个临时配置目录（2.0 GB）**，桌面上不断弹窗口。新增 `scripts/check-ui.mjs`：headless 启动、`--remote-debugging-port=0` 免抢端口、固定 `node_modules/.tmp/chrome-check`、退出整棵进程树 `taskkill /T /F` + 重试清目录；内置 5 个场景（首页 / 列表 / 详情源码按需 / EP 样式 / 375px），有失败退出码 1。实测通过，跑完自动化进程与临时目录均为 0；同时清理了存量的 111 个进程与 2 GB 目录
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -181,3 +183,4 @@
 | 2026-10-21 | **新增体积门禁 `npm run check:bundle` 并接入 CI** | 体积回归不会让单测变红（eager glob 就是例子）。脚本读 `dist/index.html` 的首屏资源，校验：首屏 gzip ≤180 KB、非 pdf 单 chunk ≤600 KB、首屏 JS 不得出现「//! 中文」教学标记；CI 在 build 后执行，红灯直接拦住合并 |
 | 2026-10-21 | **全局搜索扩到 notes 正文：索引空闲构建、纯函数可单测** | 标题/摘要/标签继续同步匹配，正文索引在首次打开弹窗后 `requestIdleCallback` 构建（并发 6、单例缓存、边读边刷新），首屏不多下载 190 KB；匹配与片段逻辑放 `utils/search-index.ts` 纯函数（16 条单测），组件只负责调度；正文结果用 `<mark>` 高亮（不用 `v-html` 防注入），片段两行截断；键盘选择只在关键词变化时重置，避免增量结果把选中项弹回第一条 |
 | 2026-10-21 | **构建产物按「类型 → 用途 → 案例」分目录** | 265 个 chunk 全平铺在 `assets/` 里，排查和缓存策略都没法按类处理。`entryFileNames` 固定入口；`chunkFileNames` 用 `facadeModuleId` 把案例 chunk 归到 `js/cases/<分类>/<案例>/`（Demo / Demo.source / 教学代码 / notes），vendor、pages、lib、workers 各自成目录；`assetFileNames` 按扩展名与 `originalFileNames` 把样式归到 `css/{vendor,pages,cases,themes}`，图片/字体/worker 分到 `media`/`fonts`/`js/workers`。只改路径不改体积，`check:bundle` 同步改递归扫描 |
+| 2026-10-21 | **浏览器验收统一走 `npm run check:ui`，禁止临时 Chrome 脚本** | 各会话临时脚本只 kill 父进程、部分没加 `--headless`、每轮新建 profile，累计 111 个 chrome 进程 + 41 个目录（2 GB），桌面不断弹窗。统一脚本：headless、`--remote-debugging-port=0`、固定 `node_modules/.tmp/chrome-check`、退出 `taskkill /T /F` 并重试清理；内置 5 个场景、失败返回 1 |

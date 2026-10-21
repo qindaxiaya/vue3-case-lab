@@ -36,6 +36,7 @@ npm run dev
 | `npm run lint` | ESLint（禁止 `any`） |
 | `npx vitest run` | 运行测试（含案例收录与内容质量门禁） |
 | `npm run check:bundle` | 首屏体积门禁（build 后执行） |
+| `npm run check:ui` | 浏览器端验收（headless，需先 build + preview） |
 
 ## 打包策略
 
@@ -97,5 +98,6 @@ src/
 ## 质量门禁
 
 - `.github/workflows/ci.yml`：push `main` / PR / 手动触发，依次跑 `npm ci`、type-check、lint、vitest、build、check:bundle
+- 页面验收统一用 `npm run check:ui`：headless 跑首页 / 列表 / 详情源码按需 / EP 样式 / 375px 五个场景，退出时整棵杀进程并清理临时配置，不弹窗口、不留残留
 - `main` 启用 ruleset：必须走 PR、必需检查通过、禁止强推/删除、只允许线性历史
 - 案例内容由测试自动校验：SBAC 四段、摘要与卖点长度、notes 五段、标题可搜索
