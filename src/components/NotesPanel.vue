@@ -19,6 +19,11 @@ const props = defineProps<{
   active: boolean
 }>()
 
+const emit = defineEmits<{
+  /** 内容/失败/空状态已完成一次渲染，父级可据此对齐滚动 */
+  rendered: []
+}>()
+
 /** notes.md 原文 */
 const markdown = ref('')
 /** 加载中（首次打开或重试） */
@@ -61,7 +66,12 @@ async function load(): Promise<void> {
     markdown.value = ''
     failed.value = true
   } finally {
-    if (seq === requestSeq) loading.value = false
+    if (seq === requestSeq) {
+      loading.value = false
+      // 等 DOM 把正文/失败/空状态渲染出来，父级再按最终高度对齐滚动
+      await nextTick()
+      emit('rendered')
+    }
   }
 }
 
