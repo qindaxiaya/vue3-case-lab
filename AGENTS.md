@@ -117,6 +117,11 @@
   - Element Plus 去掉 353 KB 整包主题，改 `importStyle: 'css'` + `theme-chalk/base.css` + 暗色变量；组件样式只随 3 个用到 EP 的 Demo chunk 下发
   - 新增 `npm run check:bundle` 体积门禁（首屏 gzip ≤180 KB、单 chunk ≤600 KB、首屏禁「//! 中文」教学标记），CI 在 build 后执行
   - 机器验收（Chrome CDP）：首页/列表/详情/EP 案例零 console 错误；列表 62 张卡片；详情首屏**不请求**源码 chunk，点「源码」后才请求（125 行代码 + 4 处重点行）；notes 正常渲染；案例间切换不残留上一个案例源码、tab 回到「说明」；375px 无横向溢出；vitest 29/29、type-check、lint、build、check:bundle 全绿
+- ✅ 2026-10-21 全局搜索扩到 notes 正文（正文命中带高亮片段）
+  - 新增 `src/utils/search-index.ts`：纯函数「去 Markdown 标记 → 建文档 → 命中计数 + 片段截取 → 关键词切分 → 与元数据结果合并」，可单测、不依赖浏览器
+  - 新增 `src/composables/useNotesIndex.ts`：首次打开搜索弹窗后 `requestIdleCallback` 构建，62 篇并发 6 分批读、模块级单例缓存、每读完一篇增量刷新结果
+  - `SearchModal.vue`：结果行加「正文」标记与 `<mark>` 高亮片段（不用 `v-html` 防注入），正文索引加载中/不可用有提示；键盘选择不再被增量结果打断
+  - 机器验收（Chrome CDP）：搜「微任务」3 条全部来自正文、搜「虚拟列表」元数据优先 + 6 条正文追加、`structuredClone` 1 条仅正文命中；↑↓ + 回车跳转 `/cases/vue3/reactive-loss`；375px `scrollWidth=375`、面板 351px；零 console 错误；vitest 45/45（新增 16 条）、type-check、lint、build 通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -173,3 +178,4 @@
 | 2026-10-21 | **Element Plus 样式改按需（推翻 2026-10-20「整包主题统一」决策）** | 全站只有 `debounce-throttle` / `json-viewer` / `vitest-gate` 用 EP，整包 `index.css` 353 KB（产物 549 KB）性价比极低。改 `importStyle: 'css'` + `theme-chalk/base.css` + `dark/css-vars.css`，组件样式随 Demo chunk 下发；`base.css` 必须留在入口 CSS，否则官方变量晚于 `_element.scss` 生效，浅色主题会被默认蓝覆盖 |
 | 2026-10-21 | **Rolldown 分包用 `codeSplitting.groups` + priority，不用 `manualChunks`** | Vite 8 底层是 Rolldown，`manualChunks` 会被转成单个 codeSplitting 组，且组默认 `includeDependenciesRecursively: true`，把 Vue 运行时卷进 element-plus chunk → 入口被迫预加载 218 KB 且 EP 变成首屏依赖。改用显式分组：Vue 优先级最高先被认领，EP 组关闭递归收编，`theme-chalk` 的 CSS 不参与分组（留在入口保证覆盖顺序） |
 | 2026-10-21 | **新增体积门禁 `npm run check:bundle` 并接入 CI** | 体积回归不会让单测变红（eager glob 就是例子）。脚本读 `dist/index.html` 的首屏资源，校验：首屏 gzip ≤180 KB、非 pdf 单 chunk ≤600 KB、首屏 JS 不得出现「//! 中文」教学标记；CI 在 build 后执行，红灯直接拦住合并 |
+| 2026-10-21 | **全局搜索扩到 notes 正文：索引空闲构建、纯函数可单测** | 标题/摘要/标签继续同步匹配，正文索引在首次打开弹窗后 `requestIdleCallback` 构建（并发 6、单例缓存、边读边刷新），首屏不多下载 190 KB；匹配与片段逻辑放 `utils/search-index.ts` 纯函数（16 条单测），组件只负责调度；正文结果用 `<mark>` 高亮（不用 `v-html` 防注入），片段两行截断；键盘选择只在关键词变化时重置，避免增量结果把选中项弹回第一条 |
