@@ -1,0 +1,68 @@
+// ============================================================
+// 教学片段 2：全量入口 vs 按需拆分，以及预取与缓存的边界
+// ============================================================
+
+// --- 1. 错误做法：一个「全量入口」把三个模块打包收编 ---
+
+// full-kit.ts：静态 re-export 三个模块
+export { buildReport } from './city-report'
+export { buildSampleCsv, parseCsv } from './csv-kit'
+export { renderMarkdown, SAMPLE_DOC } from './mini-markdown'
+
+// 页面里只要点了任意一个功能，就会先下载这个全量入口，
+// 三个模块 + 数据集一起到手，用户为没用到的功能付流量与解析时间。
+
+function loadEverything(): Promise<unknown> {
+  //! 一次 import 带走三个模块：这里量到的字节是「全量」的代价
+  return import('./modules/full-kit')
+}
+
+// --- 2. 正确做法：一个功能一个入口 ---
+
+type FeatureKey = 'report' | 'csv' | 'markdown'
+
+/** 每个入口都是独立字面量，打包工具才会切成三个文件 */
+async function runFeature(key: FeatureKey): Promise<void> {
+  if (key === 'report') {
+    //! 字面量 import：写成变量（如 import(path)）打包工具无法静态分析
+    const { buildReport } = await import('./modules/city-report')
+    console.table(buildReport().countries.slice(0, 5))
+  } else if (key === 'csv') {
+    const { buildSampleCsv, parseCsv } = await import('./modules/csv-kit')
+    console.log(parseCsv(buildSampleCsv(400)).rows.length)
+  } else {
+    const { renderMarkdown, SAMPLE_DOC } = await import('./modules/mini-markdown')
+    console.log(renderMarkdown(SAMPLE_DOC).length)
+  }
+}
+
+// --- 3. 预取：用户「正要」点的时候提前下载 ---
+
+// 鼠标移入按钮就开始下载，点击时大概率已经就绪；
+// 只在真的想用的功能上预取，别在页面加载时无脑预取全部。
+function prefetchOnHover(button: HTMLElement): void {
+  button.addEventListener(
+    'pointerenter',
+    () => {
+      //! 同一个地址只会发一次请求：预取完再 import() 直接命中缓存
+      void import('./modules/city-report')
+    },
+    { once: true },
+  )
+}
+
+// --- 4. 缓存与失败：两次点击为什么差这么多 ---
+
+// 第一次点击：发请求 → 下载 → 解析 → 执行，耗时几十毫秒
+// 第二次点击：模块已在内存里，import() 直接返回同一个模块对象，耗时接近 0
+//! 注意：失败也会被记住。同一地址首次加载失败后，再次 import() 常常立刻失败，
+//! 真实项目里要么给地址加版本参数重试，要么提示用户刷新页面。
+
+async function retryOnce(): Promise<void> {
+  try {
+    return await import('./modules/city-report')
+  } catch {
+    //! 加 ?v=时间戳 绕开失败的模块记录（保持字面量前缀，Vite 仍能识别）
+    return import('./modules/city-report')
+  }
+}
