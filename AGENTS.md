@@ -9,14 +9,15 @@
 - **常用命令**：
   - `npm run dev` — 启动开发服务器
   - `npm run type-check` — vue-tsc 类型检查
-  - `npm run lint` — ESLint 检查
+  - `npm run lint` — ESLint 检查（全量，收尾/合并前用）
+  - `npx eslint <改动文件> --max-warnings 0` — 只查改动文件（L0/L1 默认用法）
   - `npx vitest run` — 运行测试
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
 
 - 全程中文界面、中文说明文案；变量/函数/文件名英文
-- **Windows 中文乱码（2026-10-20 根治）**：opencode 以 `-NoProfile` 启动 Windows PowerShell 5.1，控制台/管道默认 GBK(936)，而 opencode 按 UTF-8 解码，中文输出就成乱码。已加全局插件 `~/.config/opencode/plugins/utf8-encoding.ts`，在每次 bash 工具调用前注入 `[Console]::OutputEncoding=...UTF8`（重启 opencode 生效）。未重启或 `--pure` 模式下，查看中文优先用 Read/Grep 工具，必须用 shell 时在命令前手动加同样设置
+- **Windows 中文乱码（2026-10-20 根治，2026-10-21 迁移 V2 插件格式）**：opencode 以 `-NoProfile` 启动 Windows PowerShell 5.1，控制台/管道默认 GBK(936)，而 opencode 按 UTF-8 解码，中文输出就成乱码。全局插件 `~/.config/opencode/plugins/utf8-encoding.ts` 现在必须是 V2 写法（`export default Plugin.define({ id, setup })` + `ctx.shell.hook("create.before")`），对 PowerShell 命令自动前置 `[Console]::OutputEncoding=...UTF8`；V1 的「返回 hook 对象」写法在 v2.1.1 会直接加载失败（日志 `Plugin must export a default definition ... Missing key at ["default"]`，即表现为乱码复发）。验证两条：`opencode api get /api/plugin` 出现 `utf8-encoding` 且 `state.status=active`；不带前缀跑中文命令能正常显示。`--pure` 模式不加载插件，必须手工加同样设置
 - **站点自身全部代码写中文注释**（组件/composable/工具/路由），关键逻辑逐行注释「做什么、为什么」，与案例代码同等标准
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）；ESLint `no-explicit-any` 为 error
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
@@ -46,13 +47,19 @@
   1. 做完一个任务/一个案例必须停下，等用户检查确认后才继续下一步
   2. 有页面变化时必须给出 dev 地址（`http://localhost:5173/`）供用户查看
   3. git 分步提交：一个任务/一个逻辑单元一个 commit，不攒大提交
-- **完成前强制验证清单（2026-10-19 教训固化，每个任务/案例收尾必跑）**：
+- **任务分级（2026-10-21 用户拍板，解决「改一个样式也要跑全量」）**：细则见 `docs/skills-and-subagents.md`
+  1. **L0 微调**（单文件样式/文案/间距/颜色，无逻辑）：读片段 → 改 → `npx eslint <改动文件> --max-warnings 0` → dev 目视；不 brainstorm、不写计划、不 TDD、不派子代理、不跑 DoD/build/全量 vitest
+  2. **L1 小功能**（单组件/单案例内交互，≤3 文件）：逻辑部分先写测试 → 相关 `npx vitest run` + `npm run type-check` + `npx eslint <改动文件> --max-warnings 0` → dev 走查 + 375px；不跑全量 build、不派子代理
+  3. **L2 新案例/跨模块**（新案例、registry/router/构建配置、≥4 个逻辑文件（纯样式批量微调不算），或改动触及共享模块）：完整 DoD + 全量四项 + 人工走查，收尾可派 `verifier` / `case-reviewer` 子代理
+  4. 技能按级别触发：L0/L1 不主动加载 `brainstorming` / `writing-plans` / `subagent-driven-development`；用户明确要求走完整流程时以用户指令为准
+  5. 停等与提交仍按「工作节奏」：每个任务停下等确认、有页面变化给 dev 地址；连续同类微调可合并成一次确认与一个 commit
+- **完成前强制验证清单（2026-10-19 教训固化；2026-10-21 收敛：完整清单只用于 L2 新案例/跨模块，L0/L1 按上方分级与影响面验证）**：
   1. 按 `docs/case-definition-of-done.md` 逐条验收（Demo 稳定性 / 对比开关 / 实测数据 / notes 五段 / meta.sell / 375px）
   2. `npx vitest run`（含真实 glob 收录链路 + 内容质量门禁：SBAC 四段齐全 / 卖点≤30 字、摘要≤40 字 / 说明区禁未解释缩写 / notes 五段 / 标题可被搜索命中——新增案例自动扩展校验）
   3. `npm run type-check`、`npm run lint`、`npm run build`
   4. dev 页面实测：案例页可交互、刷新无控制台告警、路由往返状态正确
   5. 有页面交互变化时，dev 地址交用户人工走查（机器验证不能替代）
-  6. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（已通过全局 superpowers 插件提供，用 skill 工具加载 `verification-before-completion`）
+  6. 未跑完清单不得宣称"完成"；宣称前先有 fresh 证据（已通过全局 superpowers skills 提供，用 skill 工具加载 `verification-before-completion`）
 - 每任务收尾必更新本文件「当前进度」段；重大取舍记入「决策记录」
 
 ## 当前进度
@@ -98,8 +105,11 @@
 - ✅ 2026-10-20 Element Plus 试点：接入 unplugin-vue-components 按需引入（不整包注册），新增主题适配层 `_element.scss`（主色/字体/圆角/边框/背景对齐站点 token，含暗色与 Select 弹层）；3 个样板案例改用统一大号表单控件：vitest-gate（el-select）、debounce-throttle（el-input）、json-viewer（el-input textarea）
 - ✅ 2026-10-20 收尾合并：#9 文档 → #7 Element Plus → #8 Demo 尺寸（rebase 解决 `vitest-gate` / `AGENTS.md` 冲突）；56/56 案例完成尺寸统一，`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补 14px 字号与 40px 高度；CDP 1200/375 抽查 5 路由 + 下拉弹层 + 路由往返，无横向溢出与 console 错误
 - ✅ 2026-10-20 批次 8（6 案例）：交叉观察器曝光统计 / 过渡组列表动画 / content-visibility 长列表 / 请求竞态与取消 / 乐观更新与回滚 / 虚拟网格；全部含 Demo + code + notes 五段。实测：IO 布局读取 888→0、回调 28；过渡组打乱耗时 360ms vs 普通替换 2ms；content-visibility 3000 条重建 99.4→49.9ms（1.99×，节点仍 3000）；请求竞态旧响应覆盖 2→0、最终结果串台→正确；乐观更新点击后 40ms 即变、失败约 300ms 回滚；虚拟网格 5000→44 节点、重建 97.5→14ms。vitest 25/25、type-check、lint、build 通过；1200/375 六路由无横向溢出、无 console 错误
-- ✅ 2026-10-20 Agent Skills 接入：opencode 1.19.3 通过全局 `plugin` 安装 superpowers v7，`opencode debug skill` 列出 16 个（15 superpowers + 1 内置），bootstrap 实测注入；Claude Code 侧同步升级到 v7（15 skills，user + project scope 均 enabled）
-- dev 地址：当前主工作区 `http://localhost:5174/`（5173 被其他项目占用），列表 `/cases`，案例页 `/cases/performance/perf-observer`
+- ✅ 2026-10-20 Agent Skills 接入：superpowers v7 以技能目录形式接入（当时放在 `~/.config/opencode/skills`，2026-10-21 起统一到 `~/.agents/skills`），`~/.claude/skills/frontend-design` 提供设计技能；2026-10-21 清理 `grill-me`（与 `grilling` 同文）和重复副本后无 duplicate 告警。opencode 升到 **v2.1.1** 后 `debug skill` 已移除，改用 `opencode api get /api/skill` 实测 **20 个**（17 superpowers + frontend-design + 内置 `opencode` / `report`）
+- ✅ 2026-10-21 详情页 tab 体验：主色胶囊指示器用 transform 快滑并带柔和阴影；移除 `v-show` 面板重播的透明度动画，消除「深入」首次加载闪屏；首次 notes 用 `rendered` 事件 + 临时 min-height 等正文完成后再对齐；吸顶切换滚到「刚吸顶」位置（零高度锚点避开 sticky offsetTop 漂移），并支持快速连点。系统开启「减少动态效果」时，全局仍关闭其余动效，但指示器保留短滑，避免直接瞬移。实测 1200/375、亮暗色、键盘左右键、快速连点、减少动态效果均对齐；全量回归 62 路由 × 2 视口 = 124 项 0 失败，vitest 25/25、type-check、lint、build 通过
+- ✅ 2026-10-21 skills 收口（续做中断会话 `ses_ea3f7735…`）：新增 `docs/skills-and-subagents.md`（20 个技能清单与触发时机、L0/L1/L2 分级、SubAgent 配置与权限语义、重装记录与排障）；`AGENTS.md` 增加任务分级并把强制清单收敛到 L2；新增项目级只读子代理 `case-reviewer` / `verifier`（`opencode debug agents` 实测 `mode=subagent`、`edit: deny`）；lint 常用写法改为单文件。**superpowers 已重装**：`npx skills add obra/superpowers -g -a opencode -s "*" --copy -y`，15 个技能补齐 prompts/scripts/references（`subagent-driven-development` 7 个文件、`systematic-debugging` 11 个、`diagnosing-superpowers` 20 个）；技能实体统一到 `~/.agents/skills`，`~/.config/opencode/skills` 已清空，避免重复来源。实测 `opencode api get /api/skill` = 20 条、全部指向 `.agents`（`frontend-design` 在 `.claude`）、日志无新 duplicate 告警。首轮 `case-reviewer` 审查报 0 P0 / 2 P1 / 8 P2，已逐条修完：统一 eslint `--max-warnings 0` 口径、按 V2 优先级覆盖解释同名技能（不是「随机/静默」）、补 `metadata.opencode/autoinvoke` 正确嵌套、L2 判据改为「≥4 个逻辑文件」、给 `case-reviewer` 追加 deny `git *--output*` 与 `*>*` 并实测拦截成功
+- ✅ 2026-10-21 中文乱码复发并修复：opencode 升到 v2.1.1 后 V1 插件实现不再运行，每次启动报 `failed to load plugin ... Plugin must export a default definition with an id ... Missing key at ["default"]`，UTF-8 前缀实际没注入（不带前缀跑中文命令实测仍是乱码）。`utf8-encoding.ts` 改写为 `export default Plugin.define({ id: "utf8-encoding", setup })` + `ctx.shell.hook("create.before")`：按 `event.shell` 只对 PowerShell 注入、幂等跳过已有设置。实测 `/api/plugin` 中 `utf8-encoding` 为 `active`、日志不再报加载失败、裸跑 `中文测试：你好，世界` 正常显示（进程参数里可见自动加上的前缀）
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
 
@@ -144,4 +154,10 @@
 | 2026-10-20 | **仓库转公开 + ruleset 硬门禁** | 私有免费仓库不支持分支保护/ruleset（API 403）；转公开后创建 `main-merge-gate`：必须 PR、必需检查 `Type check, lint, test, build`、禁强推/删除、线性历史、审批 0（单人不能自批）、无 bypass；管理员直推同样被 GH013 拒绝 |
 | 2026-10-20 | **Demo 尺寸统一走 token + 全局兜底** | `_tokens.scss` 新增 `--demo-*`；`.demo-card` 控件桌面 ≥36px / 移动 ≥40px 由 `_components.scss` 兜底；字号按 13/14/15/16 分层，避免统一大字号压平层级；`CasePage` 外卡桌面 `2.25rem 2.5rem`、移动 `1.25rem`。覆盖 56/56；`debounce-throttle`、`json-viewer` 的 EP 控件用 `:deep` 补内层字号与 40px 高度 |
 | 2026-10-20 | **Element Plus 仅限通用表单控件试点，按需引入，站点壳不换皮** | 用户拍板试点：用 unplugin-vue-components + ElementPlusResolver（`importStyle: false`）按需引入，样式由 main.ts 引入官方完整主题，再用 `_element.scss` 把主色/字体/圆角/边框/背景/暗色与 Select 弹层映射到站点 token；禁止整包 `app.use(ElementPlus)`；站点壳与教学型组件仍自建，Pinia 仍禁止 |
-| 2026-10-20 | **skills 统一走 superpowers v7 官方插件** | opencode 1.19.3 用全局 V1 `plugin` 键安装 git 源（插件自动注入 `skills.paths` 与 bootstrap，16 个 skill 实测可加载）；Claude Code 侧因 github.com 的 git 协议不可达，改用 codeload tarball 手工落缓存并同步 `installed_plugins.json` / marketplace sha 到 v7；将来升 OpenCode 2 时改用 V2 `plugins` 键（v7 已支持 2.0.4+） |
+| 2026-10-20 | **skills 以目录形式接入 superpowers v7** | 当时放 `~/.config/opencode/skills` 直接放技能目录（17 个），不依赖 npm 插件；**2026-10-21 已迁至 `~/.agents/skills`，该目录现为空**（见同日重装决策）。bootstrap 由 `using-superpowers` 的描述触发；Claude Code 侧因 github.com 的 git 协议不可达，改用 codeload tarball 手工落缓存并同步 `installed_plugins.json` / marketplace sha 到 v7 |
+| 2026-10-21 | **skills 去重并固定 frontend-design 来源** | 删除 `grill-me`（正文与 `grilling` 完全相同，仅 name/description 不同）；`frontend-design` 原为 `.agents` 实体 + `.claude` junction，opencode 双路径扫描导致 `duplicate skill name` 告警，改为仅保留 `~/.claude/skills` 真实目录；实测无重复告警（v1.19.3 计 19 个；v2.1.1 内置技能换成 `opencode` / `report`，共 20 个） |
+| 2026-10-21 | **任务分级 L0/L1/L2，验证按影响面** | 用户反馈「改一个东西有点慢」：样式微调也被强制清单 + brainstorming/TDD 技能链拖成 15~25 次工具调用。改为 L0 只跑单文件 eslint、L1 跑相关测试 + type-check、L2 才走完整 DoD 与全量四项；技能按级别豁免；细则见 `docs/skills-and-subagents.md` |
+| 2026-10-21 | **项目级只读子代理 case-reviewer / verifier** | 用 `.opencode/agents/*.md`（Markdown frontmatter + permissions 规则，随仓库同步）；两者都 `edit: deny` + 禁派子代理，`case-reviewer` 的 shell 只放行 `git diff/status/log/show`，并追加 deny `git *--output*` 与 `*>*`（否则 `git diff --output=file`、`> file` 能借只读命令写文件）；`verifier` 开放 shell 但只用于跑验证（靠 prompt 约束，非硬隔离）；仅 L2 审查/验收使用，L0/L1 不派 |
+| 2026-10-21 | **superpowers 重装为完整安装，技能实体统一 `~/.agents/skills`** | 旧安装只有 `SKILL.md`，缺官方 prompts/scripts/references；用 `npx skills add obra/superpowers -g -a opencode -s "*" --copy -y` 重装（`--copy` 不建 symlink）。踩坑：同名技能按**固定优先级覆盖**（`~/.config/opencode/skills` > `~/.agents/skills` > `~/.claude/skills` > 内置），旧副本留在 config 目录就会盖住新版，且**日志不一定报** duplicate（.config/.agents 这次完全没报），只能靠 `api get /api/skill` 看 path 才发现；已清空 `~/.config/opencode/skills`，`frontend-design` 留 `~/.claude/skills` 真实目录。以后升级用 `npx skills update -g` |
+| 2026-10-21 | **详情页 tab 指示器 + 吸顶对齐 + notes 首屏无闪** | 主色胶囊用 transform 滑动（0.18s，带柔和阴影）；移除 `v-show` 面板重播动画；首次 notes 用 `rendered` 事件 + 临时 min-height 等正文完成后再滚；吸顶目标用零高度锚点，避开 sticky `offsetTop` 漂移；系统开启「减少动态效果」时，全局仍关闭其余动效，但指示器显式保留短滑，避免被 0.01ms 规则压成瞬移；1200/375、快速连点、减少动态效果实测通过 |
+| 2026-10-21 | **UTF-8 插件必须用 V2 格式，挂 shell 层的 `create.before`** | v2.1.1 起 V1「返回 hook 对象」的实现不再运行，表现为启动日志 `failed to load plugin` + 中文乱码复发（本次先复现：裸跑中文命令输出乱码）。改写为 `export default Plugin.define({ id, setup })` + `ctx.shell.hook("create.before")`；选 shell 层而非 `tool.execute.before`，是因为工具名从 `bash` 变 `shell` 后按名匹配会失效；用 `event.shell` 判断只对 PowerShell 注入。验收：`/api/plugin` 中 `utf8-encoding` = `active` + 裸跑中文命令正常 |
