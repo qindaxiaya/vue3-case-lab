@@ -4,26 +4,35 @@
 // - /cases                         → 案例列表页（全宽 + 分类筛选）
 // - /cases/:categoryId/:caseId     → 案例详情页（面包屑返回列表）
 // - /c/:categoryId/:caseId         → 兼容旧链接，重定向
+//
+// 页面组件全部懒加载（2026-10-21 打包优化）：
+// 首页不再被迫下载案例列表/详情页及其依赖（registry、highlight.js 等），
+// 每个页面各自成 chunk，改哪个页面都不会影响其它页面的缓存。
 // ============================================================
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from './pages/HomePage.vue'
-import CaseListPage from './pages/CaseListPage.vue'
-import CasePage from './pages/CasePage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     // 项目介绍首页（landing）
-    { path: '/', name: 'home', component: HomePage },
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('./pages/HomePage.vue'),
+    },
 
     // 案例列表（无嵌套布局——侧边栏方案已废弃）
-    { path: '/cases', name: 'case-list', component: CaseListPage },
+    {
+      path: '/cases',
+      name: 'case-list',
+      component: () => import('./pages/CaseListPage.vue'),
+    },
 
     // 案例详情
     {
       path: '/cases/:categoryId/:caseId',
       name: 'case',
-      component: CasePage,
+      component: () => import('./pages/CasePage.vue'),
     },
 
     // 旧路径兼容：/c/xxx → /cases/xxx（已在书签/历史中的链接不断）
