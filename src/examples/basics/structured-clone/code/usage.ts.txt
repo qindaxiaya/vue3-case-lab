@@ -1,0 +1,57 @@
+// ============================================================
+// structuredClone 深拷贝 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+interface DraftItem {
+  id: number
+  createdAt: Date
+  meta: Map<string, string>
+  labels: Set<string>
+  pattern?: RegExp
+}
+
+//! 法一：结构化克隆——浏览器原生，日期/映射/集合/正则/循环引用全保真
+function safeSnapshot(items: DraftItem[]): DraftItem[] {
+  return structuredClone(items)
+}
+
+//! 法二：JSON 字符串往返——日期变字符串、映射变对象、集合直接丢空
+function jsonSnapshot(items: DraftItem[]): DraftItem[] {
+  return JSON.parse(JSON.stringify(items)) as DraftItem[]
+}
+
+//! 法三：展开 + 手动点名——点过名的字段生还，漏一个就共享原引用
+function spreadSnapshot(items: DraftItem[]): DraftItem[] {
+  return items.map((it) => ({
+    ...it,
+    createdAt: new Date(it.createdAt.getTime()),
+    meta: new Map(it.meta),
+    labels: new Set(it.labels),
+  }))
+}
+
+//! 类型判定：拷出「独立的新对象且类型仍在」才算真副本（共享原引用不算）
+function verifyClone(copy: { createdAt?: unknown }, original: Date): boolean {
+  return copy.createdAt !== original && copy.createdAt instanceof Date
+}
+
+// ---------- 循环引用：structuredClone 原生支持，JSON 直接抛错 ----------
+
+function cyclicDemo(): void {
+  const node: { self?: unknown; id: number } = { id: 1 }
+  node.self = node
+  const twin = structuredClone(node)
+  console.log('副本的 self 又指向副本自己：', twin.self === twin)
+  try {
+    JSON.stringify(node)
+  }
+  catch (error) {
+    console.log('JSON 往返在循环引用处抛错：', error)
+  }
+}
+
+// ---------- 实践建议 ----------
+// 1. 现代浏览器深拷贝首选 structuredClone；JSON 往返只在不涉及特殊类型时才安全
+// 2. 手动点名的拷贝有隐藏成本：数据加一个嵌套字段，这里必须同步补一行
+// 3. 结构化克隆不能拷函数与网络资源引用；含回调的数据不适合任何深拷贝方案

@@ -1,0 +1,53 @@
+// ============================================================
+// URLSearchParams 筛选状态进地址栏 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+interface FilterState {
+  cats: string[]
+  keyword: string
+  page: number
+}
+
+//! 状态入列：用 URLSearchParams 生成查询串，空格/中文/等号全部自动转义
+//! 多选分类用 append（同一键名重复出现），别用 set（会覆盖只剩最后一个）
+function buildQuery(state: FilterState): string {
+  const params = new URLSearchParams()
+  for (const cat of state.cats) params.append('cat', cat)
+  if (state.keyword.trim()) params.append('kw', state.keyword.trim())
+  if (state.page > 1) params.append('page', String(state.page))
+  return params.toString()
+}
+
+//! 静默写地址栏：replaceState 只改地址不产生历史记录，后退列表不会被灌满
+function syncUrl(state: FilterState): void {
+  history.replaceState(null, '', `?${buildQuery(state)}`)
+}
+
+//! 页面初始化：从路由查询串读回状态——刷新/后退/分享链接三线共用的还原口
+function parseFromUrl(search: string): FilterState {
+  const params = new URLSearchParams(search)
+  return {
+    cats: params.getAll('cat'),
+    keyword: params.get('kw') ?? '',
+    page: Number(params.get('page') ?? '1'),
+  }
+}
+
+//! 真实历史栈的后退还原：监听 popstate（pushState 进栈的地址在这里生效）
+window.addEventListener('popstate', () => {
+  const recovered = parseFromUrl(location.search)
+  console.log('后退还原：', recovered)
+})
+
+// ---------- 对照：手写拼接的坑（每一条 URLSearchParams 都自动绕开） ----------
+
+function brokenManualQuery(state: FilterState): string {
+  // 关键词含空格/中文时这条路直接翻车：空格截断、中文乱码、等号拆参数
+  return `?cat=${state.cats.join(',')}&kw=${state.keyword}&page=${state.page}`
+}
+
+// ---------- 实践建议 ----------
+// 1. 筛选变化 → buildQuery → replaceState 一步到位，去抖 200ms 更稳
+// 2. 页面初始化永远先 parseFromUrl，保证「链接即状态」
+// 3. 不需要分享的单会话状态才放内存，别什么都往地址栏塞
