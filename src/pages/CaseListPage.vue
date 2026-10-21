@@ -1,15 +1,22 @@
 // ============================================================
 // 案例列表页（/cases，全宽）
-// - 顶栏搜索改为全局弹窗，本页只负责分类筛选
+// - 顶栏搜索改为全局弹窗，本页只负责分类 / 难度 / 收藏筛选
 // - 分类分组的案例卡片：标题 / 摘要 / 难度 / 标签，点击进详情
+// - 最近浏览：本机打开过的案例，方便继续上次的位置
 // ============================================================
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { categories } from '../examples/categories'
 import { allCases } from '../examples/registry'
+import type { CaseDifficulty } from '../types/case'
+import { caseKey, parseCaseKey, useCaseHistory } from '../composables/useCaseHistory'
 
 /** 分类筛选持久化键：从详情页返回时保留用户选中的分类 */
 const FILTER_KEY = 'moyu-cases-filter'
+/** 难度筛选持久化键 */
+const DIFFICULTY_KEY = 'moyu-cases-difficulty'
+/** 只看收藏的持久化键 */
+const FAVONLY_KEY = 'moyu-cases-favonly'
 
 /** 选中的分类 id（'' = 全部；chips 本地状态，sessionStorage 记忆） */
 const activeCategory = ref(sessionStorage.getItem(FILTER_KEY) ?? '')
@@ -19,9 +26,47 @@ if (activeCategory.value && !categories.some((c) => c.id === activeCategory.valu
   activeCategory.value = ''
 }
 
+/** 选中的难度（'' = 全部） */
+const activeDifficulty = ref<CaseDifficulty | ''>(
+  (sessionStorage.getItem(DIFFICULTY_KEY) as CaseDifficulty | null) ?? '',
+)
+
+/** 是否只看收藏 */
+const favOnly = ref(sessionStorage.getItem(FAVONLY_KEY) === '1')
+
 // 筛选变化即写入会话存储（关闭标签页后自动清空）
 watch(activeCategory, (value) => {
   sessionStorage.setItem(FILTER_KEY, value)
+})
+watch(activeDifficulty, (value) => {
+  sessionStorage.setItem(DIFFICULTY_KEY, value)
+})
+watch(favOnly, (value) => {
+  sessionStorage.setItem(FAVONLY_KEY, value ? '1' : '0')
+})
+
+/** 收藏与浏览记录（模块级单例，详情页写、本页读） */
+const { recent, isFavorite } = useCaseHistory()
+
+/** 难度筛选项（带数量，数量为当前分类下该难度的案例数） */
+const difficultyChips = computed(() => {
+  const scoped = activeCategory.value
+    ? allCases.filter((c) => c.categoryId === activeCategory.value)
+    : allCases
+
+  const options: Array<{ id: CaseDifficulty | ''; name: string }> = [
+    { id: '', name: '全部难度' },
+    { id: 'beginner', name: '入门' },
+    { id: 'intermediate', name: '进阶' },
+    { id: 'advanced', name: '高级' },
+  ]
+
+  return options.map((option) => ({
+    ...option,
+    count: option.id
+      ? scoped.filter((c) => c.meta.difficulty === option.id).length
+      : scoped.length,
+  }))
 })
 
 /**
@@ -38,11 +83,20 @@ const chips = computed(() => [
     .filter((cat) => cat.count > 0),
 ])
 
-/** 当前分类过滤后的案例（chips 与分组列表共用） */
+/** 当前筛选条件下的案例（分类 → 难度 → 收藏三层过滤） */
 const visibleCases = computed(() =>
-  activeCategory.value
-    ? allCases.filter((c) => c.categoryId === activeCategory.value)
-    : allCases,
+  allCases.filter((item) => {
+    if (activeCategory.value && item.categoryId !== activeCategory.value) {
+      return false
+    }
+    if (activeDifficulty.value && item.meta.difficulty !== activeDifficulty.value) {
+      return false
+    }
+    if (favOnly.value && !isFavorite(caseKey(item.categoryId, item.meta.id))) {
+      return false
+    }
+    return true
+  }),
 )
 
 /**
@@ -58,8 +112,30 @@ const grouped = computed(() =>
     .filter((group) => group.cases.length > 0),
 )
 
-/** 无任何命中的总数（搜索/筛选双重条件） */
+/** 无任何命中的总数（筛选条件叠加后的结果数） */
 const totalHits = computed(() => visibleCases.value.length)
+
+/** 最近浏览的案例（最多展示 4 个；已删除的案例自动忽略） */
+const recentCases = computed(() =>
+  recent.value
+    .map((key) => {
+      const ids = parseCaseKey(key)
+      if (!ids) return null
+      return (
+        allCases.find(
+          (c) => c.categoryId === ids[0] && c.meta.id === ids[1],
+        ) ?? null
+      )
+    })
+    .filter((item): item is (typeof allCases)[number] => item !== null)
+    .slice(0, 4),
+)
+
+/** 当前可见案例里被收藏的数量（收藏筛选 chip 的计数） */
+const favoriteCount = computed(
+  () =>
+    allCases.filter((c) => isFavorite(caseKey(c.categoryId, c.meta.id))).length,
+)
 
 /** 难度 → tag 语义色类 */
 function difficultyClass(difficulty: string): string {
@@ -114,12 +190,75 @@ function difficultyLabel(difficulty: string): string {
       </button>
     </div>
 
+    <!-- 难度 / 收藏筛选：与分类筛选叠加生效 -->
+    <div
+      class="filter-chips filter-chips--secondary"
+      role="group"
+      aria-label="按难度或收藏筛选"
+    >
+      <button
+        v-for="chip in difficultyChips"
+        :key="`diff-${chip.id}`"
+        type="button"
+        class="filter-chip filter-chip--sm"
+        :class="{ 'filter-chip--active': activeDifficulty === chip.id }"
+        :aria-pressed="activeDifficulty === chip.id"
+        @click="activeDifficulty = chip.id"
+      >
+        {{ chip.name }}
+        <span class="chip-count">{{ chip.count }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="filter-chip filter-chip--sm filter-chip--fav"
+        :class="{ 'filter-chip--active': favOnly }"
+        :aria-pressed="favOnly"
+        @click="favOnly = !favOnly"
+      >
+        <span aria-hidden="true">★</span>
+        收藏
+        <span class="chip-count">{{ favoriteCount }}</span>
+      </button>
+    </div>
+
+    <!-- 最近浏览：本机打开过的案例，方便接着上次看 -->
+    <section
+      v-if="recentCases.length"
+      class="recent-strip"
+      aria-labelledby="recent-title"
+    >
+      <h2
+        id="recent-title"
+        class="recent-title"
+      >
+        最近浏览
+      </h2>
+      <div class="recent-list">
+        <RouterLink
+          v-for="item in recentCases"
+          :key="`recent-${item.categoryId}/${item.meta.id}`"
+          :to="`/cases/${item.categoryId}/${item.meta.id}`"
+          class="recent-chip"
+        >
+          {{ item.meta.title }}
+        </RouterLink>
+      </div>
+    </section>
+
     <!-- 分类无案例时的空结果 -->
     <div
       v-if="totalHits === 0"
       class="empty-state"
     >
-      <p>该分类暂无案例</p>
+      <p>当前筛选条件下没有案例</p>
+      <button
+        class="btn-ghost empty-reset"
+        type="button"
+        @click="activeCategory = ''; activeDifficulty = ''; favOnly = false"
+      >
+        清除筛选
+      </button>
     </div>
 
     <!-- 分类分组卡片 -->
@@ -143,9 +282,15 @@ function difficultyLabel(difficulty: string): string {
           :to="`/cases/${group.id}/${item.meta.id}`"
           class="case-card card card--interactive"
         >
-          <!-- 卡片头：标题 + 难度 tag -->
+          <!-- 卡片头：标题 + 收藏标记 + 难度 tag -->
           <div class="card-head">
             <h3 class="card-title">
+              <span
+                v-if="isFavorite(caseKey(group.id, item.meta.id))"
+                class="fav-mark"
+                aria-label="已收藏"
+                title="已收藏"
+              >★</span>
               {{ item.meta.title }}
             </h3>
             <span
@@ -253,6 +398,86 @@ function difficultyLabel(difficulty: string): string {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   opacity: 0.75;
+}
+
+/* 第二行筛选：难度与收藏，视觉上比分类轻一档 */
+.filter-chips--secondary {
+  margin-top: -1.35rem;
+  margin-bottom: 1.75rem;
+}
+
+.filter-chip--sm {
+  padding: 0.24rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+/* 收藏 chip：星标跟随文字色，选中时实心 */
+.filter-chip--fav {
+  margin-left: 0.35rem;
+}
+
+.filter-chip--fav.filter-chip--active {
+  color: var(--warning);
+  border-color: var(--warning);
+  background-color: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+/* ---------- 最近浏览 ---------- */
+
+.recent-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-btn);
+  background-color: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.recent-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.recent-chip {
+  padding: 0.22rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+  transition:
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.recent-chip:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  text-decoration: none;
+}
+
+/* 卡片标题前的收藏星 */
+.fav-mark {
+  margin-right: 0.15rem;
+  color: var(--warning);
+}
+
+.empty-reset {
+  margin-top: 0.25rem;
 }
 
 .empty-state {

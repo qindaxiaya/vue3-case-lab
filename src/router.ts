@@ -41,8 +41,12 @@ export const router = createRouter({
       redirect: (to) => `/cases/${to.params.categoryId}/${to.params.caseId}`,
     },
 
-    // 未知路径回首页
-    { path: '/:pathMatch(.*)*', redirect: '/' },
+    // 未知路径：明确展示 404，而不是静默跳回首页
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('./pages/NotFoundPage.vue'),
+    },
   ],
   // 页面切换回顶部；浏览器前进/后退时恢复原滚动位置
   scrollBehavior(_to, _from, savedPosition) {
@@ -83,4 +87,39 @@ export const router = createRouter({
       window.requestAnimationFrame(tryRestore)
     })
   },
+})
+
+// ============================================================
+// 动态 chunk 加载失败兜底
+// - 部署新版本后，旧页面里的 chunk 文件名已失效：再点链接会 404，
+//   表现为整页卡住、什么都不发生（用户只能手动刷新）
+// - 处理：识别「动态导入失败」，整页刷新一次拿新资源；同一会话只重试一次，
+//   避免真正的网络故障时陷入刷新循环
+// ============================================================
+
+/** 会话内只自动刷新一次 */
+const RELOAD_FLAG = 'moyu-chunk-reload'
+
+router.onError((error, to) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const isChunkError
+    = /dynamically imported module|Importing a module script failed|Loading chunk|Failed to fetch/i.test(
+      message,
+    )
+  if (!isChunkError) return
+
+  // 已经重试过还失败：清掉标记，交给控制台与页面错误态，不再刷新
+  if (sessionStorage.getItem(RELOAD_FLAG) === '1') {
+    sessionStorage.removeItem(RELOAD_FLAG)
+    return
+  }
+
+  sessionStorage.setItem(RELOAD_FLAG, '1')
+  // 用完整路径重载，刷新后通常已经拿到新的 chunk 清单
+  window.location.assign(to.fullPath)
+})
+
+// 导航成功即清标记：下次版本更新还能再自动恢复一次
+router.afterEach(() => {
+  sessionStorage.removeItem(RELOAD_FLAG)
 })
