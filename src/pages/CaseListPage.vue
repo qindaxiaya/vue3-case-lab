@@ -89,7 +89,7 @@ function difficultyLabel(difficulty: string): string {
         案例库
       </h1>
       <p class="page-desc">
-        点分类筛选，或点顶栏搜索（支持标题 / 标签 / 摘要）
+        点分类筛选，或点顶栏搜索（支持标题 / 标签 / 摘要 / 正文）
       </p>
     </header>
 
