@@ -18,13 +18,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { loadCaseNotes } from '../examples/notes'
 import {
+  allCases,
   getCase,
   loadCaseSource,
   loadDemoComponent,
   type CodeTab,
+  type RegisteredCase,
 } from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 import NotesPanel from '../components/NotesPanel.vue'
+import { caseKey, useCaseHistory } from '../composables/useCaseHistory'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +156,99 @@ const categoryName = computed(
   () =>
     categories.find((c) => c.id === route.params.categoryId)?.name ??
     String(route.params.categoryId),
+)
+
+/** 分类 id → 展示名（相关案例卡片用） */
+function categoryLabel(categoryId: string): string {
+  return categories.find((c) => c.id === categoryId)?.name ?? categoryId
+}
+
+// ============================================================
+// 收藏 + 最近浏览
+// ============================================================
+
+/** 当前案例的持久化键（分类/案例） */
+const currentKey = computed(() =>
+  item.value ? caseKey(item.value.categoryId, item.value.meta.id) : '',
+)
+
+const { isFavorite, toggleFavorite, recordVisit } = useCaseHistory()
+
+/** 当前案例是否已收藏 */
+const favorite = computed(() =>
+  currentKey.value ? isFavorite(currentKey.value) : false,
+)
+
+// 进入/切换案例即记录浏览（immediate 覆盖首屏直接打开）
+watch(
+  currentKey,
+  (key) => {
+    if (key) recordVisit(key)
+  },
+  { immediate: true },
+)
+
+// ============================================================
+// 相关案例 + 上一篇 / 下一篇
+// - 相关：共享标签数最多的 3 个（跨分类，能串起同类能力）
+// - 上下篇：按 registry 的分类 + 字典序，保证顺序稳定可预期
+// ============================================================
+
+/** 共享标签数最多的相关案例（至少共享 1 个标签；不够 3 个用同分类补齐） */
+const relatedCases = computed<RegisteredCase[]>(() => {
+  const current = item.value
+  if (!current) return []
+
+  const others = allCases.filter(
+    (c) => !(c.categoryId === current.categoryId && c.meta.id === current.meta.id),
+  )
+
+  const currentTags = new Set(current.meta.tags)
+  const scored = others
+    .map((c) => ({
+      item: c,
+      score: c.meta.tags.filter((tag) => currentTags.has(tag)).length,
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.item.meta.title.localeCompare(b.item.meta.title),
+    )
+    .map((entry) => entry.item)
+
+  if (scored.length >= 3) return scored.slice(0, 3)
+
+  // 标签不重合时（新分类里的独立技巧很常见）退化成同分类的其他案例，
+  // 保证「相关案例」区始终有内容，而不是空一块
+  const picked = new Set(scored.map((c) => `${c.categoryId}/${c.meta.id}`))
+  const sameCategory = others.filter(
+    (c) =>
+      c.categoryId === current.categoryId
+      && !picked.has(`${c.categoryId}/${c.meta.id}`),
+  )
+
+  return [...scored, ...sameCategory].slice(0, 3)
+})
+
+/** 当前案例在注册表中的下标（-1 表示未收录） */
+const currentIndex = computed(() =>
+  item.value
+    ? allCases.findIndex(
+        (c) => c.categoryId === item.value?.categoryId && c.meta.id === item.value?.meta.id,
+      )
+    : -1,
+)
+
+/** 上一篇（同一顺序上的前一个案例） */
+const prevCase = computed<RegisteredCase | null>(() =>
+  currentIndex.value > 0 ? allCases[currentIndex.value - 1] : null,
+)
+
+/** 下一篇 */
+const nextCase = computed<RegisteredCase | null>(() =>
+  currentIndex.value >= 0 && currentIndex.value < allCases.length - 1
+    ? allCases[currentIndex.value + 1]
+    : null,
 )
 
 /** 难度 → tag 语义色类 */
@@ -647,6 +743,18 @@ const explainBlocks = computed(() => {
             aria-current="page"
           >{{ item.meta.title }}</span>
         </nav>
+
+        <!-- 收藏：本地保存，列表页可只看收藏 -->
+        <button
+          class="fav-btn"
+          :class="{ 'fav-btn--on': favorite }"
+          type="button"
+          :aria-pressed="favorite"
+          @click="toggleFavorite(currentKey)"
+        >
+          <span aria-hidden="true">{{ favorite ? '★' : '☆' }}</span>
+          {{ favorite ? '已收藏' : '收藏' }}
+        </button>
       </div>
 
       <!-- 页头：标题 + 难度/标签一行 + 摘要（文档站紧凑规格） -->
@@ -897,6 +1005,71 @@ const explainBlocks = computed(() => {
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- ③ 相关案例 + 上一篇 / 下一篇：串起同一类能力，方便连续查阅 -->
+      <section
+        v-if="relatedCases.length || prevCase || nextCase"
+        class="related"
+        aria-labelledby="related-title"
+      >
+        <h2
+          id="related-title"
+          class="related-title"
+        >
+          相关案例
+        </h2>
+
+        <div
+          v-if="relatedCases.length"
+          class="related-grid"
+        >
+          <RouterLink
+            v-for="rel in relatedCases"
+            :key="`related-${rel.categoryId}/${rel.meta.id}`"
+            :to="`/cases/${rel.categoryId}/${rel.meta.id}`"
+            class="related-card card card--interactive"
+          >
+            <span class="related-cat">{{ categoryLabel(rel.categoryId) }}</span>
+            <span class="related-name">{{ rel.meta.title }}</span>
+            <span class="related-summary">{{ rel.meta.summary }}</span>
+          </RouterLink>
+        </div>
+
+        <nav
+          class="case-nav"
+          aria-label="上一篇与下一篇"
+        >
+          <RouterLink
+            v-if="prevCase"
+            :to="`/cases/${prevCase.categoryId}/${prevCase.meta.id}`"
+            class="case-nav-link"
+          >
+            <span aria-hidden="true">←</span>
+            <span class="case-nav-label">上一篇</span>
+            <span class="case-nav-title">{{ prevCase.meta.title }}</span>
+          </RouterLink>
+          <span
+            v-else
+            class="case-nav-spacer"
+            aria-hidden="true"
+          />
+
+          <RouterLink
+            v-if="nextCase"
+            :to="`/cases/${nextCase.categoryId}/${nextCase.meta.id}`"
+            class="case-nav-link case-nav-link--next"
+          >
+            <span class="case-nav-label">下一篇</span>
+            <span class="case-nav-title">{{ nextCase.meta.title }}</span>
+            <span aria-hidden="true">→</span>
+          </RouterLink>
+          <span
+            v-else
+            class="case-nav-spacer"
+            aria-hidden="true"
+          />
+        </nav>
       </section>
 
       <!-- 回到顶部：滚动超过一屏后浮现，外圈是阅读进度 -->
@@ -1386,6 +1559,157 @@ const explainBlocks = computed(() => {
   }
 }
 
+/* ---------- 收藏按钮 ---------- */
+
+.fav-btn {
+  /* 推到工具条最右侧：返回按钮与面包屑保持左对齐 */
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.34rem 0.8rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background-color var(--transition),
+    transform var(--transition);
+}
+
+.fav-btn:hover {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.fav-btn:active {
+  transform: scale(0.97);
+}
+
+/* 已收藏：星标实心 + 暖色底，和小小的「收藏」按钮区分开 */
+.fav-btn--on {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 60%, var(--border));
+  background-color: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+/* ---------- 相关案例 ---------- */
+
+.related {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.related-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.related-card:hover {
+  text-decoration: none;
+}
+
+.related-cat {
+  font-size: 0.7rem;
+  color: var(--primary);
+}
+
+.related-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.related-summary {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 上一篇 / 下一篇：贴底的两张窄条，长标题省略不换行 */
+.case-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.case-nav-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  text-decoration: none;
+  transition:
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.case-nav-link:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  text-decoration: none;
+}
+
+.case-nav-link--next {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.case-nav-label {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.case-nav-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.case-nav-spacer {
+  flex: 1;
+}
+
 /* ---------- 回到顶部 ---------- */
 
 .back-top {
@@ -1491,6 +1815,24 @@ const explainBlocks = computed(() => {
   .case-page {
     padding: 1.5rem 1.25rem 3rem;
     gap: 1.5rem;
+  }
+
+  /* 移动端收藏按钮单独换行，不与返回/面包屑抢一行 */
+  .fav-btn {
+    margin-left: 0;
+  }
+
+  .related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 上下篇改为纵向堆叠，标题才有空间显示 */
+  .case-nav {
+    flex-direction: column;
+  }
+
+  .case-nav-spacer {
+    display: none;
   }
 
   /* 移动端 tab 组铺满一行，方便点按 */
