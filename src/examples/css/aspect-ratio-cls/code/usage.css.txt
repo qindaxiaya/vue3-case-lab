@@ -1,0 +1,67 @@
+// ============================================================
+// aspect-ratio 图片占位防抖动教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+/* ---------- 1. 占位：比例写在加载之前 ---------- */
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0.5rem;
+}
+
+.media-cell {
+  //! aspect-ratio: 16 / 9 让元素在图片到来之前就有正确高度——
+  //! 高度 = 宽度 ÷ 1.7778，由样式直接算出，不等网络
+  aspect-ratio: 16 / 9;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.06); /* 低饱和底色当「加载中」皮肤 */
+  overflow: hidden;
+  min-width: 0;
+}
+
+.media-cell img {
+  display: block;
+  width: 100%;
+  height: 100%;      //! 图片只负责「填进早已备好的位置」：object-fit 裁边也稳
+  object-fit: cover;
+}
+
+/* 对照组（旧写法）：什么都不声明的裸图片 */
+.media-cell img.plain {
+  display: block;
+  width: 100%;
+  height: auto;      //! 加载前高度 0，加载后按原图比例撑开——下方内容被顶走
+}
+
+/* ---------- 2. 计量：布局偏移观察器实测 ---------- */
+/* 与 Demo.vue 一致：hadRecentInput 豁免点击引起的偏移，只算「自己抖」的 */
+
+// const observer = new PerformanceObserver((list) => {
+//   for (const entry of list.getEntries()) {
+//     const shift = entry as unknown as LayoutShiftEntry
+//     //! 点击 / 输入后 500ms 内的偏移浏览器自动豁免，跳过它防误计
+//     if (shift.hadRecentInput) continue
+//     if (shift.value <= 0) continue
+//     score += shift.value   //! value 就是本次偏移分数：面积 × 距离占比
+//   }
+// })
+// observer.observe({ type: 'layout-shift', buffered: false })
+
+/* ---------- 3. 图片来源：本地 canvas → data URI ---------- */
+/* 离线可复现、无网络抖动、无跨域，测量干净 */
+
+// const canvas = document.createElement('canvas')
+// canvas.width = 320
+// canvas.height = 180   //! 320/180 = 16/9：素材比例与占位比例一致才有对照意义
+// const uri = canvas.toDataURL('image/jpeg', 0.75)
+
+// // 模拟网络：占零高度的位 → 延时赋 src → 加载完成撑开（旧写法）/ 稳坐（新写法）
+// setTimeout(() => { item.src = uri }, delay)
+
+/* ---------- 何时不用 aspect-ratio ---------- */
+
+// 1. 图片尺寸已经由服务端返回（宽高都有了）→ 直接写 width/height 属性，语义更准
+// 2. 素材比例五花八门且需要保留原始比例 → object-fit: contain + 求平均比例，或按内容按图加比例
+// 3. 比例不是 16/9 的场景（如 4/3 缩略图）→ 同一机制，改数值即可
