@@ -65,7 +65,7 @@
 
 ## 当前进度
 
-- **阶段**：共 62 案例 / 6 分类（composables 1 · observer 5 · virtual 3 · performance 11 · vue3 17 · practice 25）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 73 案例 / 8 分类（css 5 · basics 5 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 1 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -125,6 +125,10 @@
   - `SearchModal.vue`：结果行加「正文」标记与 `<mark>` 高亮片段（不用 `v-html` 防注入），正文索引加载中/不可用有提示；键盘选择不再被增量结果打断
   - 机器验收（Chrome CDP）：搜「微任务」3 条全部来自正文、搜「虚拟列表」元数据优先 + 6 条正文追加、`structuredClone` 1 条仅正文命中；↑↓ + 回车跳转 `/cases/vue3/reactive-loss`；375px `scrollWidth=375`、面板 351px；零 console 错误；vitest 45/45（新增 16 条）、type-check、lint、build 通过
 - ✅ 2026-10-21 浏览器验收脚本统一（`npm run check:ui`）：此前各会话各写临时 CDP 脚本，跑完只 kill 父进程、`--headless` 有的加有的没加、每轮新建 profile，累计 **111 个 chrome 进程 + 41 个临时配置目录（2.0 GB）**，桌面上不断弹窗口。新增 `scripts/check-ui.mjs`：headless 启动、`--remote-debugging-port=0` 免抢端口、固定 `node_modules/.tmp/chrome-check`、退出整棵进程树 `taskkill /T /F` + 重试清目录；内置 5 个场景（首页 / 列表 / 详情源码按需 / EP 样式 / 375px），有失败退出码 1。实测通过，跑完自动化进程与临时目录均为 0；同时清理了存量的 111 个进程与 2 GB 目录
+- ✅ 2026-10-21 站点体验优化（第二批）：列表页难度筛选（带数量）+ 收藏筛选 + 最近浏览；详情页收藏、浏览记录、相关案例（同标签优先，不够用同分类补齐）、上下篇导航；全局文档标题按路由更新、`skip-link` + `<main id="main-content">`、`NotFoundPage`（`/nope` 走 404 路由）、路由 chunk 加载失败自动刷新一次兜底；新增 `useCaseHistory` + 8 条单测
+- ✅ 2026-10-21 新增 11 个案例（共 73 案例 / 8 分类）：`css` 5 个（grid-auto-fit / container-query / has-parent / fluid-clamp / aspect-ratio-cls）+ `basics` 5 个（event-loop / url-search-params / intl-format / structured-clone / clipboard-api），两个新分类置于分类列表最前；`practice/dynamic-chunk` 用真实动态 import 实测「按需 7.3 KB / 5.8 ms」vs「全量 36.8 KB / 15 ms」、同页二次点击 0 B / 0.8 ms，生产构建复访 300 B（304 头部）
+- ✅ 2026-10-21 工具与门禁修正：`npm run type-check` 原为 `vue-tsc --noEmit`，根 tsconfig 只有 references、实际什么都不检查（本次 build 一次性暴露 12 处类型错误才发现的），改为 `vue-tsc -b`；`.gitignore` 补 `.vitest` / `coverage`；`check:ui` 场景从 5 个扩到 7 个（新增列表难度筛选、无效路由兜底，详情场景加相关案例与上下篇断言），并修正 dev 模式误判（源码 chunk / EP 样式只在 preview 有 hash 资源可数，dev 记 `null` 表示不适用）
+- ✅ 2026-10-21 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 103.8 KB）、`npm run check:ui` 7/7（preview）与 5/5（dev）全绿；11 个新案例在 375px 下 `scrollWidth=375`、零 console 错误；`container-query` 与 `aspect-ratio-cls` 的测量时序坑已在 headless 下复测（见决策记录）
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -183,4 +187,9 @@
 | 2026-10-21 | **新增体积门禁 `npm run check:bundle` 并接入 CI** | 体积回归不会让单测变红（eager glob 就是例子）。脚本读 `dist/index.html` 的首屏资源，校验：首屏 gzip ≤180 KB、非 pdf 单 chunk ≤600 KB、首屏 JS 不得出现「//! 中文」教学标记；CI 在 build 后执行，红灯直接拦住合并 |
 | 2026-10-21 | **全局搜索扩到 notes 正文：索引空闲构建、纯函数可单测** | 标题/摘要/标签继续同步匹配，正文索引在首次打开弹窗后 `requestIdleCallback` 构建（并发 6、单例缓存、边读边刷新），首屏不多下载 190 KB；匹配与片段逻辑放 `utils/search-index.ts` 纯函数（16 条单测），组件只负责调度；正文结果用 `<mark>` 高亮（不用 `v-html` 防注入），片段两行截断；键盘选择只在关键词变化时重置，避免增量结果把选中项弹回第一条 |
 | 2026-10-21 | **构建产物按「类型 → 用途 → 案例」分目录** | 265 个 chunk 全平铺在 `assets/` 里，排查和缓存策略都没法按类处理。`entryFileNames` 固定入口；`chunkFileNames` 用 `facadeModuleId` 把案例 chunk 归到 `js/cases/<分类>/<案例>/`（Demo / Demo.source / 教学代码 / notes），vendor、pages、lib、workers 各自成目录；`assetFileNames` 按扩展名与 `originalFileNames` 把样式归到 `css/{vendor,pages,cases,themes}`，图片/字体/worker 分到 `media`/`fonts`/`js/workers`。只改路径不改体积，`check:bundle` 同步改递归扫描 |
-| 2026-10-21 | **浏览器验收统一走 `npm run check:ui`，禁止临时 Chrome 脚本** | 各会话临时脚本只 kill 父进程、部分没加 `--headless`、每轮新建 profile，累计 111 个 chrome 进程 + 41 个目录（2 GB），桌面不断弹窗。统一脚本：headless、`--remote-debugging-port=0`、固定 `node_modules/.tmp/chrome-check`、退出 `taskkill /T /F` 并重试清理；内置 5 个场景、失败返回 1 |
+| 2026-10-21 | **浏览器验收统一走 `npm run check:ui`，禁止临时 Chrome 脚本** | 各会话临时脚本只 kill 父进程、部分没加 `--headless`、每轮新建 profile，累计 111 个 chrome 进程 + 41 个目录（2 GB），桌面不断弹窗。统一脚本：headless、`--remote-debugging-port=0`、固定 `node_modules/.tmp/chrome-check`、退出 `taskkill /T /F` 并重试清理；默认验 preview（4173，可 `--base` 指 dev），失败返回 1。场景从 5 个扩到 7 个：首页 / 列表 / 详情源码按需（+ 相关案例、上下篇断言）/ EP 样式 / 列表难度筛选 / 无效路由兜底 / 375px |
+| 2026-10-21 | **新分类 `css` / `basics` 前置且不合并，入门案例先讲现象再讲原理** | 用户要求补入门、简单常用的例子（可偏 CSS）。拆成「CSS 技巧」与「浏览器基础」两个分类，放在分类列表最前（查阅读顺序）；案例仍走四件套 + notes 五段，Demo 默认停在「错误/旧做法」那一侧，先看到问题再切正确做法 |
+| 2026-10-21 | **选题边界：新分类讲「特性怎么用」，存量案例仍讲「机制为什么」** | 存量 62 个案例里 `reactive-*` / `v-memo` / `time-slicing` 讲的是机制，新分类补齐「CSS 特性怎么用」「浏览器原生 API 怎么用」这类日常高频但原理较轻的内容；`practice/dynamic-chunk` 与 `practice/vite-split` 的界线固定为「运行时动态 import 实测」vs「构建期怎么拆包」，避免两个案例讲同一件事 |
+| 2026-10-21 | **`type-check` 必须用 `vue-tsc -b`** | 根 `tsconfig.json` 只有 `files: []` + references，`vue-tsc --noEmit` 在这种情况下什么都不检查（本次 build 暴露 12 处类型错误才发现）。改为构建模式后才会真正检查 `tsconfig.app.json` / `tsconfig.node.json` 引用的全部文件；CI 与本地口径一致 |
+| 2026-10-21 | **布局偏移 / 容器查询的测量必须「页面可见 + 强制布局」** | `layout-shift` 条目在 `document.visibilityState === 'hidden'` 时根本不产生，rAF 也会被节流，headless 用旧模式（非 `--headless=new`）同样会假阴性；容器查询的 `getComputedStyle` 要读一次 `offsetWidth` 强制结算后再取值。Demo 内统一：`measureDirs` 强制布局 + 双 rAF，另加 120ms 定时器兜底（后台标签页不靠 rAF）；切换占位模式 / 清空列表产生的偏移延迟 220ms 再清零，只统计「图片逐张加载」的账 |
+| 2026-10-21 | **相关案例不足 3 个时用同分类补齐** | 新分类里的独立技巧常常没有共享标签，纯按标签匹配会出现空块；改为「标签命中优先，不够 3 个用同分类其他案例补足」，保证详情页底部始终有可继续点击的入口 |

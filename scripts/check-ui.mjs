@@ -248,31 +248,100 @@ const SCENARIOS = [
               .slice(before)
               .some((url) => /\/assets\/js\/cases\/[^/]+\/[^/]+\/(?:Demo\.source|usage)/.test(url))
           : null,
+        /** 相关案例用同标签或同分类补齐，任何案例都不该是空块 */
+        relatedCards: await evaluate(`document.querySelectorAll('.related-card').length`),
+        /** 上下篇导航：首尾案例只有一侧，这里只要求至少有一条 */
+        caseNavLinks: await evaluate(`document.querySelectorAll('.case-nav-link').length`),
       }
     },
     assert: (result) => {
       const failures = []
       if (result.demoTextLength < 20) failures.push('详情页演示没有渲染内容')
+      // 源码 chunk 的按需断言只在 preview 有意义：dev 是源码直出，没有 hash chunk 可数，
+      // 上面两个字段会是 null（不适用），不能当成失败
       if (result.sourceFetchedBeforeClick) failures.push('点开源码前就下载了源码 chunk')
-      if (!result.sourceFetchedAfterClick) failures.push('点开源码后没有加载源码 chunk')
+      if (result.sourceFetchedAfterClick === false) failures.push('点开源码后没有加载源码 chunk')
       if (result.codeLines < 10) failures.push(`源码区只有 ${result.codeLines} 行`)
+      if (result.relatedCards < 1) failures.push('相关案例区是空的')
+      if (result.caseNavLinks < 1) failures.push('上下篇导航缺失')
       return failures
     },
   },
   {
     name: 'Element Plus 案例样式',
     route: '/cases/practice/debounce-throttle',
+    facts: async ({ evaluate }) => {
+      // 首次访问 dev 服务器要现编译 EP 组件，3.2s 可能不够，这里最多再等 6s
+      for (let i = 0; i < 20; i++) {
+        if (await evaluate(`Boolean(document.querySelector('.demo-card .el-input'))`)) break
+        await sleep(300)
+      }
+
+      return {
+        epInput: await evaluate(`Boolean(document.querySelector('.demo-card .el-input'))`),
+        /** 样式是否真的生效：读计算样式，dev（样式内联注入）与 preview（独立 CSS chunk）都适用 */
+        epStyled: await evaluate(`(() => {
+          const wrapper = document.querySelector('.demo-card .el-input__wrapper')
+          if (!wrapper) return null
+          const style = getComputedStyle(wrapper)
+          return style.boxShadow !== 'none' && style.borderRadius !== '0px'
+        })()`),
+        /** 组件样式是否走了独立文件：只有 preview 才有 CSS chunk，dev 下为 null（不适用） */
+        epCssLoaded: IS_PREVIEW
+          ? await evaluate(`[...document.styleSheets].some(s => (s.href ?? '').includes('element-plus'))`)
+          : null,
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!result.epInput) failures.push('EP 输入框没有渲染')
+      if (result.epStyled === false) failures.push('EP 输入框没有套上组件样式')
+      if (result.epCssLoaded === false) failures.push('EP 组件样式没有加载')
+      return failures
+    },
+  },
+  {
+    name: '列表难度筛选',
+    route: '/cases',
+    facts: async ({ evaluate }) => {
+      const total = await evaluate(`document.querySelectorAll('.case-card').length`)
+      await evaluate(
+        `[...document.querySelectorAll('.filter-chips--secondary .filter-chip')]
+          .find((chip) => chip.textContent.includes('入门'))?.click()`,
+      )
+      await sleep(600)
+      return {
+        total,
+        filtered: await evaluate(`document.querySelectorAll('.case-card').length`),
+        /** 过滤后每张卡片的难度标签都必须是「入门」，混进别的难度就算失败 */
+        nonBeginnerCards: await evaluate(
+          `[...document.querySelectorAll('.case-card .card-head .tag')]
+            .filter((tag) => tag.textContent.trim() !== '入门').length`,
+        ),
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!(result.filtered > 0 && result.filtered < result.total)) {
+        failures.push(`难度筛选没有生效（${result.total} → ${result.filtered}）`)
+      }
+      if (result.nonBeginnerCards > 0) failures.push('筛选结果里混进了其他难度')
+      return failures
+    },
+  },
+  {
+    name: '无效路由兜底',
+    route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
-      epInput: await evaluate(`Boolean(document.querySelector('.demo-card .el-input'))`),
-      /** 样式按需加载的关键：组件 CSS 必须真的挂上（暗色变量覆盖不走这里） */
-      epCssLoaded: await evaluate(
-        `[...document.styleSheets].some(s => (s.href ?? '').includes('element-plus'))`,
+      title: await evaluate(`document.title`),
+      heading: await evaluate(
+        `document.querySelector('.not-found-title')?.textContent?.trim() ?? ''`,
       ),
     }),
     assert: (result) => {
       const failures = []
-      if (!result.epInput) failures.push('EP 输入框没有渲染')
-      if (!result.epCssLoaded) failures.push('EP 组件样式没有加载')
+      if (result.heading !== '页面不存在') failures.push('没有渲染 404 页面')
+      if (!result.title.includes('页面不存在')) failures.push(`文档标题没更新：${result.title}`)
       return failures
     },
   },
