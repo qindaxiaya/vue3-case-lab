@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# 测试与工具缓存（vitest 的 .vitest 报告缓存不进仓库）
+.vitest
+coverage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
