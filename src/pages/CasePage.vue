@@ -14,6 +14,7 @@ import {
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
+import { loadCaseNotes } from '../examples/notes'
 import { getCase } from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 import NotesPanel from '../components/NotesPanel.vue'
@@ -35,6 +36,12 @@ watch(
   () => route.fullPath,
   () => {
     activeTab.value = 'explain'
+    // 新案例的 notes 还没加载，清掉上一个案例的等待状态
+    tabSwitchSeq++
+    notesRendered.value = false
+    panelMinHeight.value = 0
+    notesRenderedResolve?.()
+    notesRenderedResolve = null
   },
 )
 
@@ -127,6 +134,8 @@ const TAB_ORDER: ContentTab[] = ['explain', 'notes', 'code']
 const activeTab = ref<ContentTab>('explain')
 /** tab 栏（吸顶容器）：切换后需要据此判断是否把页面拉回视野 */
 const tabsWrapEl = ref<HTMLElement | null>(null)
+/** 吸顶栏前的零高度锚点：offsetTop 不随 sticky 变化，用来算稳定的文档位置 */
+const tabsAnchorEl = ref<HTMLElement | null>(null)
 /** 三个 tab 按钮：键盘左右切换后把焦点交给新选中的按钮 */
 const explainTabEl = ref<HTMLButtonElement | null>(null)
 const notesTabEl = ref<HTMLButtonElement | null>(null)
@@ -138,6 +147,95 @@ const tabElMap: Record<ContentTab, typeof explainTabEl> = {
   code: codeTabEl,
 }
 
+/** tab 容器：测量按钮位置，驱动滑块 */
+const tabsEl = ref<HTMLElement | null>(null)
+/** 滑块位置与宽度（用 transform 做位移动画，避免触发布局） */
+const tabIndicatorStyle = ref({ transform: 'translateX(0px)', width: '0px' })
+/** 首次测量完成后再显示滑块，避免从左侧 0 位置滑入 */
+const tabIndicatorReady = ref(false)
+/** 监听 tab 栏/按钮尺寸变化（字体加载、移动端铺满、源码数量徽章） */
+let tabIndicatorObserver: ResizeObserver | null = null
+/** 初始显示滑块前的逐帧任务，卸载时需要取消 */
+let tabIndicatorRaf = 0
+
+/** 切到 notes 首次加载时临时保留旧面板高度，避免页面骤矮把滚动位置夹走 */
+const panelMinHeight = ref(0)
+/** 当前案例的 notes 是否已完成一次渲染 */
+const notesRendered = ref(false)
+/** 等待 notes 渲染的 resolve（切换 tab 时对齐滚动用） */
+let notesRenderedResolve: (() => void) | null = null
+/** tab 切换序号：快速连点时只让最后一次切换执行滚动 */
+let tabSwitchSeq = 0
+
+/** 把当前选中按钮的位置同步给滑块 */
+function syncTabIndicator(): void {
+  const container = tabsEl.value
+  const button = tabElMap[activeTab.value].value
+  if (!container || !button) return
+
+  // offsetLeft / offsetWidth 都是相对 tab 容器的布局值，不受 transform 影响
+  tabIndicatorStyle.value = {
+    transform: `translateX(${button.offsetLeft}px)`,
+    width: `${button.offsetWidth}px`,
+  }
+}
+
+// tab 切换后按钮的字体粗细会变化，等 DOM 更新完再测量
+watch(activeTab, async () => {
+  await nextTick()
+  syncTabIndicator()
+})
+
+/** 读取某个面板当前高度（隐藏面板为 0） */
+function getPanelHeight(tab: ContentTab): number {
+  return document.getElementById(`panel-${tab}`)?.offsetHeight ?? 0
+}
+
+/** NotesPanel 完成一次渲染：解除等待，后续切换不再等 */
+function onNotesRendered(): void {
+  notesRendered.value = true
+  notesRenderedResolve?.()
+  notesRenderedResolve = null
+}
+
+/**
+ * 等待 notes 首次渲染
+ * 1.5s 兜底：网络异常时也允许继续执行滚动，避免 tab 切换卡住
+ */
+function waitForNotesRendered(): Promise<void> {
+  if (notesRendered.value) return Promise.resolve()
+
+  return new Promise((resolve) => {
+    let settled = false
+    let timer = 0
+
+    /** 只结束当前这一次等待，快速连点时不误清后来的 resolver */
+    const finish = (): void => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      if (notesRenderedResolve === finish) notesRenderedResolve = null
+      resolve()
+    }
+
+    timer = window.setTimeout(finish, 1500)
+    notesRenderedResolve = finish
+  })
+}
+
+/**
+ * 悬停 / 聚焦「深入」时预取当前案例的 notes.md
+ * 只提前加载当前这一篇，点击时通常已有缓存，减少首次切换的骨架屏停留
+ */
+function prefetchNotes(): void {
+  const current = item.value
+  if (!current) return
+
+  void loadCaseNotes(current.categoryId, current.meta.id).catch(() => {
+    // 预取失败不提示；真正点击时 NotesPanel 仍会重新加载并展示重试入口
+  })
+}
+
 // ============================================================
 // 平滑滚动（按钮/tab 这类主动操作，自己插值，保证一定平滑）
 // 不依赖 behavior: 'smooth'：系统「减少动态效果」等设置可能把它降级成瞬间跳转
@@ -147,6 +245,21 @@ const tabElMap: Record<ContentTab, typeof explainTabEl> = {
 let scrollAnimId = 0
 /** 正在进行的滚动动画的清理函数 */
 let stopScrollAnim: (() => void) | null = null
+
+/**
+ * 读取元素在文档中的绝对顶部位置
+ * 不能用 getBoundingClientRect + scrollY：tab 栏吸顶后 rect.top 固定为 64，
+ * 算出来的“文档顶部”会跟着滚动位置变化，无法回到刚吸顶的位置。
+ */
+function getDocumentTop(el: HTMLElement): number {
+  let top = 0
+  let node: HTMLElement | null = el
+  while (node) {
+    top += node.offsetTop
+    node = node.offsetParent as HTMLElement | null
+  }
+  return top
+}
 
 /**
  * 逐帧缓动滚动到目标位置
@@ -161,8 +274,20 @@ function smoothScrollTo(targetY: number, duration = 460): void {
   const distance = targetY - startY
   if (Math.abs(distance) < 1) return
 
-  const id = ++scrollAnimId
   const root = document.documentElement
+
+  // 系统开启“减少动态效果”时直接跳转：CSS 的 reduced-motion 管不到这段 JS 动画
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // 让上一段动画的 rAF 失效，避免它下一帧把位置又拉回旧目标
+    scrollAnimId++
+    const prevBehavior = root.style.scrollBehavior
+    root.style.scrollBehavior = 'auto'
+    window.scrollTo(0, targetY)
+    root.style.scrollBehavior = prevBehavior
+    return
+  }
+
+  const id = ++scrollAnimId
   const prevBehavior = root.style.scrollBehavior
 
   // 临时关闭 CSS 平滑：否则每帧的 scrollTo 会被再平滑一次，动画收尾拖尾
@@ -210,20 +335,52 @@ function smoothScrollTo(targetY: number, duration = 460): void {
 
 /**
  * 切换说明 / 深入 / 源码
- * 吸顶状态下如果已经滚到内容中段，切过去会从中间开始看；
- * 因此切换后把 tab 栏拉回顶部（只在已滚过 tab 栏时执行，避免页面跳动）
+ * tab 已经吸顶时，切过去会从内容中段开始看；
+ * 因此平滑滚到“tab 刚吸顶”的位置，让下面内容从 tab 栏下方开始，而不是回到页面顶部。
  */
 async function switchTab(next: ContentTab): Promise<void> {
   if (activeTab.value === next) return
+
+  const seq = ++tabSwitchSeq
+  const prevPanelHeight = getPanelHeight(activeTab.value)
+  panelMinHeight.value = 0
+
+  // 首次看 notes 时骨架屏比原面板矮很多，先保留原面板高度，防止滚动被页面夹取
+  if (next === 'notes' && !notesRendered.value) {
+    panelMinHeight.value = prevPanelHeight
+  }
+
   activeTab.value = next
   await nextTick()
 
+  // 等 notes 正文渲染完，拿到最终高度后再对齐滚动
+  if (next === 'notes' && !notesRendered.value) {
+    await waitForNotesRendered()
+    if (seq !== tabSwitchSeq) return
+  }
+
+  panelMinHeight.value = 0
+  await nextTick()
+
   const wrap = tabsWrapEl.value
-  if (!wrap) return
-  // 顶栏高 64px，留出吸顶位置
-  const target = wrap.getBoundingClientRect().top + window.scrollY - 64
-  if (window.scrollY > target) {
-    smoothScrollTo(target)
+  const anchor = tabsAnchorEl.value
+  if (!wrap || !anchor) return
+
+  // 只有 tab 已经吸顶时才回位；页面还没滚到这里时保持不动
+  if (wrap.getBoundingClientRect().top > 64.5) return
+
+  // 吸顶元素的 offsetTop 会跟着 sticky 变化，改用前面的零高度锚点；
+  // 再加上 tab 栏的负 margin，得到它“未吸顶时”的文档顶部。
+  const marginTop = Number.parseFloat(getComputedStyle(wrap).marginTop) || 0
+  const target = getDocumentTop(anchor) + marginTop - 64
+  const maxScroll = Math.max(
+    0,
+    document.documentElement.scrollHeight - window.innerHeight,
+  )
+  // 切到较短的面板时页面可能不够高，目标要收敛到最大可滚位置
+  const nextY = Math.min(Math.max(0, target), maxScroll)
+  if (Math.abs(window.scrollY - nextY) > 1) {
+    smoothScrollTo(nextY)
   }
 }
 
@@ -275,16 +432,38 @@ function backToTop(): void {
   smoothScrollTo(0)
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 刷新时可能已处于滚动位置，先同步一次
   onWindowScroll()
   window.addEventListener('scroll', onWindowScroll, { passive: true })
+
+  // 先测量再显示滑块，避免首次从左侧 0 位置滑入
+  await nextTick()
+  syncTabIndicator()
+  tabIndicatorRaf = requestAnimationFrame(() => {
+    tabIndicatorReady.value = true
+  })
+
+  // 字体加载、移动端布局、源码数量徽章都会改变按钮宽度
+  tabIndicatorObserver = new ResizeObserver(syncTabIndicator)
+  if (tabsEl.value) tabIndicatorObserver.observe(tabsEl.value)
+  for (const tabEl of Object.values(tabElMap)) {
+    if (tabEl.value) tabIndicatorObserver.observe(tabEl.value)
+  }
+  void document.fonts.ready.then(() => syncTabIndicator())
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onWindowScroll)
   // 路由离开时停掉滚动动画，避免动画持有已销毁组件的闭包
   stopScrollAnim?.()
+  cancelAnimationFrame(tabIndicatorRaf)
+  tabIndicatorObserver?.disconnect()
+
+  // 解除可能仍在等待 notes 的切换，避免 Promise 悬挂
+  tabSwitchSeq++
+  notesRenderedResolve?.()
+  notesRenderedResolve = null
 })
 
 // ============================================================
@@ -394,14 +573,26 @@ const explainBlocks = computed(() => {
       <!-- ② 说明 / 深入 / 源码：共用一个 tab 组，默认说明，其余按需切换 -->
       <section aria-label="案例说明、深入资料与源码">
         <div
+          ref="tabsAnchorEl"
+          class="content-tabs-anchor"
+          aria-hidden="true"
+        />
+        <div
           ref="tabsWrapEl"
           class="content-tabs-wrap"
         >
           <div
+            ref="tabsEl"
             class="content-tabs"
             role="tablist"
             aria-label="说明、深入与源码切换"
           >
+            <span
+              class="content-tab-indicator"
+              :class="{ 'content-tab-indicator--ready': tabIndicatorReady }"
+              :style="tabIndicatorStyle"
+              aria-hidden="true"
+            />
             <button
               id="tab-explain"
               ref="explainTabEl"
@@ -427,6 +618,9 @@ const explainBlocks = computed(() => {
               aria-controls="panel-notes"
               @click="switchTab('notes')"
               @keydown="onTabKeydown($event, 'notes')"
+              @pointerenter="prefetchNotes"
+              @pointerdown="prefetchNotes"
+              @focus="prefetchNotes"
             >
               深入
             </button>
@@ -452,93 +646,99 @@ const explainBlocks = computed(() => {
           </div>
         </div>
 
-        <!-- 面板一：案例说明（SBAC 四段；未补齐时回退到卖点 + 代码要点） -->
         <div
-          v-show="activeTab === 'explain'"
-          id="panel-explain"
-          class="content-panel"
-          role="tabpanel"
-          aria-labelledby="tab-explain"
+          class="content-panels"
+          :style="panelMinHeight ? { minHeight: panelMinHeight + 'px' } : undefined"
         >
-          <div class="card note-card">
-            <template v-if="explain">
-              <p class="note-lead">
-                {{ item.meta.sell }}
-              </p>
-
-              <ol class="sbac-list">
-                <li
-                  v-for="block in explainBlocks"
-                  :key="block.key"
-                  class="sbac-row"
-                >
-                  <span
-                    class="sbac-badge"
-                    :class="`sbac-${block.key.toLowerCase()}`"
-                    aria-hidden="true"
-                  >{{ block.key }}</span>
-                  <div class="sbac-body">
-                    <h3 class="sbac-label">
-                      {{ block.label }}
-                    </h3>
-                    <p class="sbac-text">
-                      {{ block.text }}
-                    </p>
-                  </div>
-                </li>
-              </ol>
-            </template>
-
-            <template v-else>
-              <div class="note-sell">
-                <span class="note-sell-label">为什么看</span>
-                <p class="note-sell-text">
+          <!-- 面板一：案例说明（SBAC 四段；未补齐时回退到卖点 + 代码要点） -->
+          <div
+            v-show="activeTab === 'explain'"
+            id="panel-explain"
+            class="content-panel"
+            role="tabpanel"
+            aria-labelledby="tab-explain"
+          >
+            <div class="card note-card">
+              <template v-if="explain">
+                <p class="note-lead">
                   {{ item.meta.sell }}
                 </p>
-              </div>
 
-              <ul
-                v-if="keyPoints.length"
-                class="note-points"
-              >
-                <li
-                  v-for="point in keyPoints"
-                  :key="point"
+                <ol class="sbac-list">
+                  <li
+                    v-for="block in explainBlocks"
+                    :key="block.key"
+                    class="sbac-row"
+                  >
+                    <span
+                      class="sbac-badge"
+                      :class="`sbac-${block.key.toLowerCase()}`"
+                      aria-hidden="true"
+                    >{{ block.key }}</span>
+                    <div class="sbac-body">
+                      <h3 class="sbac-label">
+                        {{ block.label }}
+                      </h3>
+                      <p class="sbac-text">
+                        {{ block.text }}
+                      </p>
+                    </div>
+                  </li>
+                </ol>
+              </template>
+
+              <template v-else>
+                <div class="note-sell">
+                  <span class="note-sell-label">为什么看</span>
+                  <p class="note-sell-text">
+                    {{ item.meta.sell }}
+                  </p>
+                </div>
+
+                <ul
+                  v-if="keyPoints.length"
+                  class="note-points"
                 >
-                  {{ point }}
-                </li>
-              </ul>
-            </template>
+                  <li
+                    v-for="point in keyPoints"
+                    :key="point"
+                  >
+                    {{ point }}
+                  </li>
+                </ul>
+              </template>
+            </div>
           </div>
-        </div>
 
-        <!-- 面板二：深入资料（notes.md 五段，懒加载） -->
-        <div
-          v-show="activeTab === 'notes'"
-          id="panel-notes"
-          class="content-panel"
-          role="tabpanel"
-          aria-labelledby="tab-notes"
-        >
-          <NotesPanel
-            :category-id="item.categoryId"
-            :case-id="item.meta.id"
-            :active="activeTab === 'notes'"
-          />
-        </div>
+          <!-- 面板二：深入资料（notes.md 五段，懒加载） -->
+          <div
+            v-show="activeTab === 'notes'"
+            id="panel-notes"
+            class="content-panel"
+            role="tabpanel"
+            aria-labelledby="tab-notes"
+          >
+            <NotesPanel
+              :category-id="item.categoryId"
+              :case-id="item.meta.id"
+              :active="activeTab === 'notes'"
+              @rendered="onNotesRendered"
+            />
+          </div>
 
-        <!-- 面板三：源码工作台（核心代码 / demo源码 两个子 tab） -->
-        <div
-          v-show="activeTab === 'code'"
-          id="panel-code"
-          class="content-panel"
-          role="tabpanel"
-          aria-labelledby="tab-code"
-        >
-          <CodeWorkbench
-            :tabs="item.codeTabs"
-            :demo-source="item.demoSource"
-          />
+          <!-- 面板三：源码工作台（核心代码 / demo源码 两个子 tab） -->
+          <div
+            v-show="activeTab === 'code'"
+            id="panel-code"
+            class="content-panel"
+            role="tabpanel"
+            aria-labelledby="tab-code"
+          >
+            <CodeWorkbench
+              :tabs="item.codeTabs"
+              :demo-source="item.demoSource"
+            />
+          </div>
         </div>
       </section>
 
@@ -701,6 +901,12 @@ const explainBlocks = computed(() => {
 
 /* ---------- 说明 / 源码 tab 组 ---------- */
 
+/* 零高度锚点：tab 吸顶后 offsetTop 会变，用它的位置算稳定的滚动目标 */
+.content-tabs-anchor {
+  height: 0;
+  pointer-events: none;
+}
+
 /* 吸顶容器：滚动查看长代码时 tab 保持可见，随时切回说明 */
 .content-tabs-wrap {
   position: sticky;
@@ -713,24 +919,9 @@ const explainBlocks = computed(() => {
   backdrop-filter: blur(8px);
 }
 
-/* 面板切换：v-show 重新显示时重播动画，避免「啪」地硬切 */
-.content-panel {
-  animation: panel-in 0.24s var(--ease-out);
-}
-
-@keyframes panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 .content-tabs {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   gap: 0.2rem;
   padding: 0.25rem;
@@ -740,7 +931,46 @@ const explainBlocks = computed(() => {
   box-shadow: var(--shadow-soft);
 }
 
+/* 选中滑块：主色胶囊 + 柔和阴影，用 transform 快速滑到目标 tab */
+.content-tab-indicator {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  border-radius: 999px;
+  background-color: var(--primary);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent),
+    var(--shadow-soft);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width;
+  transition:
+    transform 0.18s var(--ease-out),
+    width 0.2s var(--ease-out),
+    opacity 0.15s var(--ease-out);
+}
+
+.content-tab-indicator--ready {
+  opacity: 1;
+}
+
+/*
+ * 指示器是短距离位置提示：系统开启「减少动态效果」时也保留滑动，
+ * 否则会被全局规则压成 0.01ms，看起来就是直接瞬移；
+ * 其余页面动效仍按 _base.scss 的 reduced-motion 规则关闭。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .content-tab-indicator {
+    transition-duration: 0.18s, 0.2s, 0.15s !important;
+  }
+}
+
 .content-tab {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -773,8 +1003,9 @@ const explainBlocks = computed(() => {
 .content-tab--active:hover {
   color: #fff;
   font-weight: 500;
-  background-color: var(--primary);
-  box-shadow: var(--shadow-soft);
+  /* 背景由滑块承担，按钮本身透明，避免切换时两层主色叠在一起 */
+  background-color: transparent;
+  box-shadow: none;
 }
 
 /* 「源码」后的代码段数：小号胶囊，提示有多少段可看 */
