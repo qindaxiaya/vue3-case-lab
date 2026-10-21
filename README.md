@@ -47,6 +47,33 @@ npm run dev
 
 实测（2026-10-21）：首屏 gzip 从 521 KB 降到 91 KB；详情页按需追加约 40 KB（含语法高亮运行时），源码 tab 再加载该案例自己的文本。
 
+### 产物结构
+
+产物按「类型 → 用途 → 案例」分目录，不再把几百个 chunk 平铺在 `assets/` 一层。规则写在 `vite.config.ts` 的 `chunkFileName` / `assetFileName` 里，新增资源类型时按同样思路扩展即可。
+
+```
+dist/
+├── index.html
+├── favicon.svg
+└── assets/
+    ├── js/
+    │   ├── index-<hash>.js           # 应用入口
+    │   ├── vendor/                   # vue / markdown / element-plus / utils
+    │   ├── pages/                    # HomePage / CaseListPage / CasePage
+    │   ├── cases/<分类>/<案例>/       # Demo、Demo.source、教学代码、notes
+    │   ├── lib/                      # pdf.js 运行时
+    │   └── workers/                  # pdf.worker
+    └── css/
+        ├── index-<hash>.css          # 站点样式 + Element Plus 基础变量
+        ├── vendor/                   # Element Plus 组件样式
+        ├── pages/                    # 路由页样式
+        ├── cases/<分类>/<案例>/       # 案例 scoped 样式
+        ├── themes/                   # highlight.js 亮/暗主题
+        └── chunks/                   # 其它共享样式
+```
+
+图片、字体、其它二进制资源分别落到 `assets/media/`、`assets/fonts/`、`assets/misc/`（当前项目还没用到）。
+
 ## 目录结构
 
 ```

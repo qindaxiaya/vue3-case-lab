@@ -82,12 +82,28 @@ if (entryGzip > ENTRY_GZIP_BUDGET) {
 }
 
 // 遍历全部 JS chunk，拦住「某个懒加载 chunk 悄悄变成巨无霸」
+// 产物按 assets/js/{vendor,pages,cases,lib,workers} 分目录，需要递归查找
 const assetsDir = path.join(DIST, 'assets')
-const jsFiles = readdirSync(assetsDir).filter((f) => f.endsWith('.js'))
+
+/** 递归收集目录下的文件（返回相对 assets 的 posix 路径） */
+function collectFiles(dir, prefix = '') {
+  const result = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name
+    if (entry.isDirectory()) {
+      result.push(...collectFiles(path.join(dir, entry.name), relative))
+    } else {
+      result.push(relative)
+    }
+  }
+  return result
+}
+
+const jsFiles = collectFiles(assetsDir).filter((f) => f.endsWith('.js'))
 
 for (const file of jsFiles) {
   // pdf.js 与 worker 是按需加载的独立大块，不参与单 chunk 预算
-  if (file.startsWith('pdf-') || file.includes('worker')) continue
+  if (file.startsWith('js/lib/') || file.includes('worker')) continue
   const { raw } = measure(path.join(assetsDir, file))
   if (raw > CHUNK_RAW_BUDGET) {
     failures.push(`${file} 原始体积 ${kb(raw)} 超出单 chunk 预算 ${kb(CHUNK_RAW_BUDGET)}`)
