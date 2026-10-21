@@ -10,27 +10,117 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
   watch,
+  type Component,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { loadCaseNotes } from '../examples/notes'
-import { getCase } from '../examples/registry'
+import {
+  getCase,
+  loadCaseSource,
+  loadDemoComponent,
+  type CodeTab,
+} from '../examples/registry'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 import NotesPanel from '../components/NotesPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-// 路由参数查找案例（不存在渲染空状态）
+// 路由参数查找案例（meta 同步可得；演示与源码按需加载）
 const item = computed(() =>
   getCase(String(route.params.categoryId), String(route.params.caseId)),
 )
 
+// ============================================================
+// 按需加载：演示组件 + 源码文本
+// - 每个案例的 Demo.vue / code/*.txt 都是独立 chunk，
+//   只有进入该案例才下载，首屏不再背 60 多个案例的源码
+// - 序号（seq）保证快速切案例时只接受最后一次请求的结果
+// ============================================================
+
+/** 异步资源的加载状态 */
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+/** 当前案例的演示组件（加载完成后才渲染） */
+const demoComponent = shallowRef<Component | null>(null)
+const demoStatus = ref<LoadStatus>('idle')
+/** 演示加载序号：路由快速切换时丢弃过期结果 */
+let demoSeq = 0
+
+/** 加载当前案例的演示组件 */
+async function loadDemo(): Promise<void> {
+  const current = item.value
+  const seq = ++demoSeq
+  demoComponent.value = null
+
+  if (!current) {
+    demoStatus.value = 'idle'
+    return
+  }
+
+  demoStatus.value = 'loading'
+  try {
+    const component = await loadDemoComponent(current.categoryId, current.meta.id)
+    if (seq !== demoSeq) return
+    demoComponent.value = component
+    demoStatus.value = 'ready'
+  } catch (error) {
+    if (seq !== demoSeq) return
+    console.error('[case-page] 演示组件加载失败', error)
+    demoStatus.value = 'error'
+  }
+}
+
+/** 核心代码片段（源码 tab 打开后才填充） */
+const codeTabs = ref<CodeTab[]>([])
+/** Demo.vue 完整源码文本（同上） */
+const demoSource = ref('')
+const sourceStatus = ref<LoadStatus>('idle')
+/** 源码加载序号：切案例后旧请求不回填 */
+let sourceSeq = 0
+
+/** 加载当前案例的源码包（Demo 全文 + 全部代码片段，并行请求） */
+async function loadSource(): Promise<void> {
+  const current = item.value
+  if (!current) return
+  // 已就绪 / 正在加载：不重复发起（registry 内部还有 Promise 缓存兜底）
+  if (sourceStatus.value === 'ready' || sourceStatus.value === 'loading') return
+
+  const seq = ++sourceSeq
+  sourceStatus.value = 'loading'
+  try {
+    const bundle = await loadCaseSource(current.categoryId, current.meta.id)
+    if (seq !== sourceSeq) return
+    codeTabs.value = bundle.codeTabs
+    demoSource.value = bundle.demoSource
+    sourceStatus.value = 'ready'
+  } catch (error) {
+    if (seq !== sourceSeq) return
+    console.error('[case-page] 源码加载失败', error)
+    sourceStatus.value = 'error'
+  }
+}
+
+/** 源码加载失败后手动重试 */
+function retrySource(): void {
+  if (sourceStatus.value === 'loading') return
+  sourceStatus.value = 'idle'
+  void loadSource()
+}
+
+/** 悬停 / 聚焦「源码」tab 时预取源码包，点击时通常已经就绪 */
+function prefetchSource(): void {
+  if (sourceStatus.value === 'idle') void loadSource()
+}
+
 /**
- * 路由切换时重置内容 tab
+ * 路由切换时重置内容 tab 与异步资源
  * CasePage 在同一路由记录内复用（只换 params），组件不会重建；
  * 不重置的话，从上一个案例的源码切过来会直接停在源码面板。
+ * 首次进入（watch 不会触发）由下方的 loadDemo() 负责。
  */
 watch(
   () => route.fullPath,
@@ -42,8 +132,21 @@ watch(
     panelMinHeight.value = 0
     notesRenderedResolve?.()
     notesRenderedResolve = null
+
+    // 丢弃上一个案例的源码，避免看到别人的代码
+    sourceSeq++
+    codeTabs.value = []
+    demoSource.value = ''
+    sourceStatus.value = 'idle'
+
+    void loadDemo()
+    // 没有 SBAC 说明的案例要靠代码要点兜底，此时提前加载源码
+    if (item.value && !item.value.meta.explain) void loadSource()
   },
 )
+
+// 首次进入：立刻开始加载演示组件（后续切换由上面的路由 watch 负责）
+void loadDemo()
 
 /** 当前分类展示名（面包屑用，找不到回退为原始 id） */
 const categoryName = computed(
@@ -101,7 +204,8 @@ const keyPoints = computed<string[]>(() => {
   const points: string[] = []
   const seen = new Set<string>()
 
-  for (const tab of item.value.codeTabs) {
+  // 源码按需加载：未加载时为空（仅作为没有 SBAC 说明时的兜底展示）
+  for (const tab of codeTabs.value) {
     for (const line of tab.content.split('\n')) {
       // 与代码区同一套约定：行首 //! 是重点行
       const match = line.match(/^\s*\/\/!\s?(.+)$/)
@@ -351,6 +455,10 @@ async function switchTab(next: ContentTab): Promise<void> {
   }
 
   activeTab.value = next
+
+  // 源码按需加载：切到源码 tab 时才开始下载文本（提前发起，减少等待）
+  if (next === 'code') void loadSource()
+
   await nextTick()
 
   // 等 notes 正文渲染完，拿到最终高度后再对齐滚动
@@ -563,10 +671,34 @@ const explainBlocks = computed(() => {
           {{ item.meta.summary }}
         </p>
       </header>
-      <!-- ① 演示区：直接展示可交互演示 -->
+      <!-- ① 演示区：演示组件按需加载，加载期间显示占位 -->
       <section aria-label="可交互演示">
         <div class="card demo-card">
-          <component :is="item.demoComponent" />
+          <component
+            :is="demoComponent"
+            v-if="demoComponent"
+          />
+          <div
+            v-else-if="demoStatus === 'error'"
+            class="async-placeholder"
+            role="alert"
+          >
+            <p>演示加载失败，请检查网络后重试。</p>
+            <button
+              class="btn-ghost"
+              type="button"
+              @click="loadDemo"
+            >
+              重新加载
+            </button>
+          </div>
+          <div
+            v-else
+            class="async-placeholder"
+            role="status"
+          >
+            演示加载中…
+          </div>
         </div>
       </section>
 
@@ -635,13 +767,16 @@ const explainBlocks = computed(() => {
               aria-controls="panel-code"
               @click="switchTab('code')"
               @keydown="onTabKeydown($event, 'code')"
+              @pointerenter="prefetchSource"
+              @pointerdown="prefetchSource"
+              @focus="prefetchSource"
             >
               源码
               <span
-                v-if="item.codeTabs.length > 1"
+                v-if="item.codeFileCount > 1"
                 class="content-tab-count"
-                :title="`共 ${item.codeTabs.length} 段核心代码`"
-              >{{ item.codeTabs.length }}</span>
+                :title="`共 ${item.codeFileCount} 段核心代码`"
+              >{{ item.codeFileCount }}</span>
             </button>
           </div>
         </div>
@@ -735,9 +870,31 @@ const explainBlocks = computed(() => {
             aria-labelledby="tab-code"
           >
             <CodeWorkbench
-              :tabs="item.codeTabs"
-              :demo-source="item.demoSource"
+              v-if="sourceStatus === 'ready'"
+              :tabs="codeTabs"
+              :demo-source="demoSource"
             />
+            <div
+              v-else-if="sourceStatus === 'error'"
+              class="card async-placeholder async-placeholder--card"
+              role="alert"
+            >
+              <p>源码加载失败，请检查网络后重试。</p>
+              <button
+                class="btn-ghost"
+                type="button"
+                @click="retrySource"
+              >
+                重新加载
+              </button>
+            </div>
+            <div
+              v-else
+              class="card async-placeholder async-placeholder--card"
+              role="status"
+            >
+              源码加载中…
+            </div>
           </div>
         </div>
       </section>
@@ -1032,6 +1189,29 @@ const explainBlocks = computed(() => {
   /* 演示区正文统一到 15px，内部细节再用 --demo-text-* 收敛 */
   font-size: var(--demo-text-lg);
   line-height: 1.65;
+}
+
+/* 异步资源占位：演示 / 源码加载中或失败时显示，固定最小高度避免布局跳动 */
+.async-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 12rem;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.async-placeholder p {
+  margin: 0;
+}
+
+/* 源码面板里的占位本身就是一张卡，高度可以小一些 */
+.async-placeholder--card {
+  min-height: 10rem;
 }
 
 /* ---------- 说明卡 ---------- */

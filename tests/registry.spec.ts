@@ -13,9 +13,7 @@ function makeCase(
 ): RegisteredCase {
   return {
     categoryId: 'performance',
-    demoComponent: {} as RegisteredCase['demoComponent'],
-    demoSource: '<template><div /></template>',
-    codeTabs: [],
+    codeFileCount: 0,
     ...overrides,
   }
 }
@@ -111,12 +109,17 @@ describe('filterCases — 搜索过滤（大小写不敏感子串匹配）', () 
 // ============================================================
 // 真实 glob 集成测试
 // 这组测试是「案例自动收录链路」的回归防线：
-// import.meta.glob → parseIdsFromPath → allCases → getCase
+// import.meta.glob → parseIdsFromPath → allCases → getCase → 懒加载 loader
 // 曾因 glob key 格式（'./x/y/' 而非 '../examples/x/y/'）解析错误
 // 导致全部案例被静默跳过、侧边栏空白——本组测试防止复发。
 // 每新增一个案例目录，此链路测试自动扩展验证（allCases 增量）。
 // ============================================================
-import { allCases, getCase } from '../src/examples/registry'
+import {
+  allCases,
+  getCase,
+  loadCaseSource,
+  loadDemoComponent,
+} from '../src/examples/registry'
 
 describe('真实 glob 收录链路（集成）', () => {
   it('allCases 非空（glob 至少收录了已存在的案例）', () => {
@@ -124,35 +127,53 @@ describe('真实 glob 收录链路（集成）', () => {
     expect(allCases.length).toBeGreaterThan(0)
   })
 
-  it('perf-observer 被完整收录（组件/源码/代码片段/meta 齐全）', () => {
+  it('perf-observer 的元数据同步可得（列表/搜索不等待网络）', () => {
     const item = getCase('performance', 'perf-observer')
     expect(item, 'getCase 应找到 perf-observer').toBeDefined()
-    // 演示组件已加载（不是空对象占位）
-    expect(item!.demoComponent).toBeTruthy()
-    // Demo.vue 完整源码非空
-    expect(item!.demoSource).toContain('PerformanceObserver')
-    // 教学代码片段已收录且带语言标记
-    expect(item!.codeTabs.length).toBeGreaterThan(0)
-    expect(item!.codeTabs[0].lang).toBe('typescript')
+    expect(item!.meta.title.length).toBeGreaterThan(0)
+    // 片段数量来自构建期 glob key 统计，不含正文
+    expect(item!.codeFileCount).toBeGreaterThan(0)
   })
 
-  it('raf-loop 被完整收录（组件/源码/代码片段/meta 齐全）', () => {
-    const item = getCase('performance', 'raf-loop')
-    expect(item, 'getCase 应找到 raf-loop').toBeDefined()
-    expect(item!.demoComponent).toBeTruthy()
-    // Demo 源码含 rAF 核心调用
-    expect(item!.demoSource).toContain('requestAnimationFrame')
-    expect(item!.codeTabs.length).toBeGreaterThan(0)
-    expect(item!.codeTabs[0].lang).toBe('typescript')
+  it('演示组件按需加载成功', async () => {
+    const component = await loadDemoComponent('performance', 'perf-observer')
+    // Vue SFC 编译后的组件对象非空
+    expect(component).toBeTruthy()
   })
 
-  it('idle-schedule 被完整收录（组件/源码/代码片段/meta 齐全）', () => {
-    const item = getCase('performance', 'idle-schedule')
-    expect(item, 'getCase 应找到 idle-schedule').toBeDefined()
-    expect(item!.demoComponent).toBeTruthy()
-    expect(item!.demoSource).toContain('requestIdleCallback')
-    expect(item!.codeTabs.length).toBeGreaterThan(0)
-    expect(item!.codeTabs[0].lang).toBe('typescript')
+  it('源码包按需加载（Demo 全文 + 教学代码齐全）', async () => {
+    const item = getCase('performance', 'perf-observer')
+    const bundle = await loadCaseSource('performance', 'perf-observer')
+
+    // Demo.vue 完整源码含核心 API
+    expect(bundle.demoSource).toContain('PerformanceObserver')
+    // 片段数量与构建期统计一致，且带语言标记 + 正文
+    expect(bundle.codeTabs.length).toBe(item!.codeFileCount)
+    expect(bundle.codeTabs[0].lang).toBe('typescript')
+    expect(bundle.codeTabs[0].content.length).toBeGreaterThan(0)
+  })
+
+  it('raf-loop 的源码包可加载（rAF 调用在 Demo 全文里）', async () => {
+    const bundle = await loadCaseSource('performance', 'raf-loop')
+    expect(bundle.demoSource).toContain('requestAnimationFrame')
+    expect(bundle.codeTabs.length).toBeGreaterThan(0)
+  })
+
+  it('重复加载复用缓存（并发调用拿到同一个结果对象）', async () => {
+    const [a, b] = await Promise.all([
+      loadCaseSource('performance', 'idle-schedule'),
+      loadCaseSource('performance', 'idle-schedule'),
+    ])
+    expect(a).toBe(b)
+  })
+
+  it('不存在的案例加载时明确报错（不会静默返回空）', async () => {
+    await expect(loadDemoComponent('performance', 'not-exist')).rejects.toThrow(
+      '不存在',
+    )
+    await expect(loadCaseSource('performance', 'not-exist')).rejects.toThrow(
+      '不存在',
+    )
   })
 
   it('收录案例的 meta.id 与目录名全部一致（防止路由错乱）', () => {
@@ -162,6 +183,14 @@ describe('真实 glob 收录链路（集成）', () => {
       )
       // meta.id 必须能在 getCase 中按 categoryId+id 查回（自洽性）
       expect(getCase(item.categoryId, item.meta.id)).toBe(item)
+    }
+  })
+
+  it('每个案例都有代码片段与源码加载入口', () => {
+    for (const item of allCases) {
+      const name = `${item.categoryId}/${item.meta.id}`
+      // 0 个片段的案例会在源码区只剩 demo 源码，视为内容缺失
+      expect(item.codeFileCount, `${name} 没有 code/*.txt`).toBeGreaterThan(0)
     }
   })
 })
