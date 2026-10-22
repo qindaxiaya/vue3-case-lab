@@ -65,7 +65,7 @@
 
 ## 当前进度
 
-- **阶段**：共 73 案例 / 8 分类（css 5 · basics 5 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 1 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 81 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 1 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -130,7 +130,13 @@
 - ✅ 2026-10-21 工具与门禁修正：`npm run type-check` 原为 `vue-tsc --noEmit`，根 tsconfig 只有 references、实际什么都不检查（本次 build 一次性暴露 12 处类型错误才发现的），改为 `vue-tsc -b`；`.gitignore` 补 `.vitest` / `coverage`；`check:ui` 场景从 5 个扩到 7 个（新增列表难度筛选、无效路由兜底，详情场景加相关案例与上下篇断言），并修正 dev 模式误判（源码 chunk / EP 样式只在 preview 有 hash 资源可数，dev 记 `null` 表示不适用）
 - ✅ 2026-10-21 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 103.8 KB）、`npm run check:ui` 7/7（preview）与 5/5（dev）全绿；11 个新案例在 375px 下 `scrollWidth=375`、零 console 错误；`container-query` 与 `aspect-ratio-cls` 的测量时序坑已在 headless 下复测（见决策记录）
 - ✅ 2026-10-22 案例列表页补回到顶部：把详情页的浮动按钮抽成 `src/components/BackToTop.vue`（滚动 >480px 浮现、外圈滚动进度、点击缓动回顶、hover 上浮 + 进度环），逐帧缓动滚动移到 `src/utils/scroll.ts` 供详情页 tab 对齐与回顶共用；`check:ui` 的列表/详情场景各补「滚到底 → 按钮出现 → 点击回顶 → scrollY≈0」断言，实测 7/7 通过（列表 73 卡片、回顶 0px）；vitest 53/53、type-check、lint、build 全绿
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
+- ✅ 2026-10-22 新增动画与交互分类 8 个入门案例（共 81 案例 / 9 分类）：`animation` 置于 css / basics 之后
+  - 批 A（CSS 动画基础）：`skeleton-shimmer`（灰块占位 + 微光扫过，对比转圈加载的高度跳动）、`accordion-slide`（`grid-template-rows: 0fr → 1fr`，对比脚本量 `scrollHeight`，面板直接显示读取次数 1 → 0）、`drawer-slide`（`translateX` + 遮罩，等 `transitionend` 再卸载，Esc / 点遮罩 / 滚动锁 / 焦点回归）、`progress-ring`（只写一次 `stroke-dashoffset`，让过渡补中间帧，对比定时器逐帧改属性）
+  - 批 B（交互细节）：`magnetic-button`（指针偏移换算 `translate`，限制最大位移、离开回弹、触摸与减少动态效果跳过）、`snap-carousel`（`scroll-snap-type` + `scrollIntoView` + 滚动位置反推索引，对比手算 `scrollLeft` 与边界夹取）、`tooltip-pop`（自建气泡 180ms 延迟出现 + 上/下方自适应定位 + `role="tooltip"`，对比原生 `title`）、`focus-visible-ring`（`:focus-visible` 焦点环，对比 `outline: none` 裸奔）
+  - 每个案例默认停在「旧做法」一侧，面板可切对比、可重置，卸载清理定时器 / 监听器；notes 第 4 段只用「读取次数 / 监听器数 / 手算处数 / CSS 声明条数」等可核对口径，不写未实测毫秒
+  - `check:ui` 新增 `checkAnimationCases`：8 个案例逐页在 375px 打开，断言无横向溢出、演示区有内容、有可操作按钮、控制台零报错
+  - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 108.9 KB）、`npm run check:ui` 15/15 全绿（列表 81 卡片）
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
 
@@ -194,3 +200,6 @@
 | 2026-10-21 | **`type-check` 必须用 `vue-tsc -b`** | 根 `tsconfig.json` 只有 `files: []` + references，`vue-tsc --noEmit` 在这种情况下什么都不检查（本次 build 暴露 12 处类型错误才发现）。改为构建模式后才会真正检查 `tsconfig.app.json` / `tsconfig.node.json` 引用的全部文件；CI 与本地口径一致 |
 | 2026-10-21 | **布局偏移 / 容器查询的测量必须「页面可见 + 强制布局」** | `layout-shift` 条目在 `document.visibilityState === 'hidden'` 时根本不产生，rAF 也会被节流，headless 用旧模式（非 `--headless=new`）同样会假阴性；容器查询的 `getComputedStyle` 要读一次 `offsetWidth` 强制结算后再取值。Demo 内统一：`measureDirs` 强制布局 + 双 rAF，另加 120ms 定时器兜底（后台标签页不靠 rAF）；切换占位模式 / 清空列表产生的偏移延迟 220ms 再清零，只统计「图片逐张加载」的账 |
 | 2026-10-21 | **相关案例不足 3 个时用同分类补齐** | 新分类里的独立技巧常常没有共享标签，纯按标签匹配会出现空块；改为「标签命中优先，不够 3 个用同分类其他案例补足」，保证详情页底部始终有可继续点击的入口 |
+| 2026-10-22 | **新增 `animation` 分类，只收「日常高频的动画 / 交互细节」，与 `css` 分工** | 用户点名参照 `practice/ripple-button`，要更多入门常用的动画与样式案例。`css` 收纯布局/特性技巧（grid、容器查询、clamp 等），`animation` 收「一次点击/悬停/展开能看到的动效与交互」（骨架屏、折叠、抽屉、进度环、磁性按钮、吸附轮播、提示气泡、焦点环）；仍是一案例一演示、四件套、notes 五段 |
+| 2026-10-22 | **动画案例的「数据对比」用行为指标，不编造耗时** | 这类案例的收益是体验与正确性（节点是否残留、要读几次高度、焦点是否可见），不是可稳定测出的毫秒；notes 第 4 段统一改用「读取 scrollHeight 次数 / 监听器个数 / 手算距离处数 / CSS 声明条数 / 触发分支数」等可核对口径，演示面板同步显示计数，避免跨环境测量的假精度 |
+| 2026-10-22 | **`check:ui` 增加动画分类逐页抽检，而不是给 8 个案例各写一套断言** | 动画案例交互差异大，逐例定制脚本维护成本高；统一断言「375px 无横向溢出 + 演示区有内容 + 有可操作按钮 + 控制台零报错」，再靠人工走查覆盖「动效是否好看、对比是否有说服力」 |
