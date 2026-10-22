@@ -306,6 +306,86 @@ const SCENARIOS = [
     },
   },
   {
+    name: '抽屉退场动画',
+    route: '/cases/animation/drawer-slide',
+    facts: async ({ evaluate, send }) => {
+      //! 强制模拟「减少动态效果」：这正是用户机器上的情况（系统关了动画），
+      // 案例为了让对比可见会在演示区还原过渡时长，必须在这个条件下也能测出退场
+      await send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      })
+      await sleep(200)
+
+      /** 全部在页面内按真实时间轴跑：开 → 关 → 采样，避免宿主侧 sleep 与页面计时不同步 */
+      const result = await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const button = (text, root = document) =>
+          [...root.querySelectorAll('button')].find((item) => item.textContent.includes(text))
+
+        // 先切到「等动画结束」，再打开抽屉
+        button('等动画结束')?.click()
+        await wait(250)
+        button('打开抽屉')?.click()
+        await wait(500)
+        const opened = document.querySelector('.dw-panel')
+        const openedTransform = opened ? getComputedStyle(opened).transform : ''
+
+        // 点关闭后 80ms 采样：节点是否还在、transform 是否在滑出途中
+        document.querySelector('.dw-panel button[aria-label="关闭抽屉"]')?.click()
+        await wait(80)
+        const mid = document.querySelector('.dw-panel')
+        const midTransform = mid ? getComputedStyle(mid).transform : null
+
+        await wait(700)
+        const removedAfter = !document.querySelector('.dw-panel')
+
+        // 再切回「直接卸载」验证对比：关闭后应该立刻没有节点
+        button('直接卸载')?.click()
+        await wait(250)
+        button('打开抽屉')?.click()
+        await wait(400)
+        document.querySelector('.dw-panel button[aria-label="关闭抽屉"]')?.click()
+        await wait(80)
+        const instantRemoved = !document.querySelector('.dw-panel')
+
+        // 最后验证「模拟减少动态效果」：等动画结束 + 模拟开关打开，关闭也该立刻移除
+        button('等动画结束')?.click()
+        button('模拟减少动态效果')?.click()
+        await wait(250)
+        button('打开抽屉')?.click()
+        await wait(400)
+        document.querySelector('.dw-panel button[aria-label="关闭抽屉"]')?.click()
+        await wait(80)
+        const mockReduceRemoved = !document.querySelector('.dw-panel')
+
+        return {
+          openedTransform,
+          midTransform,
+          stillThereAt80ms: Boolean(mid),
+          removedAfter,
+          instantRemoved,
+          mockReduceRemoved,
+          reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        }
+      })()`)
+
+      return result
+    },
+    assert: (result) => {
+      const failures = []
+      if (!result.stillThereAt80ms) failures.push('关闭后 80ms 节点就没了，没有等退场动画')
+      if (result.midTransform === result.openedTransform) {
+        failures.push(`关闭 80ms 后面板位置没变（${result.midTransform}），退场过渡没跑`)
+      }
+      if (!result.removedAfter) failures.push('过渡结束后抽屉没有卸载')
+      if (!result.instantRemoved) failures.push('「直接卸载」模式下关闭后节点没有立刻移除')
+      if (!result.mockReduceRemoved) {
+        failures.push('「模拟减少动态效果」打开时关闭后节点没有立刻移除')
+      }
+      return failures
+    },
+  },
+  {
     name: 'Element Plus 案例样式',
     route: '/cases/practice/debounce-throttle',
     facts: async ({ evaluate }) => {
