@@ -90,10 +90,24 @@
   }
 }
 
-/* ---------- 5. 减少动态效果：不做淡入位移 ---------- */
+/* ---------- 5. 减少动态效果：真实项目应降级，演示优先仍播放 ---------- */
+/* 真实项目：系统开启「减少动态效果」时让气泡直接出现；
+   本案例为了让淡入与位移可见，演示默认仍然播放，点开关才降级 */
 
+/* 开关打开：不做淡入与位移，延迟时机仍然保留（那是功能，不是动画） */
+.tip-bubble.no-motion {
+  transition: none;
+}
+
+/*! 演示优先：站点全局规则在「减少动态效果」下把过渡压到 0.01ms，
+    这里还原时长。真实项目不要照抄，应当改用上面的 .no-motion 分支 */
 @media (prefers-reduced-motion: reduce) {
   .tip-bubble {
-    transition: none;
+    transition-duration: var(--transition) !important;
+  }
+
+  //! 降级状态的优先级更高：开关打开时确实没有过渡
+  .tip-bubble.no-motion {
+    transition: none !important;
   }
 }

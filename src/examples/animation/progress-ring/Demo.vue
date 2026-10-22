@@ -3,7 +3,8 @@
 // - 旧做法：每 16ms 用定时器改一次 stroke-dashoffset，自己补中间帧
 // - 新做法：只写一次目标值，让 CSS 过渡补齐中间帧
 // - 周长 = 2 × π × 半径，dasharray 写周长，dashoffset 表达剩余比例
-// - 减少动态效果：过渡关闭，数值直接跳到目标
+// - 减少动态效果：真实项目应直接跳到目标值；本案例为了让过渡看得见仍然播放，
+//   可用开关查看降级行为
 // ============================================================
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -27,8 +28,14 @@ const writes = ref(0)
 const ticking = ref(false)
 /** 重置时临时关闭过渡，让数值直接跳变 */
 const instant = ref(false)
-/** 系统是否开启减少动态效果 */
-const reducedMotion = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不用系统设置直接决定演示行为：本案例要对比「谁来补中间帧」，
+ * 系统关掉动画后两种方式都只剩瞬间跳变，差别就看不出来了
+ */
+const mockReduce = ref(false)
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
 
 /** 逐帧定时器编号 */
 let stepTimer = 0
@@ -65,8 +72,8 @@ function setProgressTarget(next: number): void {
 
   if (clamped === progress.value) return
 
-  //! 减少动态效果：不做过渡也不逐帧，直接跳到目标值
-  if (reducedMotion.value) {
+  //! 模拟降级：不做过渡也不逐帧，直接跳到目标值
+  if (mockReduce.value) {
     progress.value = clamped
     writes.value++
     return
@@ -129,16 +136,27 @@ function setMode(next: RingMode): void {
   writes.value = 0
 }
 
-/** 系统动态效果偏好变化时同步状态 */
+/** 切换「模拟减少动态效果」：停掉逐帧定时器、把目标对齐当前进度、计数清零 */
+function toggleMockReduce(): void {
+  stopTimer()
+  window.clearTimeout(instantTimer)
+  instantTimer = 0
+  instant.value = false
+  mockReduce.value = !mockReduce.value
+  target.value = progress.value
+  writes.value = 0
+}
+
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
+  systemReduce.value = event.matches
 }
 
 // ---------- 生命周期 ----------
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
 })
 
@@ -183,11 +201,27 @@ onUnmounted(() => {
       </button>
       <button
         class="btn ghost"
+        :aria-pressed="mockReduce"
+        :class="{ active: mockReduce }"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetRing"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此直接跳到目标值；本案例为了让过渡看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div class="stage">
       <div class="ring-wrap">
@@ -208,7 +242,7 @@ onUnmounted(() => {
           />
           <circle
             class="value"
-            :class="{ tween: mode === 'transition' && !instant }"
+            :class="{ tween: mode === 'transition' && !instant, 'is-static': mockReduce }"
             cx="60"
             cy="60"
             :r="RADIUS"
@@ -225,6 +259,7 @@ onUnmounted(() => {
           <span>属性写入次数 <b>{{ writes }}</b></span>
           <span>定时器 <b>{{ ticking ? '运行中' : '无' }}</b></span>
           <span>驱动方式 <b>{{ mode === 'timer' ? '定时器逐个百分点写' : '只写一次目标值' }}</b></span>
+          <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
         </div>
 
         <label class="slider">
@@ -260,7 +295,7 @@ onUnmounted(() => {
     <p class="hint">
       先点「重置」，保持「定时器逐帧（旧）」点「开始」：写入次数随着进度一路涨，中间帧全靠脚本一次一次改属性。
       切到「样式过渡（推荐）」再重置、再开始：脚本只写一次目标值，圆环由样式过渡补齐；中心数字会先到目标值，圆环随后追上。
-      系统开启「减少动态效果」时不做过渡，直接跳到目标值。
+      本案例为了让过渡看得见，系统开启「减少动态效果」时仍然播放，点开关可以看系统开启减少动态效果时应该怎么降级。
     </p>
   </div>
 </template>
@@ -328,6 +363,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stage {
@@ -375,6 +429,11 @@ onUnmounted(() => {
 /* 只有过渡模式才声明过渡：逐帧模式每 16ms 改一次，不需要也不能有过渡 */
 .value.tween {
   transition: stroke-dashoffset 0.8s var(--ease-out);
+}
+
+/* 模拟降级：数值由脚本一次写入，不需要过渡去补中间帧 */
+.value.tween.is-static {
+  transition: none;
 }
 
 .ring-label {
@@ -470,10 +529,17 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-/* 减少动态效果：不做过渡，直接跳变（脚本也会跳过逐帧） */
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
+    而本案例正是要展示样式过渡补中间帧，所以这里把时长还原。真实项目不要照抄这一段，
+    应当像「模拟减少动态效果」打开时那样，直接跳到目标值。 */
 @media (prefers-reduced-motion: reduce) {
   .value.tween {
-    transition: none;
+    transition-duration: 0.8s !important;
+  }
+
+  /* 降级状态优先级更高：即使系统开着减少动态效果，也不补中间帧 */
+  .value.tween.is-static {
+    transition: none !important;
   }
 }
 

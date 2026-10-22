@@ -55,10 +55,19 @@
   box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow-soft);
 }
 
-/* ---------- 3. 减少动态效果：回弹直接到位 ---------- */
+/* ---------- 3. 模拟降级：不跟随，回弹也直接到位 ---------- */
 
+/* 脚本在降级时直接跳过整段跟随；这里把 transform 从过渡列表里去掉作为兜底 */
+.mag-btn.is-static {
+  transition: background-color var(--transition), box-shadow var(--transition);
+}
+
+/* ---------- 4. 演示优先：把被全局规则压短的回弹过渡还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示缓动回弹，
+    所以这里还原时长。真实业务不要照抄，应当直接走上面的不跟随分支 */
 @media (prefers-reduced-motion: reduce) {
   .mag-btn.is-returning {
-    transition: background-color var(--transition), box-shadow var(--transition);
+    transition-duration: 0.3s !important;
   }
 }

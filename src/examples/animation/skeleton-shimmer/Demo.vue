@@ -3,7 +3,8 @@
 // - 旧做法：转圈加载，内容就绪时整块替换，内容区高度跳一下
 // - 新做法：按最终排版铺同尺寸灰块，一道渐变高光横扫，内容到位淡出
 // - 指标：替换前后内容区高度差超过 2px 记一次布局跳动
-// - 减少动态效果：高光静止、骨架直接移除，不做淡出
+// - 减少动态效果：真实项目应降级（高光静止、骨架直接移除）；
+//   本案例为了让动效看得见仍然播放，可用开关查看降级行为
 // ============================================================
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -38,8 +39,14 @@ const heightDelta = ref(0)
 /** 布局跳动次数：高度差超过 2px 记 1 次 */
 const jumpCount = ref(0)
 
-/** 系统是否开启减少动态效果（监听变化，用户中途改设置也能生效） */
-const reducedMotion = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不用系统设置直接决定演示行为：本案例要展示的正是高光横扫，
+ * 系统关掉动画后骨架屏只剩几块灰条，案例就没有内容可看了
+ */
+const mockReduce = ref(false)
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
 
 const stageRef = ref<HTMLElement | null>(null)
 
@@ -47,7 +54,7 @@ const stageRef = ref<HTMLElement | null>(null)
 let loadTimer = 0
 /** 骨架淡出的兜底计时器（过渡结束事件没送达时也要移除节点） */
 let fadeTimer = 0
-/** 系统动态效果偏好的媒体查询对象（卸载时移除监听） */
+/** 系统「减少动态效果」的媒体查询对象（只用于提示，卸载时移除监听） */
 let motionQuery: MediaQueryList | null = null
 
 // ---------- 测量 ----------
@@ -111,8 +118,8 @@ async function finishLoad(): Promise<void> {
   jumpCount.value = heightDelta.value > 2 ? 1 : 0
 
   if (!skeletonFading.value) return
-  // 减少动态效果：不做淡出，直接移除骨架节点
-  if (reducedMotion.value) {
+  // 模拟降级：不做淡出，直接移除骨架节点
+  if (mockReduce.value) {
     skeletonFading.value = false
     return
   }
@@ -152,16 +159,28 @@ function resetAll(): void {
   resetMetrics()
 }
 
-/** 系统动态效果偏好变化时同步到页面状态 */
+/**
+ * 切换「模拟减少动态效果」：停掉在跑的计时器、收起骨架，计数归零
+ * 避免上一轮的淡出兜底计时器在新状态里把节点收掉
+ */
+function toggleMockReduce(): void {
+  clearTimers()
+  phase.value = 'ready'
+  skeletonFading.value = false
+  mockReduce.value = !mockReduce.value
+  resetMetrics()
+}
+
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
+  systemReduce.value = event.matches
 }
 
 // ---------- 生命周期 ----------
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
 })
 
@@ -173,7 +192,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="sk-demo">
+  <div
+    class="sk-demo"
+    :class="{ 'is-static': mockReduce }"
+  >
     <div class="bar">
       <div
         class="modes"
@@ -205,11 +227,27 @@ onUnmounted(() => {
       </button>
       <button
         class="btn ghost"
+        :aria-pressed="mockReduce"
+        :class="{ active: mockReduce }"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此降级：高光静止、骨架直接移除；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div
       class="stats"
@@ -221,7 +259,8 @@ onUnmounted(() => {
         → 替换后 <b>{{ afterHeight ? `${afterHeight}px` : '—' }}</b>
         （高度差 {{ heightDelta }}px）
       </span>
-      <span>骨架高光 <b>{{ reducedMotion ? '静止（减少动态效果）' : skeletonVisible ? '横扫中' : '待机' }}</b></span>
+      <span>骨架高光 <b>{{ mockReduce ? '静止（模拟降级）' : skeletonVisible ? '横扫中' : '待机' }}</b></span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
     <!-- 内容区：转圈、骨架屏、成品三选一，高度变化都发生在这里 -->
@@ -309,7 +348,7 @@ onUnmounted(() => {
     <p class="hint">
       先保持「转圈」点一次模拟加载：加载态比成品矮一大截，内容到位时整块撑高，布局跳动记 1 次。
       切到「骨架屏」再跑一次：灰块一开始就按成品排版占好位置，替换前后高度一致，记 0 次。
-      高度差在 ±2px 以内视为没有跳动；系统开启「减少动态效果」后高光停止横扫。
+      高度差在 ±2px 以内视为没有跳动；本案例为了让高光看得见，系统开启「减少动态效果」时仍然播放，点开关可以看系统开启减少动态效果时应该怎么降级。
     </p>
   </div>
 </template>
@@ -377,6 +416,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -552,16 +610,20 @@ onUnmounted(() => {
   transition: opacity 0.22s var(--ease-out);
 }
 
-/* 减少动态效果：高光静止，骨架不做淡出（脚本也会直接移除节点） */
-@media (prefers-reduced-motion: reduce) {
-  .sk {
-    animation: none;
-    background-image: none;
-  }
+/* 模拟降级：高光静止、骨架不做淡出（脚本也会直接移除节点）
+   用 !important 压住下面「演示优先」的还原规则，保证开关打开时确实没有动画 */
+.is-static .sk,
+.is-static .spinner {
+  animation: none !important;
+}
 
-  .skeleton.is-overlay {
-    transition: none;
-  }
+/* 高光渐变也去掉：只剩纯灰块，和真实降级后的样子一致 */
+.is-static .sk {
+  background-image: none;
+}
+
+.is-static .skeleton.is-overlay {
+  transition: none !important;
 }
 
 /* ---------- 转圈：高度固定且远低于成品 ---------- */
@@ -634,6 +696,25 @@ onUnmounted(() => {
 
   .mode {
     flex: 1;
+  }
+}
+
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把动画压到 0.01ms，
+    而本案例正是要展示高光横扫与淡出，所以这里把时长还原。真实项目不要照抄这一段，
+    应当像「模拟减少动态效果」打开时那样，直接去掉动画。 */
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation-duration: 1.15s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .spinner {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .skeleton.is-overlay {
+    transition-duration: 0.22s !important;
   }
 }
 </style>

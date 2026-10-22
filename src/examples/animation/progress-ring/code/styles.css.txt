@@ -44,11 +44,24 @@
   stroke-dashoffset: 326.73;
 }
 
-/* ---------- 4. 减少动态效果 ---------- */
+/* ---------- 4. 模拟降级：不做过渡，直接跳变 ---------- */
 
+/* 脚本里的跳变分支配合这条规则：数值一次写入，不再补中间帧 */
+.value.tween.is-static {
+  transition: none;
+}
+
+/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示样式过渡补中间帧，
+    所以这里还原时长。真实业务不要照抄，应当直接走上面的跳变分支 */
 @media (prefers-reduced-motion: reduce) {
   .value.tween {
-    //! 关闭过渡：进度直接跳到目标值，百分比文字仍然完整更新
-    transition: none;
+    transition-duration: 0.8s !important;
+  }
+
+  /* 降级状态优先级更高：即使系统开着减少动态效果，也不补中间帧 */
+  .value.tween.is-static {
+    transition: none !important;
   }
 }

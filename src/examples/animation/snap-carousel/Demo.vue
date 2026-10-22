@@ -67,8 +67,14 @@ const centerError = ref(0)
 const handCalc = ref(0)
 /** 最近一次手算的中间结果，方便看清「目标 → 夹取后」 */
 const handTarget = ref('—')
-/** 系统是否开启减少动态效果：开启时用瞬间滚动 */
-const reducedMotion = ref(false)
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不让系统设置直接决定演示行为：本案例要展示平滑滚动，
+ * 系统关掉动画后「平滑」和「直接到位」看起来一模一样，案例就失去意义了
+ */
+const mockReduce = ref(false)
 
 const trackRef = ref<HTMLElement | null>(null)
 
@@ -76,7 +82,7 @@ const trackRef = ref<HTMLElement | null>(null)
 let settleTimer = 0
 /** 滚动事件的帧合并编号 */
 let scrollFrame = 0
-/** 动态效果偏好的媒体查询对象（卸载时移除监听） */
+/** 系统「减少动态效果」的媒体查询对象（卸载时移除监听） */
 let motionQuery: MediaQueryList | null = null
 
 /** 取轮播的横向滚动容器 */
@@ -156,7 +162,8 @@ function goTo(target: number): void {
   if (!track) return
 
   const nextIndex = Math.min(SLIDES.length - 1, Math.max(0, target))
-  const behavior: ScrollBehavior = reducedMotion.value ? 'auto' : 'smooth'
+  //! 模拟降级时用 auto 直接到位：吸附仍然生效（它属于功能，不是装饰动画）
+  const behavior: ScrollBehavior = mockReduce.value ? 'auto' : 'smooth'
 
   if (mode.value === 'manual') {
     const step = measureStep()
@@ -226,21 +233,32 @@ function resetAll(): void {
   scheduleSettle()
 }
 
+/** 切换「模拟减少动态效果」：先停掉等停稳的计时器与帧回调，再把指标清零 */
+function toggleMockReduce(): void {
+  window.clearTimeout(settleTimer)
+  settleTimer = 0
+  if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
+  scrollFrame = 0
+  handCalc.value = 0
+  handTarget.value = '—'
+  mockReduce.value = !mockReduce.value
+}
+
 /** 窗口尺寸变化后卡片宽度会变，重新量索引 */
 function onResize(): void {
   readMetrics()
 }
 
-/** 系统动态效果偏好变化时同步 */
+/** 系统动态效果偏好变化时只更新提示 */
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
+  systemReduce.value = event.matches
 }
 
 // ---------- 生命周期 ----------
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
   window.addEventListener('resize', onResize)
   readMetrics()
@@ -259,7 +277,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="snap-demo">
+  <div
+    class="snap-demo"
+    :class="{ 'no-motion': mockReduce }"
+  >
     <div class="bar">
       <div
         class="modes"
@@ -285,11 +306,27 @@ onUnmounted(() => {
       </div>
       <button
         class="btn ghost"
+        :class="{ active: mockReduce }"
+        :aria-pressed="mockReduce"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此降级；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div
       class="stats"
@@ -300,6 +337,8 @@ onUnmounted(() => {
       <span>本次手算距离 <b>{{ handCalc }} 处</b></span>
       <span>手算结果 <b>{{ handTarget }}</b></span>
       <span>居中误差 <b>{{ centerError }}px</b></span>
+      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : '平滑滚动' }}</b></span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
     <div
@@ -377,6 +416,7 @@ onUnmounted(() => {
       旧做法用 scrollLeft 手算：圆点跳转要先算「索引 × 单卡距离」，再夹到最大可滚动范围，两处都算错就会停在半路。
       新做法开滚动吸附，圆点只调 scrollIntoView，索引用滚动位置反推。
       用手随便向右滑一段再松手：旧做法常停在两张中间（居中误差大于 0），新做法会自动吸到整张卡片。
+      点「模拟减少动态效果」可查看降级行为：跳转直接到位，吸附本身仍然生效。
     </p>
   </div>
 </template>
@@ -437,6 +477,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -643,6 +702,13 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
+/* 模拟降级：卡片描边与圆点的装饰过渡直接关掉（吸附本身是功能，保持生效） */
+.no-motion .slide,
+.no-motion .arrow,
+.no-motion .dot::after {
+  transition: none;
+}
+
 @media (min-width: 640px) {
   .track {
     /* 宽屏固定卡片宽度，两侧留白由公式自动算 */
@@ -668,12 +734,22 @@ onUnmounted(() => {
   }
 }
 
-/* 减少动态效果：吸附保留（它是布局行为），滚动直接到位 */
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
+    而本案例要展示卡片描边与圆点的过渡，所以这里把时长还原。
+    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样关掉装饰动画；
+    滚动吸附属于功能，不受动态效果偏好影响，保持开启。 */
 @media (prefers-reduced-motion: reduce) {
   .slide,
   .arrow,
-  .dot {
-    transition: none;
+  .dot::after {
+    transition-duration: var(--transition) !important;
+  }
+
+  /* 降级状态的优先级更高：开关打开时不做装饰过渡 */
+  .no-motion .slide,
+  .no-motion .arrow,
+  .no-motion .dot::after {
+    transition: none !important;
   }
 }
 </style>

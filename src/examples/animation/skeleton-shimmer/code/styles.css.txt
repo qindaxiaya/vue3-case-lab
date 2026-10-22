@@ -93,16 +93,26 @@
   transition: opacity 0.22s var(--ease-out);
 }
 
-/* ---------- 4. 减少动态效果 ---------- */
+/* ---------- 4. 模拟降级：高光静止、骨架不淡出 ---------- */
 
+/* 真实项目把 .is-static 换成「系统开启了减少动态效果」的判断即可 */
+.sk-demo.is-static .sk {
+  //! 高光静止：动画不是理解加载状态的唯一线索，状态文字也要保留
+  animation: none;
+  background-image: none;
+}
+
+.sk-demo.is-static .skeleton-panel.is-overlay {
+  transition: none;
+}
+
+/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把动画压到 0.01ms；本案例要展示高光横扫，
+    所以这里把时长还原。只有「动画就是教学内容」的演示页才需要这样做，真实业务不要照抄 */
 @media (prefers-reduced-motion: reduce) {
   .sk {
-    //! 高光静止：动画不是理解加载状态的唯一线索，状态文字也要保留
-    animation: none;
-    background-image: none;
-  }
-
-  .skeleton-panel.is-overlay {
-    transition: none;
+    animation-duration: 1.15s !important;
+    animation-iteration-count: infinite !important;
   }
 }
