@@ -10,12 +10,26 @@ let scrollAnimId = 0
 /** 正在进行的滚动动画的清理函数 */
 let stopScrollAnim: (() => void) | null = null
 
+/** smoothScrollTo 的可选项 */
+export interface SmoothScrollOptions {
+  /**
+   * 忽略系统「减少动态效果」：用户主动点击触发的短动画（如回到顶部）按产品要求始终播放。
+   * 任何环境都至少能滚到目标位置，只是「瞬跳」与「缓动」的差别
+   */
+  ignoreReducedMotion?: boolean
+}
+
 /**
  * 逐帧缓动滚动到目标位置
  * @param targetY 目标滚动高度（px）
  * @param duration 动画时长（毫秒）
+ * @param options 见 SmoothScrollOptions
  */
-export function smoothScrollTo(targetY: number, duration = 460): void {
+export function smoothScrollTo(
+  targetY: number,
+  duration = 460,
+  options: SmoothScrollOptions = {},
+): void {
   // 连续点击 / 切换 tab 时先停掉上一段，避免两段动画互相抢
   stopScrollAnim?.()
 
@@ -26,7 +40,12 @@ export function smoothScrollTo(targetY: number, duration = 460): void {
   const root = document.documentElement
 
   // 系统开启“减少动态效果”时直接跳转：CSS 的 reduced-motion 管不到这段 JS 动画
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // 例外：调用方显式要求播放（ignoreReducedMotion），例如回到顶部按钮——
+  // 用户主动点一下，瞬跳反而像“页面抽了一下”，这里仍按传入时长缓动（可由调用方缩短）
+  if (
+    !options.ignoreReducedMotion &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
     // 让上一段动画的 rAF 失效，避免它下一帧把位置又拉回旧目标
     scrollAnimId++
     const prevBehavior = root.style.scrollBehavior
