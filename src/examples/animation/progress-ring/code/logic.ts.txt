@@ -17,7 +17,8 @@ const target = ref(0)
 const writes = ref(0)
 const ticking = ref(false)
 const instant = ref(false)
-const reducedMotion = ref(false)
+/** 是否模拟「系统开启了减少动态效果」：打开后不做过渡也不逐帧，直接跳到目标值 */
+const mockReduce = ref(false)
 
 let stepTimer = 0
 let instantTimer = 0
@@ -45,7 +46,8 @@ function setProgressTarget(next: number): void {
 
   if (clamped === progress.value) return
 
-  if (reducedMotion.value) {
+  // 模拟降级：直接跳到目标值，百分比文字仍然完整更新
+  if (mockReduce.value) {
     progress.value = clamped
     writes.value++
     return
@@ -92,15 +94,15 @@ onUnmounted(() => {
 })
 
 // 模板里的关键绑定：
-// :class="{ tween: mode === 'transition' && !instant }"
+// :class="{ tween: mode === 'transition' && !instant, 'is-static': mockReduce }"
 // :style="ringStyle"
 export {
   RADIUS,
   dashOffset,
   instant,
+  mockReduce,
   mode,
   progress,
-  reducedMotion,
   resetRing,
   ringStyle,
   setProgressTarget,

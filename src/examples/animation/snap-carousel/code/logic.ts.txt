@@ -12,7 +12,10 @@ const index = ref(0)
 const scrollLeft = ref(0)
 const centerError = ref(0)
 const handCalc = ref(0)
-const reducedMotion = ref(false)
+/** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
+const systemReduce = ref(false)
+/** 手动模拟「系统关闭动画」：打开后跳转直接到位，吸附仍保留 */
+const mockReduce = ref(false)
 
 const trackRef = ref<HTMLElement | null>(null)
 let settleTimer = 0
@@ -75,7 +78,8 @@ function goTo(target: number): void {
   if (!track) return
 
   const nextIndex = Math.min(getSlides().length - 1, Math.max(0, target))
-  const behavior: ScrollBehavior = reducedMotion.value ? 'auto' : 'smooth'
+  //! 降级时用 auto 直接到位：吸附仍然生效（它属于功能，不是装饰动画）
+  const behavior: ScrollBehavior = mockReduce.value ? 'auto' : 'smooth'
 
   if (mode.value === 'manual') {
     const step = measureStep()
@@ -136,12 +140,23 @@ function resetAll(): void {
 }
 
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
+  // 只更新提示文案，不夺走演示
+  systemReduce.value = event.matches
+}
+
+// 演示优先：真实业务应当直接跟随系统设置（开启减少动态效果就用 auto），
+// 本案例为了让平滑滚动可见，只在手动开关打开时才降级
+function toggleMockReduce(): void {
+  // 先停掉等停稳的计时器，避免切换后又被旧回调改写读数
+  window.clearTimeout(settleTimer)
+  settleTimer = 0
+  handCalc.value = 0
+  mockReduce.value = !mockReduce.value
 }
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
   readMetrics()
 })
@@ -158,6 +173,7 @@ onUnmounted(() => {
 // 1. 容器 .track 加 tabindex="0" + @scroll.passive + @keydown="onKeydown"
 // 2. 卡片 .slide 写 scroll-snap-align: center
 // 3. 新做法在容器上加 scroll-snap-type: x mandatory，旧做法不加
+// 4. 降级态的类绑定：根节点 :class="{ 'no-motion': mockReduce }"（样式见 styles.css.txt）
 
 export {
   centerError,
@@ -165,6 +181,7 @@ export {
   handCalc,
   index,
   measureStep,
+  mockReduce,
   mode,
   onKeydown,
   onScroll,
@@ -172,4 +189,6 @@ export {
   resetAll,
   scrollLeft,
   setMode,
+  systemReduce,
+  toggleMockReduce,
 }

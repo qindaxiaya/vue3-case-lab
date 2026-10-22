@@ -7,7 +7,7 @@
 // - 窄屏把气泡改到下方，避免超出视口
 // ============================================================
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 /** 提示实现方式：native = 原生 title（旧）/ custom = 自建气泡（新） */
 type TipMode = 'native' | 'custom'
@@ -36,6 +36,18 @@ const pending = ref(false)
 const elapsedText = ref('—')
 /** 触摸指针被跳过的次数：手指没有悬停，不该弹气泡 */
 const touchSkipped = ref(0)
+
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不让系统设置直接决定演示行为：本案例要展示气泡的淡入与位移，
+ * 系统关掉动画后看起来和「直接出现」一模一样，案例就失去意义了
+ */
+const mockReduce = ref(false)
+
+/** 系统「减少动态效果」的媒体查询对象（卸载时移除监听） */
+let motionQuery: MediaQueryList | null = null
 
 /** 延迟计时器编号 */
 let showTimer = 0
@@ -180,10 +192,35 @@ function resetAll(): void {
   focused = false
 }
 
+/** 切换「模拟减少动态效果」：先清掉延迟计时器与读数，再从同一起点观察 */
+function toggleMockReduce(): void {
+  clearShowTimer()
+  shown.value = false
+  armedAt = 0
+  elapsedText.value = '—'
+  source.value = '—'
+  touchSkipped.value = 0
+  mockReduce.value = !mockReduce.value
+}
+
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
+function onMotionChange(event: MediaQueryListEvent): void {
+  systemReduce.value = event.matches
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
 onUnmounted(() => {
   //! 延迟计时器必须清：组件卸载后回调仍会改已经销毁的状态
   clearShowTimer()
   armedAt = 0
+  //! 媒体查询监听同样要移除，避免回调去改已经销毁的状态
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
 })
 </script>
 
@@ -214,11 +251,27 @@ onUnmounted(() => {
       </div>
       <button
         class="btn ghost"
+        :class="{ active: mockReduce }"
+        :aria-pressed="mockReduce"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此降级；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div
       class="stats"
@@ -230,6 +283,7 @@ onUnmounted(() => {
       <span>触发来源 <b>{{ source }}</b></span>
       <span>延迟计时器 <b>{{ timerText }}</b></span>
       <span>触摸跳过 <b>{{ touchSkipped }}</b> 次</span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
     <!--
@@ -256,7 +310,7 @@ onUnmounted(() => {
           v-if="mode === 'custom'"
           id="tip-bubble"
           class="tip-bubble"
-          :class="{ show: shown }"
+          :class="{ show: shown, 'no-motion': mockReduce }"
           role="tooltip"
           :aria-hidden="!shown"
         >
@@ -273,6 +327,7 @@ onUnmounted(() => {
       原生 title：鼠标停多久才出现由浏览器决定，样式与换行改不了，触摸设备基本看不到。
       切到自建气泡后，鼠标停留 {{ SHOW_DELAY }}ms 才出现、移出立即消失，键盘聚焦马上出现；
       面板会显示实际用时与触发来源。窄屏下气泡自动改到按钮下方，不会顶出视口。
+      点「模拟减少动态效果」可查看降级行为：气泡直接出现，延迟时机仍然保留。
     </p>
   </div>
 </template>
@@ -330,6 +385,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -421,6 +495,11 @@ onUnmounted(() => {
   }
 }
 
+/* 模拟降级：系统关掉动画时气泡直接出现，不做淡入与位移 */
+.tip-bubble.no-motion {
+  transition: none;
+}
+
 .tip-arrow {
   position: absolute;
   bottom: -4px;
@@ -476,10 +555,17 @@ onUnmounted(() => {
   }
 }
 
-/* 减少动态效果：气泡直接出现，不做淡入位移 */
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
+    而本案例正是要展示气泡的淡入与位移，所以这里把时长还原。
+    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样直接出现。 */
 @media (prefers-reduced-motion: reduce) {
   .tip-bubble {
-    transition: none;
+    transition-duration: var(--transition) !important;
+  }
+
+  /* 降级状态的优先级更高：开关打开时不做淡入位移 */
+  .tip-bubble.no-motion {
+    transition: none !important;
   }
 }
 </style>

@@ -5,7 +5,7 @@
 // - 指标：累计读取 scrollHeight 的次数（旧每次打开加 1，新恒为 0）
 // ============================================================
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 /** 展开方式：js = 读内容高度写行内高度（旧）/ grid = 0fr 到 1fr 过渡（新） */
 type PanelMode = 'js' | 'grid'
@@ -56,6 +56,18 @@ const heights = reactive<Record<string, number>>({})
 const measureReads = ref(0)
 /** 最近一次写入的行内高度，方便在面板上看到脚本确实动了手 */
 const lastWrite = ref('—')
+
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不让系统设置直接决定演示行为：本案例要靠中间帧对比两种方案，
+ * 系统关掉动画后两边都直接到位，案例就失去意义了
+ */
+const mockReduce = ref(false)
+
+/** 系统「减少动态效果」的媒体查询对象（卸载时移除监听） */
+let motionQuery: MediaQueryList | null = null
 
 /** 当前方案每次展开需要几行「量高度」脚本：旧 1 行，新 0 行 */
 const needMeasureLines = computed(() => (mode.value === 'js' ? 1 : 0))
@@ -114,6 +126,35 @@ function resetAll(): void {
   measureReads.value = 0
   lastWrite.value = '—'
 }
+
+/** 切换「模拟减少动态效果」：先全部收起、清空计数，避免带着旧状态切换 */
+function toggleMockReduce(): void {
+  // 先清理上一轮的状态与计数：开关切换后从同一起点重新对比
+  openId.value = null
+  for (const key of Object.keys(heights)) delete heights[key]
+  measureReads.value = 0
+  lastWrite.value = '—'
+  mockReduce.value = !mockReduce.value
+}
+
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
+function onMotionChange(event: MediaQueryListEvent): void {
+  systemReduce.value = event.matches
+}
+
+// ---------- 生命周期 ----------
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
+onUnmounted(() => {
+  //! 媒体查询监听必须移除：否则离开页面后回调仍会改已经销毁的状态
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
+})
 </script>
 
 <template>
@@ -143,11 +184,27 @@ function resetAll(): void {
       </div>
       <button
         class="btn ghost"
+        :class="{ active: mockReduce }"
+        :aria-pressed="mockReduce"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置（全部收起）
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此降级；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div
       class="stats"
@@ -156,6 +213,8 @@ function resetAll(): void {
       <span>读取 scrollHeight <b>{{ measureReads }}</b> 次</span>
       <span>每次展开需要的量高行数 <b>{{ needMeasureLines }}</b> 行</span>
       <span>最近写入 <b>{{ lastWrite }}</b></span>
+      <span>过渡时长 <b>{{ mockReduce ? '跳过' : '0.32s' }}</b></span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
     <div class="faq">
@@ -163,6 +222,7 @@ function resetAll(): void {
         v-for="(item, index) in FAQS"
         :key="item.id"
         class="faq-item"
+        :class="{ 'no-motion': mockReduce }"
       >
         <h3 class="faq-title">
           <button
@@ -217,6 +277,7 @@ function resetAll(): void {
       旧方案展开任意一条，都会看到「读取 scrollHeight」加 1，最近写入里出现一个像素值；
       新方案把面板排成网格，行高从 0fr 过渡到 1fr，脚本一次高度都不用读。
       两条答案长度差很多，但新方案的展开时长完全一样；旧方案每次都要脚本先量出终点。
+      点「模拟减少动态效果」可查看降级行为：两种方案都直接到位，不再有中间帧。
     </p>
   </div>
 </template>
@@ -274,6 +335,25 @@ function resetAll(): void {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -367,6 +447,12 @@ function resetAll(): void {
   overflow: hidden;
 }
 
+/* 模拟降级：系统关掉动画时展开/收起直接到位，没有任何中间帧 */
+.no-motion .faq-panel,
+.no-motion .faq-icon {
+  transition: none;
+}
+
 /* 旧方案：脚本写行内 height，过渡的终点是一个明确的像素值 */
 .js-panel {
   transition: height 0.32s var(--ease-out);
@@ -422,6 +508,30 @@ function resetAll(): void {
 
   .faq-answer {
     padding-left: 0.9rem;
+  }
+}
+
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
+    而本案例正是要靠中间帧对比两种方案，所以这里把时长还原。
+    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样直接到位。 */
+@media (prefers-reduced-motion: reduce) {
+  .js-panel {
+    transition-duration: 0.32s !important;
+  }
+
+  .grid-panel {
+    transition-duration: 0.32s !important;
+  }
+
+  /* + 号旋转也是演示的一部分，一并还原 */
+  .faq-icon {
+    transition-duration: var(--transition) !important;
+  }
+
+  /* 降级状态的优先级更高：开关打开时两种方案都不做过渡 */
+  .no-motion .faq-panel,
+  .no-motion .faq-icon {
+    transition: none !important;
   }
 }
 </style>

@@ -4,7 +4,9 @@
 // - 新做法：pointermove 算出指针相对按钮中心的偏移，按强度写 CSS 变量，
 //   按钮用 transform: translate() 轻微跟随；离开磁力范围缓动回弹
 // - 指标：指针移动时的实际位移（旧恒为 0px）、几何读取次数、跟随次数
-// - 触摸设备（指针类型不是鼠标）不跟随；减少动态效果时直接不跟随
+// - 触摸设备（指针类型不是鼠标）不跟随
+// - 减少动态效果：真实项目应直接不跟随；本案例为了让跟随看得见仍然跟随，
+//   可用开关查看降级行为
 // ============================================================
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -47,12 +49,18 @@ const touchSkipped = ref(0)
 
 /** 是否处于回弹阶段：只有回弹才给 transform 加过渡，跟随时要跟手 */
 const returning = ref(false)
-/** 系统是否开启减少动态效果：开启时不做跟随 */
-const reducedMotion = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不用系统设置直接决定演示行为：跟随位移就是本案例的全部内容，
+ * 系统关掉动画后指针怎么移按钮都不动，案例就没什么可演示的了
+ */
+const mockReduce = ref(false)
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
 
 const buttonRef = ref<HTMLButtonElement | null>(null)
 
-/** 动态效果偏好的媒体查询对象（卸载时移除监听） */
+/** 动态效果偏好的媒体查询对象（只用于提示，卸载时移除监听） */
 let motionQuery: MediaQueryList | null = null
 
 /** 当前强度配置：find 找不到时回退到「中」，保证一定拿到完整对象 */
@@ -83,8 +91,8 @@ function onPointerMove(event: PointerEvent): void {
   // 旧模式不做任何计算：指针怎么动，按钮都停在原地
   if (mode.value !== 'on') return
 
-  // 减少动态效果：不做跟随，直接返回（用户明确要求少动）
-  if (reducedMotion.value) return
+  // 模拟降级：不做跟随，直接返回（真实项目在系统开启该设置时也应如此）
+  if (mockReduce.value) return
 
   //! 触摸设备不跟随：手指按住时按钮乱动会让人以为点错了地方
   if (event.pointerType !== 'mouse') {
@@ -121,6 +129,13 @@ function onPointerMove(event: PointerEvent): void {
 function onPointerLeave(): void {
   if (mode.value !== 'on') return
 
+  // 模拟降级下没有位移可回弹，保持原位、也不打开过渡
+  if (mockReduce.value) {
+    returning.value = false
+    offset.value = { x: 0, y: 0 }
+    return
+  }
+
   //! 回弹靠过渡完成：脚本只写 0，中间帧交给浏览器
   returning.value = true
   offset.value = { x: 0, y: 0 }
@@ -156,20 +171,27 @@ function resetAll(): void {
   returning.value = false
 }
 
-/** 系统动态效果偏好变化时同步状态（用户中途改系统设置也能生效） */
+/** 切换「模拟减少动态效果」：位移与回弹状态复位，计数清零便于重新对比 */
+function toggleMockReduce(): void {
+  mockReduce.value = !mockReduce.value
+  returning.value = false
+  offset.value = { x: 0, y: 0 }
+  followCount.value = 0
+  geoReads.value = 0
+  maxSeen.value = 0
+  touchSkipped.value = 0
+}
+
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
-  if (event.matches) {
-    returning.value = false
-    offset.value = { x: 0, y: 0 }
-  }
+  systemReduce.value = event.matches
 }
 
 // ---------- 生命周期 ----------
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
 })
 
@@ -225,11 +247,28 @@ onUnmounted(() => {
 
       <button
         class="btn ghost"
+        :aria-pressed="mockReduce"
+        :class="{ active: mockReduce }"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </button>
+
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此不做跟随；本案例为了让跟随看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
     <div
       class="stats"
@@ -241,7 +280,7 @@ onUnmounted(() => {
       <span>本轮最大位移 <b>{{ maxSeen }}px</b></span>
       <span>位移上限 <b>{{ currentStrength.max }}px</b></span>
       <span>触摸跳过 <b>{{ touchSkipped }}</b> 次</span>
-      <span>减少动态效果 <b>{{ reducedMotion ? '开（不跟随）' : '关' }}</b></span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
     <!--
@@ -259,6 +298,7 @@ onUnmounted(() => {
         :class="{
           'is-following': mode === 'on',
           'is-returning': returning,
+          'is-static': mockReduce,
         }"
         type="button"
         :style="{ '--mx': `${offset.x}px`, '--my': `${offset.y}px` }"
@@ -279,6 +319,7 @@ onUnmounted(() => {
       旧做法只监听背景色：指针在按钮上怎么移动，位移读数都停在 0px / 0px。
       切到「指针跟随」后，移动指针能看到读数变化，几何读取次数随移动次数上涨；
       离开虚线范围，按钮会缓动回弹到中心。把强度从「弱」调到「强」，最大位移会停在上限，不会跟着指针无限跑。
+      本案例为了让跟随看得见，系统开启「减少动态效果」时仍然播放，点开关可以看系统开启减少动态效果时应该怎么降级。
     </p>
   </div>
 </template>
@@ -360,6 +401,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -441,6 +501,11 @@ onUnmounted(() => {
   &.is-following {
     box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow-soft);
   }
+
+  /* 模拟降级：位移不再参与，回弹也不需要过渡 */
+  &.is-static {
+    transition: background-color var(--transition), box-shadow var(--transition);
+  }
 }
 
 .mag-dot {
@@ -477,10 +542,12 @@ onUnmounted(() => {
   }
 }
 
-/* 减少动态效果：回弹也直接到位，不做位移过渡 */
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把回弹过渡压到 0.01ms，
+    而本案例正是要展示缓动回弹，所以这里把时长还原。真实项目不要照抄这一段，
+    应当像「模拟减少动态效果」打开时那样，直接不跟随。 */
 @media (prefers-reduced-motion: reduce) {
   .mag-btn.is-returning {
-    transition: background-color var(--transition), box-shadow var(--transition);
+    transition-duration: 0.3s !important;
   }
 }
 </style>

@@ -31,7 +31,10 @@ const geoReads = ref(0)
 const maxSeen = ref(0)
 const touchSkipped = ref(0)
 const returning = ref(false)
-const reducedMotion = ref(false)
+/** 是否模拟「系统开启了减少动态效果」：打开后整段跟随都跳过 */
+const mockReduce = ref(false)
+/** 系统设置只用于顶部提示，不直接决定演示行为 */
+const systemReduce = ref(false)
 
 const buttonRef = ref<HTMLButtonElement | null>(null)
 let motionQuery: MediaQueryList | null = null
@@ -49,8 +52,8 @@ function round1(value: number): number {
 }
 
 function onPointerMove(event: PointerEvent): void {
-  // 旧模式不读几何、不算位移
-  if (mode.value !== 'on' || reducedMotion.value) return
+  // 旧模式不读几何、不算位移；模拟降级时同样整段跳过
+  if (mode.value !== 'on' || mockReduce.value) return
 
   //! 触摸设备不跟随：手指按住时按钮乱动会被当成点偏了
   if (event.pointerType !== 'mouse') {
@@ -85,6 +88,12 @@ function onPointerMove(event: PointerEvent): void {
 
 function onPointerLeave(): void {
   if (mode.value !== 'on') return
+  // 模拟降级下没有位移可回弹，保持原位、也不打开过渡
+  if (mockReduce.value) {
+    returning.value = false
+    offset.value = { x: 0, y: 0 }
+    return
+  }
   //! 只把位移写回 0，中间帧交给样式过渡完成
   returning.value = true
   offset.value = { x: 0, y: 0 }
@@ -112,12 +121,12 @@ function resetAll(): void {
 // 按钮样式统一用 transform: translate3d(var(--mx), var(--my), 0) 消费位移。
 
 function onMotionChange(event: MediaQueryListEvent): void {
-  reducedMotion.value = event.matches
+  systemReduce.value = event.matches
 }
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  reducedMotion.value = motionQuery.matches
+  systemReduce.value = motionQuery.matches
   motionQuery.addEventListener('change', onMotionChange)
 })
 
@@ -133,14 +142,15 @@ export {
   followCount,
   geoReads,
   maxSeen,
+  mockReduce,
   mode,
   offset,
   onPointerLeave,
   onPointerMove,
-  reducedMotion,
   resetAll,
   returning,
   setMode,
   strength,
+  systemReduce,
   touchSkipped,
 }

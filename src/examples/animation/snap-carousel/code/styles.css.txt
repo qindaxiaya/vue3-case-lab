@@ -67,12 +67,30 @@
   }
 }
 
-/* ---------- 4. 减少动态效果：吸附保留，过渡关掉 ---------- */
+/* ---------- 4. 减少动态效果：真实项目应降级，演示优先仍播放 ---------- */
+/* 真实项目：系统开启「减少动态效果」时跳转用 behavior: 'auto' 直接到位，
+   并关掉卡片描边、圆点的装饰过渡；吸附必须保留（它决定停在哪，是功能） */
 
+/* 开关打开：装饰过渡直接关掉，吸附不受影响 */
+.no-motion .slide,
+.no-motion .arrow,
+.no-motion .dot::after {
+  transition: none;
+}
+
+/*! 演示优先：站点全局规则在「减少动态效果」下把过渡压到 0.01ms，
+    这里还原时长。真实项目不要照抄，应当改用上面的 .no-motion 分支 */
 @media (prefers-reduced-motion: reduce) {
   .slide,
   .arrow,
-  .dot {
-    transition: none;
+  .dot::after {
+    transition-duration: var(--transition) !important;
+  }
+
+  //! 降级状态的优先级更高：开关打开时确实没有过渡
+  .no-motion .slide,
+  .no-motion .arrow,
+  .no-motion .dot::after {
+    transition: none !important;
   }
 }

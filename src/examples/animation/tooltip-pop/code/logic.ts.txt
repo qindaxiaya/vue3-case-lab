@@ -2,7 +2,7 @@
 // 提示气泡逻辑（与 Demo.vue 的 scheduleShow / onPointerEnter 一致）
 // 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
 // ============================================================
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 /** native = 原生 title（旧）/ custom = 自建气泡（新） */
 type TipMode = 'native' | 'custom'
@@ -17,6 +17,13 @@ const source = ref<TipSource>('—')
 const pending = ref(false)
 const elapsedText = ref('—')
 const touchSkipped = ref(0)
+
+/** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
+const systemReduce = ref(false)
+/** 手动模拟「系统关闭动画」：打开后气泡直接出现，延迟仍然保留 */
+const mockReduce = ref(false)
+
+let motionQuery: MediaQueryList | null = null
 
 let showTimer = 0
 let armedAt = 0
@@ -131,10 +138,36 @@ function resetAll(): void {
   armedAt = 0
 }
 
+// 演示优先：真实业务应当直接跟随系统设置（开启减少动态效果就不做淡入），
+// 本案例为了让淡入可见，只在手动开关打开时才降级
+function toggleMockReduce(): void {
+  clearShowTimer()
+  shown.value = false
+  armedAt = 0
+  elapsedText.value = '—'
+  source.value = '—'
+  touchSkipped.value = 0
+  mockReduce.value = !mockReduce.value
+}
+
+function onMotionChange(event: MediaQueryListEvent): void {
+  // 只更新提示文案，不夺走演示
+  systemReduce.value = event.matches
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
 onUnmounted(() => {
   //! 卸载时清定时器：否则到点回调会去改已经销毁的状态
   clearShowTimer()
   armedAt = 0
+  //! 媒体查询监听同样要移除
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
 })
 
 // 模板要点：
@@ -142,12 +175,14 @@ onUnmounted(() => {
 // 2. 气泡写 role="tooltip" + :aria-hidden="!shown"
 // 3. 触发器写 :aria-describedby="mode === 'custom' ? 'tip-bubble' : undefined"
 // 4. 原生模式只保留 :title，页面不接管显示逻辑
+// 5. 降级态的类绑定：:class="{ show: shown, 'no-motion': mockReduce }"（样式见 styles.css.txt）
 
 export {
   SHOW_DELAY,
   clearShowTimer,
   elapsedText,
   hideTip,
+  mockReduce,
   mode,
   onFocusIn,
   onFocusOut,
@@ -160,5 +195,7 @@ export {
   shown,
   source,
   stateText,
+  systemReduce,
+  toggleMockReduce,
   touchSkipped,
 }
