@@ -129,6 +129,7 @@
 - ✅ 2026-10-21 新增 11 个案例（共 73 案例 / 8 分类）：`css` 5 个（grid-auto-fit / container-query / has-parent / fluid-clamp / aspect-ratio-cls）+ `basics` 5 个（event-loop / url-search-params / intl-format / structured-clone / clipboard-api），两个新分类置于分类列表最前；`practice/dynamic-chunk` 用真实动态 import 实测「按需 7.3 KB / 5.8 ms」vs「全量 36.8 KB / 15 ms」、同页二次点击 0 B / 0.8 ms，生产构建复访 300 B（304 头部）
 - ✅ 2026-10-21 工具与门禁修正：`npm run type-check` 原为 `vue-tsc --noEmit`，根 tsconfig 只有 references、实际什么都不检查（本次 build 一次性暴露 12 处类型错误才发现的），改为 `vue-tsc -b`；`.gitignore` 补 `.vitest` / `coverage`；`check:ui` 场景从 5 个扩到 7 个（新增列表难度筛选、无效路由兜底，详情场景加相关案例与上下篇断言），并修正 dev 模式误判（源码 chunk / EP 样式只在 preview 有 hash 资源可数，dev 记 `null` 表示不适用）
 - ✅ 2026-10-21 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 103.8 KB）、`npm run check:ui` 7/7（preview）与 5/5（dev）全绿；11 个新案例在 375px 下 `scrollWidth=375`、零 console 错误；`container-query` 与 `aspect-ratio-cls` 的测量时序坑已在 headless 下复测（见决策记录）
+- ✅ 2026-10-22 案例列表页补回到顶部：把详情页的浮动按钮抽成 `src/components/BackToTop.vue`（滚动 >480px 浮现、外圈滚动进度、点击缓动回顶、hover 上浮 + 进度环），逐帧缓动滚动移到 `src/utils/scroll.ts` 供详情页 tab 对齐与回顶共用；`check:ui` 的列表/详情场景各补「滚到底 → 按钮出现 → 点击回顶 → scrollY≈0」断言，实测 7/7 通过（列表 73 卡片、回顶 0px）；vitest 53/53、type-check、lint、build 全绿
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
