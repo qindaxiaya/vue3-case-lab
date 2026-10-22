@@ -217,7 +217,31 @@ const SCENARIOS = [
     facts: async ({ evaluate }) => ({
       cards: await evaluate(`document.querySelectorAll('a[href^="/cases/"]').length`),
     }),
-    assert: (result) => (result.cards > 0 ? [] : ['列表没有渲染出案例卡片']),
+    /** 滚到底 → 按钮浮现 → 点击回顶，验证列表页也有回到顶部 */
+    after: async ({ evaluate }) => {
+      await evaluate(
+        `window.scrollTo(0, document.documentElement.scrollHeight)`,
+      )
+      await sleep(400)
+      const shown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+
+      await evaluate(`document.querySelector('.back-top')?.click()`)
+      await sleep(900) // 缓动 460ms + 余量
+
+      return {
+        backTopShown: shown,
+        backTopScrollY: await evaluate(`Math.round(window.scrollY)`),
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!(result.cards > 0)) failures.push('列表没有渲染出案例卡片')
+      if (!result.backTopShown) failures.push('列表页滚到底没有出现回到顶部按钮')
+      if (result.backTopScrollY > 4) {
+        failures.push(`点击回到顶部后仍停在 ${result.backTopScrollY}px`)
+      }
+      return failures
+    },
   },
   {
     name: '详情页（演示 + 源码按需加载）',
@@ -239,6 +263,14 @@ const SCENARIOS = [
       const before = requests.length
       await evaluate(`document.querySelector('#tab-code')?.click()`)
       await sleep(1500)
+
+      // 详情页也滚到底，确认抽成组件后回到顶部仍然可用
+      await evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`)
+      await sleep(400)
+      const backTopShown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+      await evaluate(`document.querySelector('.back-top')?.click()`)
+      await sleep(900)
+
       return {
         codeLines: await evaluate(
           `document.querySelectorAll('.code-workbench .line-code').length`,
@@ -252,6 +284,8 @@ const SCENARIOS = [
         relatedCards: await evaluate(`document.querySelectorAll('.related-card').length`),
         /** 上下篇导航：首尾案例只有一侧，这里只要求至少有一条 */
         caseNavLinks: await evaluate(`document.querySelectorAll('.case-nav-link').length`),
+        backTopShown,
+        backTopScrollY: await evaluate(`Math.round(window.scrollY)`),
       }
     },
     assert: (result) => {
@@ -264,6 +298,10 @@ const SCENARIOS = [
       if (result.codeLines < 10) failures.push(`源码区只有 ${result.codeLines} 行`)
       if (result.relatedCards < 1) failures.push('相关案例区是空的')
       if (result.caseNavLinks < 1) failures.push('上下篇导航缺失')
+      if (!result.backTopShown) failures.push('详情页滚到底没有出现回到顶部按钮')
+      if (result.backTopScrollY > 4) {
+        failures.push(`详情页点击回到顶部后仍停在 ${result.backTopScrollY}px`)
+      }
       return failures
     },
   },

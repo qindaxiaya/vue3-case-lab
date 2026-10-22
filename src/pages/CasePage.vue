@@ -25,9 +25,11 @@ import {
   type CodeTab,
   type RegisteredCase,
 } from '../examples/registry'
+import BackToTop from '../components/BackToTop.vue'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 import NotesPanel from '../components/NotesPanel.vue'
 import { caseKey, useCaseHistory } from '../composables/useCaseHistory'
+import { smoothScrollTo, stopSmoothScroll } from '../utils/scroll'
 
 const route = useRoute()
 const router = useRouter()
@@ -437,14 +439,9 @@ function prefetchNotes(): void {
 }
 
 // ============================================================
-// 平滑滚动（按钮/tab 这类主动操作，自己插值，保证一定平滑）
-// 不依赖 behavior: 'smooth'：系统「减少动态效果」等设置可能把它降级成瞬间跳转
+// 滚动位置计算（tab 切换时对齐用）
+// 逐帧缓动滚动本身在 utils/scroll.ts，回到顶部按钮与列表页共用同一份
 // ============================================================
-
-/** 当前动画令牌：新动画或用户手动滚动时让旧动画停下 */
-let scrollAnimId = 0
-/** 正在进行的滚动动画的清理函数 */
-let stopScrollAnim: (() => void) | null = null
 
 /**
  * 读取元素在文档中的绝对顶部位置
@@ -459,78 +456,6 @@ function getDocumentTop(el: HTMLElement): number {
     node = node.offsetParent as HTMLElement | null
   }
   return top
-}
-
-/**
- * 逐帧缓动滚动到目标位置
- * @param targetY 目标滚动高度（px）
- * @param duration 动画时长（毫秒）
- */
-function smoothScrollTo(targetY: number, duration = 460): void {
-  // 连续点击 / 切换 tab 时先停掉上一段，避免两段动画互相抢
-  stopScrollAnim?.()
-
-  const startY = window.scrollY
-  const distance = targetY - startY
-  if (Math.abs(distance) < 1) return
-
-  const root = document.documentElement
-
-  // 系统开启“减少动态效果”时直接跳转：CSS 的 reduced-motion 管不到这段 JS 动画
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // 让上一段动画的 rAF 失效，避免它下一帧把位置又拉回旧目标
-    scrollAnimId++
-    const prevBehavior = root.style.scrollBehavior
-    root.style.scrollBehavior = 'auto'
-    window.scrollTo(0, targetY)
-    root.style.scrollBehavior = prevBehavior
-    return
-  }
-
-  const id = ++scrollAnimId
-  const prevBehavior = root.style.scrollBehavior
-
-  // 临时关闭 CSS 平滑：否则每帧的 scrollTo 会被再平滑一次，动画收尾拖尾
-  root.style.scrollBehavior = 'auto'
-
-  const startTime = performance.now()
-  // 缓入缓出：起步和收尾都柔和（比线性更像真实滚动）
-  const ease = (t: number): number =>
-    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-
-  /** 结束动画：恢复页面原有的滚动行为并移除监听 */
-  function finish(): void {
-    root.style.scrollBehavior = prevBehavior
-    window.removeEventListener('wheel', onUserScroll)
-    window.removeEventListener('touchstart', onUserScroll)
-    if (stopScrollAnim === finish) stopScrollAnim = null
-  }
-
-  /** 用户自己滚动时立即让出控制权，不跟用户抢 */
-  function onUserScroll(): void {
-    scrollAnimId++
-    finish()
-  }
-
-  stopScrollAnim = finish
-  window.addEventListener('wheel', onUserScroll, { passive: true })
-  window.addEventListener('touchstart', onUserScroll, { passive: true })
-
-  function step(now: number): void {
-    // 令牌变了说明动画已被取消（用户滚动或开始了新动画）
-    if (id !== scrollAnimId) return
-
-    const progress = Math.min(1, (now - startTime) / duration)
-    window.scrollTo(0, startY + distance * ease(progress))
-
-    if (progress < 1) {
-      requestAnimationFrame(step)
-    } else {
-      finish()
-    }
-  }
-
-  requestAnimationFrame(step)
 }
 
 /**
@@ -604,43 +529,10 @@ function onTabKeydown(e: KeyboardEvent, current: ContentTab): void {
 }
 
 // ============================================================
-// 回到顶部：滚动超过一屏后出现
+// 生命周期：列表页/详情页共用的回到顶部按钮由 BackToTop 自己管滚动监听
 // ============================================================
 
-/** 按钮是否显示 */
-const showBackTop = ref(false)
-/** 当前阅读进度 0..1（画在按钮外圈的进度环） */
-const scrollProgress = ref(0)
-/** 滚动回调的逐帧节流开关：一帧最多计算一次 */
-let scrollTicking = false
-
-/** 滚动监听：passive + 逐帧节流，避免每个滚动事件都触发响应式更新 */
-function onWindowScroll(): void {
-  if (scrollTicking) return
-  scrollTicking = true
-
-  requestAnimationFrame(() => {
-    const y = window.scrollY
-    showBackTop.value = y > 480
-
-    // 进度 = 已滚距离 / 可滚总距离（内容不足一屏时保持 0）
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    scrollProgress.value = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0
-
-    scrollTicking = false
-  })
-}
-
-/** 平滑回到顶部（自行插值，不依赖浏览器 behavior: 'smooth'） */
-function backToTop(): void {
-  smoothScrollTo(0)
-}
-
 onMounted(async () => {
-  // 刷新时可能已处于滚动位置，先同步一次
-  onWindowScroll()
-  window.addEventListener('scroll', onWindowScroll, { passive: true })
-
   // 先测量再显示滑块，避免首次从左侧 0 位置滑入
   await nextTick()
   syncTabIndicator()
@@ -658,9 +550,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onWindowScroll)
   // 路由离开时停掉滚动动画，避免动画持有已销毁组件的闭包
-  stopScrollAnim?.()
+  stopSmoothScroll()
   cancelAnimationFrame(tabIndicatorRaf)
   tabIndicatorObserver?.disconnect()
 
@@ -1073,39 +964,7 @@ const explainBlocks = computed(() => {
       </section>
 
       <!-- 回到顶部：滚动超过一屏后浮现，外圈是阅读进度 -->
-      <Transition name="back-top">
-        <button
-          v-if="showBackTop"
-          class="back-top"
-          type="button"
-          aria-label="回到顶部"
-          @click="backToTop"
-        >
-          <svg
-            class="back-top-ring"
-            viewBox="0 0 44 44"
-            aria-hidden="true"
-          >
-            <circle
-              class="back-top-track"
-              cx="22"
-              cy="22"
-              r="20"
-            />
-            <circle
-              class="back-top-bar"
-              cx="22"
-              cy="22"
-              r="20"
-              :style="{ strokeDashoffset: `${125.66 * (1 - scrollProgress)}` }"
-            />
-          </svg>
-          <span
-            class="back-top-arrow"
-            aria-hidden="true"
-          >↑</span>
-        </button>
-      </Transition>
+      <BackToTop />
     </template>
   </div>
 </template>
@@ -1708,105 +1567,6 @@ const explainBlocks = computed(() => {
 
 .case-nav-spacer {
   flex: 1;
-}
-
-/* ---------- 回到顶部 ---------- */
-
-.back-top {
-  position: fixed;
-  right: 1.75rem;
-  bottom: 1.75rem;
-  z-index: 30;
-  width: 2.85rem;
-  height: 2.85rem;
-  display: grid;
-  place-items: center;
-  font-size: 1rem;
-  color: var(--primary);
-  background-color: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  box-shadow: var(--shadow-soft-lg);
-  cursor: pointer;
-  transition:
-    transform var(--transition),
-    border-color var(--transition),
-    color var(--transition),
-    box-shadow var(--transition);
-}
-
-.back-top:hover {
-  transform: translateY(-3px);
-  color: var(--primary-hover);
-  border-color: var(--primary);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
-}
-
-/* 按下回弹：给点击一个明确的触感 */
-.back-top:active {
-  transform: translateY(-1px) scale(0.92);
-}
-
-.back-top:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 3px var(--primary-soft),
-    var(--shadow-soft-lg);
-}
-
-/* 阅读进度环：贴按钮内圈，从 12 点方向顺时针补齐 */
-.back-top-ring {
-  position: absolute;
-  inset: 2px;
-  transform: rotate(-90deg);
-  pointer-events: none;
-}
-
-.back-top-track,
-.back-top-bar {
-  fill: none;
-  stroke-width: 2;
-}
-
-.back-top-track {
-  stroke: var(--border);
-}
-
-.back-top-bar {
-  stroke: var(--primary);
-  stroke-linecap: round;
-  /* 圆周长 2πr ≈ 125.66：dashoffset 由进度动态控制 */
-  stroke-dasharray: 125.66;
-  transition: stroke-dashoffset 0.12s linear;
-}
-
-.back-top-arrow {
-  position: relative;
-  line-height: 1;
-  transition: transform var(--transition);
-}
-
-.back-top:hover .back-top-arrow {
-  transform: translateY(-2px);
-}
-
-/* 出现：上浮 + 放大（柔和收尾）；消失：快速收紧 */
-.back-top-enter-active {
-  transition:
-    opacity 0.3s var(--ease-out),
-    transform 0.3s var(--ease-out);
-}
-
-.back-top-leave-active {
-  transition:
-    opacity 0.18s ease-in,
-    transform 0.18s ease-in;
-}
-
-.back-top-enter-from,
-.back-top-leave-to {
-  opacity: 0;
-  transform: translateY(18px) scale(0.7);
 }
 
 /* ---------- 移动端 ---------- */

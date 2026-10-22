@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppHeader: typeof import('./components/AppHeader.vue')['default']
+    BackToTop: typeof import('./components/BackToTop.vue')['default']
     CodeWorkbench: typeof import('./components/CodeWorkbench.vue')['default']
     ElInput: typeof import('element-plus/es')['ElInput']
     ElOption: typeof import('element-plus/es')['ElOption']

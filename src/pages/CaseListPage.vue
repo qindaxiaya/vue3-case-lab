@@ -10,6 +10,7 @@ import { categories } from '../examples/categories'
 import { allCases } from '../examples/registry'
 import type { CaseDifficulty } from '../types/case'
 import { caseKey, parseCaseKey, useCaseHistory } from '../composables/useCaseHistory'
+import BackToTop from '../components/BackToTop.vue'
 
 /** 分类筛选持久化键：从详情页返回时保留用户选中的分类 */
 const FILTER_KEY = 'moyu-cases-filter'
@@ -319,6 +320,9 @@ function difficultyLabel(difficulty: string): string {
         </RouterLink>
       </div>
     </section>
+
+    <!-- 回到顶部：73 个案例排下来很长，滚过一屏后浮现 -->
+    <BackToTop />
   </div>
 </template>
 
