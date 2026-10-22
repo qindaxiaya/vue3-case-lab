@@ -1,0 +1,59 @@
+// ============================================================
+// 焦点环样式片段（与 Demo.vue 的 .stage / .item 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 旧做法：一并关掉焦点提示 ---------- */
+
+.stage.no-ring :focus {
+  /* 注意：这是反例，键盘用户会完全失去位置提示 */
+  outline: none;
+}
+
+/* ---------- 2. 新做法：只在键盘操作时画环 ---------- */
+
+.stage.with-ring :focus-visible {
+  /*! 用 :focus-visible 而不是 :focus：鼠标点击按钮时不打扰 */
+  outline: 2px solid var(--primary);
+  /*! offset 留出 2px：轮廓贴着边框会与按钮背景糊在一起 */
+  outline-offset: 2px;
+}
+
+/* ---------- 3. 焦点环要跟背景有对比 ---------- */
+
+/* 主色按钮上的主色轮廓靠 offset 露出的页面底色区分，
+   深色主题下 --primary 会自动换成更亮的紫，仍然可见。 */
+
+.item-btn {
+  border-color: transparent;
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.item-link {
+  /* 链接当按钮用时显式去掉下划线，hover 再出现 */
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.item-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* ---------- 4. 焦点环不参与布局 ---------- */
+
+/* outline 画在边框外、不占空间，所以下面这些控件在获得焦点时
+   不会被撑大，也不会把相邻控件挤位。 */
+
+/* ---------- 5. 补充：需要更明显的双层环时 ---------- */
+
+.stage.with-ring :focus-visible.strong {
+  /*! outline 打底，box-shadow 加一层柔光；box-shadow 可能被裁切，
+      所以只在父级不裁切的场景使用 */
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--primary-soft);
+}

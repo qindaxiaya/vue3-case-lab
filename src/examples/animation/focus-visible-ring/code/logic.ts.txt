@@ -1,0 +1,121 @@
+// ============================================================
+// 焦点环逻辑（与 Demo.vue 的 onFocusIn / onFocusOut / setMode 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { nextTick, onUnmounted, ref } from 'vue'
+
+/** none = 裸奔（旧）/ ring = 自建焦点环（新） */
+type RingMode = 'none' | 'ring'
+
+const mode = ref<RingMode>('none')
+const focusedName = ref('—')
+const keyboardTriggered = ref(false)
+const outlineText = ref('—')
+const focusCount = ref(0)
+const ringCount = ref(0)
+
+const stageRef = ref<HTMLElement | null>(null)
+let activeEl: HTMLElement | null = null
+let measureFrame = 0
+
+function cancelMeasure(): void {
+  if (measureFrame) window.cancelAnimationFrame(measureFrame)
+  measureFrame = 0
+}
+
+function readOutline(el: HTMLElement, count: boolean): void {
+  const style = window.getComputedStyle(el)
+  const width = Number.parseFloat(style.outlineWidth) || 0
+  const visible = style.outlineStyle !== 'none' && width > 0
+
+  //! 焦点环有没有出现，以计算样式为准，不靠猜
+  outlineText.value = visible ? `${style.outlineStyle} ${width}px` : 'none'
+  if (visible && count) ringCount.value++
+}
+
+function scheduleRead(el: HTMLElement, count: boolean): void {
+  cancelMeasure()
+  measureFrame = window.requestAnimationFrame(() => {
+    measureFrame = 0
+    if (document.activeElement !== el) return
+    readOutline(el, count)
+  })
+}
+
+function onFocusIn(event: FocusEvent): void {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) return
+  if (!(stageRef.value?.contains(target) ?? false)) return
+
+  activeEl = target
+  focusedName.value = target.dataset.name ?? target.tagName.toLowerCase()
+  focusCount.value++
+
+  //! :focus-visible 不能用选择器直接读，只能用 matches 主动查
+  keyboardTriggered.value = target.matches(':focus-visible')
+  scheduleRead(target, true)
+}
+
+function onFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget
+  // 焦点在演示区内部移动时先不清空，等下一个 focusin 覆盖
+  if (next instanceof Node && stageRef.value?.contains(next)) return
+
+  activeEl = null
+  cancelMeasure()
+  focusedName.value = '—'
+  keyboardTriggered.value = false
+  outlineText.value = '—'
+}
+
+async function setMode(next: RingMode): Promise<void> {
+  if (mode.value === next) return
+  mode.value = next
+
+  // 切换样式后重新量当前焦点，但不重复计入「出现次数」
+  await nextTick()
+  if (activeEl && document.activeElement === activeEl) {
+    scheduleRead(activeEl, false)
+  }
+}
+
+function resetAll(): void {
+  const active = document.activeElement
+  if (active instanceof HTMLElement) active.blur()
+  cancelMeasure()
+
+  mode.value = 'none'
+  activeEl = null
+  focusedName.value = '—'
+  keyboardTriggered.value = false
+  outlineText.value = '—'
+  focusCount.value = 0
+  ringCount.value = 0
+}
+
+onUnmounted(() => {
+  //! 卸载时取消测量帧，避免读已卸载节点
+  cancelMeasure()
+  activeEl = null
+})
+
+// 模板要点：
+// 1. 演示区 :class="mode === 'ring' ? 'with-ring' : 'no-ring'"
+// 2. 旧做法 .no-ring :focus { outline: none }
+// 3. 新做法 .with-ring :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px }
+// 4. focusin / focusout 挂在演示区上，不用逐个控件绑定
+
+export {
+  cancelMeasure,
+  focusCount,
+  focusedName,
+  keyboardTriggered,
+  mode,
+  onFocusIn,
+  onFocusOut,
+  outlineText,
+  readOutline,
+  resetAll,
+  ringCount,
+  setMode,
+}
