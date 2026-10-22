@@ -1,0 +1,75 @@
+// ============================================================
+// 骨架屏测量逻辑（与 Demo.vue 的 measureStage / finishLoad 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { nextTick, ref } from 'vue'
+
+/** 内容区容器：高度变化的观察对象 */
+const stageRef = ref<HTMLElement | null>(null)
+
+/** 加载态呈现方式：spinner = 转圈 / skeleton = 骨架屏 */
+const mode = ref<'spinner' | 'skeleton'>('spinner')
+/** 本轮阶段：loading = 加载中 / ready = 内容就绪 */
+const phase = ref<'loading' | 'ready'>('ready')
+/** 骨架是否正在淡出：就绪后节点先变成覆盖层，再移除 */
+const skeletonFading = ref(false)
+
+/** 指标：替换前高度、替换后高度、跳动次数 */
+const beforeHeight = ref(0)
+const afterHeight = ref(0)
+const jumpCount = ref(0)
+
+/** 读取内容区真实高度（getBoundingClientRect 会先结算布局，不做缓存） */
+function measureStage(): number {
+  const el = stageRef.value
+  if (!el) return 0
+  return Math.round(el.getBoundingClientRect().height * 10) / 10
+}
+
+/** 内容就绪：在替换的瞬间前后各量一次，算出高度差 */
+async function finishLoad(): Promise<void> {
+  //! 替换前先量基准：必须早于内容挂载，否则量到的已经是成品高度
+  beforeHeight.value = measureStage()
+
+  // 骨架屏先标记淡出：节点改成覆盖层，高度交给马上挂载的成品
+  if (mode.value === 'skeleton') skeletonFading.value = true
+  phase.value = 'ready'
+
+  //! 等 nextTick 再量：页面节点已更新，此时才是替换后的真实高度
+  await nextTick()
+  afterHeight.value = measureStage()
+
+  //! 2px 容差：字体亚像素与边框取整会有 1px 级噪声，不能算布局跳动
+  const delta = Math.abs(afterHeight.value - beforeHeight.value)
+  jumpCount.value = delta > 2 ? 1 : 0
+}
+
+/** 开始一轮模拟加载：先切到加载态，再量加载态高度 */
+async function startLoad(): Promise<void> {
+  phase.value = 'loading'
+  // 等加载态挂载后再读，否则拿到的是上一轮的成品高度
+  await nextTick()
+  beforeHeight.value = measureStage()
+
+  // 真实项目里由请求完成回调触发 finishLoad；这里用定时器模拟 1.2 秒
+  return new Promise<void>((resolve) => {
+    window.setTimeout(() => {
+      void finishLoad().then(resolve)
+    }, 1200)
+  })
+}
+
+// 使用示例：startLoad()
+// 组件卸载时记得 clearTimeout 并移除监听（Demo.vue 在 onUnmounted 里统一清理）
+export {
+  afterHeight,
+  beforeHeight,
+  finishLoad,
+  jumpCount,
+  measureStage,
+  mode,
+  phase,
+  skeletonFading,
+  stageRef,
+  startLoad,
+}

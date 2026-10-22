@@ -1,0 +1,64 @@
+// ============================================================
+// 折叠面板样式片段（与 Demo.vue 的 .js-panel / .grid-panel 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 旧方案：脚本写行内 height ---------- */
+
+.faq-panel {
+  //! 裁切必须挂在面板本体：收起时把超出高度的内容全部挡住
+  overflow: hidden;
+}
+
+.js-panel {
+  //! 过渡的终点由脚本写成像素值，height: auto 不参与插值
+  transition: height 0.32s var(--ease-out);
+}
+
+/* ---------- 2. 新方案：网格行高过渡 ---------- */
+
+.grid-panel {
+  //! 0fr 与 1fr 都是可插值的比例，终点由网格按内容自己算
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--ease-out);
+}
+
+.grid-panel.open {
+  grid-template-rows: 1fr;
+}
+
+.grid-panel > .answer-wrap {
+  //! 不写 min-height: 0 时，内容的默认最小尺寸会把 0fr 的行撑开
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---------- 3. 内容块与内边距 ---------- */
+
+.faq-answer {
+  //! padding 放在裁切层内部：放在裁切层上，收起后仍会留一条空白
+  padding: 0 0.9rem 0.85rem 2.95rem;
+
+  p {
+    margin: 0 0 0.45rem;
+    font-size: var(--demo-text-sm);
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* ---------- 4. 减少动态效果 ---------- */
+/* 全局基础样式已把过渡时长压到极短；这里不额外写动画，
+   状态切换本身仍然完整（展开 / 收起），只是没有中间帧 */
+
+@media (prefers-reduced-motion: reduce) {
+  .js-panel,
+  .grid-panel {
+    transition: none;
+  }
+}

@@ -1,0 +1,54 @@
+// ============================================================
+// 进度环样式片段（与 Demo.vue 的 .ring / .value 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 画布与起点 ---------- */
+
+.ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  //! 整块画布转 -90 度：圆的起点从三点钟挪到十二点钟，符合进度直觉
+  transform: rotate(-90deg);
+}
+
+.track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--border) 75%, transparent);
+  stroke-width: 10;
+}
+
+/* ---------- 2. 进度弧 ---------- */
+
+.value {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 10;
+  //! 圆头描边：进度从 0 开始增长时，末端不会出现生硬的方角
+  stroke-linecap: round;
+}
+
+/* 只有过渡模式声明过渡：逐帧模式每 16ms 写一次，不需要也不能有过渡 */
+.value.tween {
+  //! 过渡只盯住真正变化的偏移量，范围越小越容易控制
+  transition: stroke-dashoffset 0.8s var(--ease-out);
+}
+
+/* ---------- 3. 行内样式绑定 ---------- */
+/* 脚本只改这两个值：
+   stroke-dasharray  = 2 × π × 半径（整圈长度）
+   stroke-dashoffset = 周长 × (1 - 进度 / 100) */
+.ring .value {
+  stroke-dasharray: 326.73;
+  stroke-dashoffset: 326.73;
+}
+
+/* ---------- 4. 减少动态效果 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .value.tween {
+    //! 关闭过渡：进度直接跳到目标值，百分比文字仍然完整更新
+    transition: none;
+  }
+}
