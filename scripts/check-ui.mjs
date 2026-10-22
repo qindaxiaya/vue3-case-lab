@@ -427,6 +427,67 @@ async function checkMobile(port) {
   }
 }
 
+/**
+ * 动画与交互分类抽检
+ * 8 个入门动画案例各自差异很大，用「逐页打开 + 375px + 有内容 + 有按钮」做统一兜底：
+ * 单页定制断言成本高，但渲染失败、横向溢出、控制台报错这三类问题必须先被拦住
+ */
+const ANIMATION_CASES = [
+  'skeleton-shimmer',
+  'accordion-slide',
+  'drawer-slide',
+  'progress-ring',
+  'magnetic-button',
+  'snap-carousel',
+  'tooltip-pop',
+  'focus-visible-ring',
+]
+
+async function checkAnimationCases(port) {
+  const results = []
+
+  for (const caseId of ANIMATION_CASES) {
+    const route = `/cases/animation/${caseId}`
+    const target = await openPage(port, BASE + route)
+    const page = await connectPage(target)
+
+    try {
+      // 每个动画案例都要在 375px 下站得住：窄屏是最容易溢出的一档
+      await page.send('Emulation.setDeviceMetricsOverride', {
+        width: 375,
+        height: 720,
+        deviceScaleFactor: 1,
+        mobile: true,
+      })
+      await sleep(1500)
+
+      const result = await page.evaluate(`({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+        /** 演示区文字长度：比「组件挂载」更能说明真的渲染出来了 */
+        demoTextLength: document.querySelector('.demo-card')?.innerText?.trim().length ?? 0,
+        /** 每个动画案例都有对比开关与操作按钮，这里是「Demo 渲染完整」的粗粒度证据 */
+        buttons: document.querySelectorAll('.demo-card button').length,
+      })`)
+
+      const failures = []
+      if (result.scrollWidth > result.innerWidth) {
+        failures.push(`375px 出现横向滚动（${result.scrollWidth} > ${result.innerWidth}）`)
+      }
+      if (result.demoTextLength < 20) failures.push('演示区没有渲染出内容')
+      if (result.buttons < 1) failures.push('演示区没有可操作按钮')
+      if (page.errors.length > 0) failures.push(...page.errors)
+
+      results.push({ name: `动画案例 ${caseId}`, route, result, failures })
+    } finally {
+      page.close()
+      await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => {})
+    }
+  }
+
+  return results
+}
+
 const chrome = await launchChrome()
 // 兜底：Ctrl+C 或异常退出时也要清干净，不能把进程留给用户
 process.on('exit', () => shutdown(chrome))
@@ -448,6 +509,7 @@ try {
     results.push(await runScenario(chrome.port, scenario))
   }
   results.push(await checkMobile(chrome.port))
+  results.push(...(await checkAnimationCases(chrome.port)))
 
   console.log(`\n[check:ui] 目标：${BASE}\n`)
   for (const item of results) {
