@@ -13,6 +13,7 @@
   - `npx eslint <改动文件> --max-warnings 0` — 只查改动文件（L0/L1 默认用法）
   - `npx vitest run` — 运行测试
   - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
+  - `npm run check:ui -- --only 抽屉` — 只验一个场景（名字或路由命中，5~10 秒）；改单个案例默认用它，`--base http://localhost:5173` 可直接验 dev
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
@@ -54,6 +55,8 @@
   3. **L2 新案例/跨模块**（新案例、registry/router/构建配置、≥4 个逻辑文件（纯样式批量微调不算），或改动触及共享模块）：完整 DoD + 全量四项 + 人工走查，收尾可派 `verifier` / `case-reviewer` 子代理
   4. 技能按级别触发：L0/L1 不主动加载 `brainstorming` / `writing-plans` / `subagent-driven-development`；用户明确要求走完整流程时以用户指令为准
   5. 停等与提交仍按「工作节奏」：每个任务停下等确认、有页面变化给 dev 地址；连续同类微调可合并成一次确认与一个 commit
+  6. **修复存量案例 bug = L1，且只验目标案例**（2026-10-22 用户要求）：读相关片段（不整文件通读）→ 最小探针确认根因（一次页面取值即可）→ 改 → `npx eslint <该案例目录> --max-warnings 0` + `npm run type-check` + `npm run check:ui -- --only <案例>`。**不跑 build / check:bundle / 全量 check:ui / 全量 lint**；根因确认后再决定要不要落常驻断言
+  7. **影响面超过 1 个案例时先问**：例如「这个毛病 8 个案例都有，只修这一个还是统一改」，不默认扩张；文档（本文件）按批次收尾一次写，不逐条追加
 - **完成前强制验证清单（2026-10-19 教训固化；2026-10-21 收敛：完整清单只用于 L2 新案例/跨模块，L0/L1 按上方分级与影响面验证）**：
   1. 按 `docs/case-definition-of-done.md` 逐条验收（Demo 稳定性 / 对比开关 / 实测数据 / notes 五段 / meta.sell / 375px）
   2. `npx vitest run`（含真实 glob 收录链路 + 内容质量门禁：SBAC 四段齐全 / 卖点≤30 字、摘要≤40 字 / 说明区禁未解释缩写 / notes 五段 / 标题可被搜索命中——新增案例自动扩展校验）
@@ -136,6 +139,17 @@
   - 每个案例默认停在「旧做法」一侧，面板可切对比、可重置，卸载清理定时器 / 监听器；notes 第 4 段只用「读取次数 / 监听器数 / 手算处数 / CSS 声明条数」等可核对口径，不写未实测毫秒
   - `check:ui` 新增 `checkAnimationCases`：8 个案例逐页在 375px 打开，断言无横向溢出、演示区有内容、有可操作按钮、控制台零报错
   - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 108.9 KB）、`npm run check:ui` 15/15 全绿（列表 81 卡片）
+- ✅ 2026-10-22 修复动画案例在「系统关闭动画效果」时看不到动画：用户机器上浏览器把 `prefers-reduced-motion` 报成 reduce，站点全局规则把过渡压到 0.01ms，`drawer-slide` 的两种关闭方式看起来一模一样
+  - Demo 改为「演示优先」：过渡始终播放，顶部提示系统真实设置，新增「模拟减少动态效果」开关展示跳过分支；`notes` 与教学代码同步说明「真实项目应跟随系统设置」
+  - 演示区用 scoped `@media (prefers-reduced-motion: reduce)` + `!important` 还原过渡时长（全局规则同为 important，靠类选择器更高优先级胜出）
+  - `check:ui` 新增「抽屉退场动画」场景：模拟 reduce 环境，断言关闭 80ms 后节点仍在且面板位移已达 281px、过渡结束后卸载、直接卸载与模拟开关都立刻移除；16 个场景全绿
+- ✅ 2026-10-22 其余 6 个动画案例统一改为「演示优先」（用户选择）：`skeleton-shimmer` / `progress-ring` / `magnetic-button` / `accordion-slide` / `tooltip-pop` / `snap-carousel`
+  - 每个案例都把系统 `prefers-reduced-motion` 降级为「顶部提示 + 手动开关」（`mockReduce`），演示本身始终播放；开关打开时走降级分支（高光静止 / 进度直接跳变 / 不跟随 / 直接展开 / 气泡瞬间出现 / 滚动直接到位）
+  - scoped `@media (prefers-reduced-motion: reduce)` 用 `!important` 还原时长（关键帧动画要同时还原 `animation-duration` 与 `animation-iteration-count`），降级态用 `.is-static` / `.no-motion` 类压回去
+  - notes 与教学代码同步说明「真实项目应跟随系统设置，本案例为了演示仍播放」
+- ✅ 2026-10-22 流程优化（用户要求）：
+  - `check:ui` 新增 `--only <关键字>`：按场景名或路由过滤，单场景 5~10 秒（`npm run check:ui -- --base http://localhost:5173 --only 抽屉` 实测 1 个场景通过）
+  - `AGENTS.md` 任务分级补两条：修复存量案例 bug 固定走 L1（单案例 eslint + type-check + `--only`，不跑 build / bundle / 全量）；影响面超过 1 个案例先问，文档按批次合并提交
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -203,3 +217,5 @@
 | 2026-10-22 | **新增 `animation` 分类，只收「日常高频的动画 / 交互细节」，与 `css` 分工** | 用户点名参照 `practice/ripple-button`，要更多入门常用的动画与样式案例。`css` 收纯布局/特性技巧（grid、容器查询、clamp 等），`animation` 收「一次点击/悬停/展开能看到的动效与交互」（骨架屏、折叠、抽屉、进度环、磁性按钮、吸附轮播、提示气泡、焦点环）；仍是一案例一演示、四件套、notes 五段 |
 | 2026-10-22 | **动画案例的「数据对比」用行为指标，不编造耗时** | 这类案例的收益是体验与正确性（节点是否残留、要读几次高度、焦点是否可见），不是可稳定测出的毫秒；notes 第 4 段统一改用「读取 scrollHeight 次数 / 监听器个数 / 手算距离处数 / CSS 声明条数 / 触发分支数」等可核对口径，演示面板同步显示计数，避免跨环境测量的假精度 |
 | 2026-10-22 | **`check:ui` 增加动画分类逐页抽检，而不是给 8 个案例各写一套断言** | 动画案例交互差异大，逐例定制脚本维护成本高；统一断言「375px 无横向溢出 + 演示区有内容 + 有可操作按钮 + 控制台零报错」，再靠人工走查覆盖「动效是否好看、对比是否有说服力」 |
+| 2026-10-22 | **单个 bug 修复固定走 L1 + `check:ui --only`** | 用户反馈「改一个抽屉花了近 40 分钟」：单案例修复却跑了两次 16 场景全量验收、build、bundle、preview。改为：读相关片段（不整文件通读）→ 一次最小探针确认根因 → 改 → 单案例 eslint + type-check + `check:ui --only <场景>`；只有根因需要长期防回归时才补常驻断言，且不影响单次验收时长 |
+| 2026-10-22 | **影响面超过 1 个案例先问，文档按批次合并** | 8 个动画案例都受系统 reduce 影响时，先让用户选「只修一个 / 统一改 / 全局放行」；`AGENTS.md` 的进度与决策在批次收尾一次写，不再每修一处追加一段、单独 commit |
