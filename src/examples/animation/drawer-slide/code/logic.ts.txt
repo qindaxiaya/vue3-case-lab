@@ -32,9 +32,10 @@ let openFrame2 = 0
 
 const nodeText = computed(() => (visible.value ? '在文档中' : '已移除'))
 
-function prefersReduced(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+/** 手动模拟「系统开启减少动态效果」：真实项目应按系统设置自动判断 */
+const mockReduce = ref(false)
+/** 是否跳过过渡：旧做法，或模拟减少动态效果 */
+const instant = computed(() => mode.value === 'unmount' || mockReduce.value)
 
 function unlockScroll(): void {
   if (!locked) return
@@ -84,7 +85,7 @@ async function openDrawer(): Promise<void> {
   document.addEventListener('keydown', onKeydown)
 
   await nextTick()
-  if (mode.value === 'unmount' || prefersReduced()) {
+  if (instant.value) {
     shown.value = true
     return
   }
@@ -104,7 +105,7 @@ function requestClose(): void {
   closing.value = true
   cancelOpenFrames()
 
-  if (mode.value === 'unmount' || prefersReduced()) {
+  if (instant.value) {
     startFrameWatch()
     void nextTick(() => finalizeClose())
     return
@@ -158,6 +159,8 @@ onUnmounted(() => {
 export {
   closing,
   frames,
+  instant,
+  mockReduce,
   mode,
   nodeText,
   onPanelTransitionEnd,
