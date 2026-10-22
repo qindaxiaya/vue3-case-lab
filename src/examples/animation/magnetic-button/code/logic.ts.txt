@@ -1,0 +1,146 @@
+// ============================================================
+// 磁性按钮跟随逻辑（与 Demo.vue 的 onPointerMove / onPointerLeave 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+/** 跟随开关：off = 只换背景（旧）/ on = 指针跟随（新） */
+type FollowMode = 'off' | 'on'
+type StrengthKey = 'weak' | 'medium' | 'strong'
+
+interface StrengthOption {
+  key: StrengthKey
+  label: string
+  /** 指针偏离按钮中心多少，按钮跟多少 */
+  factor: number
+  /** 单轴最大位移，防止按钮被甩出磁力范围 */
+  max: number
+}
+
+const STRENGTHS: StrengthOption[] = [
+  { key: 'weak', label: '弱', factor: 0.12, max: 4 },
+  { key: 'medium', label: '中', factor: 0.24, max: 8 },
+  { key: 'strong', label: '强', factor: 0.4, max: 14 },
+]
+
+const mode = ref<FollowMode>('off')
+const strength = ref<StrengthKey>('medium')
+const offset = ref({ x: 0, y: 0 })
+const followCount = ref(0)
+const geoReads = ref(0)
+const maxSeen = ref(0)
+const touchSkipped = ref(0)
+const returning = ref(false)
+const reducedMotion = ref(false)
+
+const buttonRef = ref<HTMLButtonElement | null>(null)
+let motionQuery: MediaQueryList | null = null
+
+const currentStrength = computed<StrengthOption>(
+  () => STRENGTHS.find((item) => item.key === strength.value) ?? STRENGTHS[1]!,
+)
+
+function clamp(value: number, max: number): number {
+  return Math.min(max, Math.max(-max, value))
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+function onPointerMove(event: PointerEvent): void {
+  // 旧模式不读几何、不算位移
+  if (mode.value !== 'on' || reducedMotion.value) return
+
+  //! 触摸设备不跟随：手指按住时按钮乱动会被当成点偏了
+  if (event.pointerType !== 'mouse') {
+    touchSkipped.value++
+    return
+  }
+
+  const button = buttonRef.value
+  if (!button) return
+
+  //! 几何每次现读：滚动、窗口变化后缓存的矩形会过期
+  geoReads.value++
+  const rect = button.getBoundingClientRect()
+  const centerX = rect.left + rect.width / 2
+  const centerY = rect.top + rect.height / 2
+
+  //! 偏移 × 系数后夹取上限：位移要小，而且必须有边界
+  const { factor, max } = currentStrength.value
+  const nextX = round1(clamp((event.clientX - centerX) * factor, max))
+  const nextY = round1(clamp((event.clientY - centerY) * factor, max))
+
+  // 跟手阶段必须关掉回弹过渡，否则慢半拍
+  returning.value = false
+  offset.value = { x: nextX, y: nextY }
+  followCount.value++
+  maxSeen.value = Math.max(
+    maxSeen.value,
+    round1(Math.abs(nextX)),
+    round1(Math.abs(nextY)),
+  )
+}
+
+function onPointerLeave(): void {
+  if (mode.value !== 'on') return
+  //! 只把位移写回 0，中间帧交给样式过渡完成
+  returning.value = true
+  offset.value = { x: 0, y: 0 }
+}
+
+function setMode(next: FollowMode): void {
+  if (mode.value === next) return
+  mode.value = next
+  offset.value = { x: 0, y: 0 }
+  returning.value = false
+}
+
+function resetAll(): void {
+  mode.value = 'off'
+  strength.value = 'medium'
+  offset.value = { x: 0, y: 0 }
+  followCount.value = 0
+  geoReads.value = 0
+  maxSeen.value = 0
+  touchSkipped.value = 0
+  returning.value = false
+}
+
+// 模板绑定：style="{ '--mx': `${offset.x}px`, '--my': `${offset.y}px` }"
+// 按钮样式统一用 transform: translate3d(var(--mx), var(--my), 0) 消费位移。
+
+function onMotionChange(event: MediaQueryListEvent): void {
+  reducedMotion.value = event.matches
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  reducedMotion.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
+onUnmounted(() => {
+  // 模板监听随卸载自动移除；媒体查询监听必须自己摘，否则会留住组件
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
+})
+
+export {
+  STRENGTHS,
+  currentStrength,
+  followCount,
+  geoReads,
+  maxSeen,
+  mode,
+  offset,
+  onPointerLeave,
+  onPointerMove,
+  reducedMotion,
+  resetAll,
+  returning,
+  setMode,
+  strength,
+  touchSkipped,
+}
