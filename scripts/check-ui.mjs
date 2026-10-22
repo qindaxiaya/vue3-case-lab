@@ -15,6 +15,7 @@
  *
  * 用法：
  *   npm run check:ui                          # 默认验 preview（需要先 build + preview）
+ *   npm run check:ui -- --only 抽屉           # 只验名字/路由命中的场景（改单个案例用这个，5~10 秒）
  *   node scripts/check-ui.mjs --base http://localhost:5173   # 验 dev 服务器
  *
  * 退出码：全部通过 0，有失败 1（可直接进 CI 或本地门禁）
@@ -30,7 +31,27 @@ function readBase() {
   return process.env.CHECK_BASE || 'http://localhost:4173'
 }
 
+/**
+ * 读取 --only 参数：只跑名字或路由命中的场景
+ * 为什么需要：改一个案例时跑全量 16 个场景要 60 秒以上，
+ * 只跑目标场景能把回归时间压到 5~10 秒，日常修复才愿意每次都验
+ */
+function readOnly() {
+  const index = process.argv.indexOf('--only')
+  if (index > -1 && process.argv[index + 1]) return process.argv[index + 1]
+  return process.env.CHECK_ONLY || ''
+}
+
+/** 场景过滤：名字（如「抽屉」）或路由（如 animation/drawer）命中即可 */
+function pickScenarios(only) {
+  if (!only) return SCENARIOS
+  return SCENARIOS.filter(
+    (scenario) => scenario.name.includes(only) || scenario.route.includes(only),
+  )
+}
+
 const BASE = readBase().replace(/\/$/, '')
+const ONLY = readOnly()
 /** 内置产物路径断言只在 preview 有意义，dev 是源码直出 */
 const IS_PREVIEW = !/:(5173|5174)$/.test(BASE)
 
@@ -585,13 +606,22 @@ try {
   }
 
   const results = []
-  for (const scenario of SCENARIOS) {
+  const scenarios = pickScenarios(ONLY)
+  if (scenarios.length === 0) {
+    throw new Error(
+      `--only「${ONLY}」没有命中任何场景，可用场景：${SCENARIOS.map((item) => item.name).join(' / ')}`,
+    )
+  }
+  for (const scenario of scenarios) {
     results.push(await runScenario(chrome.port, scenario))
   }
-  results.push(await checkMobile(chrome.port))
-  results.push(...(await checkAnimationCases(chrome.port)))
+  // 全量模式才补窄屏与动画分类抽检：--only 要的是「改一个案例只验这一个」
+  if (!ONLY) {
+    results.push(await checkMobile(chrome.port))
+    results.push(...(await checkAnimationCases(chrome.port)))
+  }
 
-  console.log(`\n[check:ui] 目标：${BASE}\n`)
+  console.log(`\n[check:ui] 目标：${BASE}${ONLY ? `（--only ${ONLY}）` : ''}\n`)
   for (const item of results) {
     const facts = Object.entries(item.result)
       .map(([key, value]) => `${key}=${value}`)
