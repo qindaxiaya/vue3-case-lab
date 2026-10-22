@@ -6,7 +6,7 @@
 // - 附带：Esc 关闭、点遮罩关闭、打开锁页面滚动、关闭归还焦点
 // ============================================================
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 /** 关闭方式：unmount = 直接移除（旧）/ transition = 等动画结束再移除（新） */
 type DrawerMode = 'unmount' | 'transition'
@@ -32,6 +32,17 @@ const visible = ref(false)
 const shown = ref(false)
 /** 是否正在关闭：防止重复触发、区分过渡结束的用途 */
 const closing = ref(false)
+/**
+ * 是否模拟「系统开启了减少动态效果」
+ * 为什么不用系统设置直接决定演示行为：演示本身就是动画教学，
+ * 系统关掉动画后两种关闭方式会长得一模一样，案例就失去意义了
+ */
+const mockReduce = ref(false)
+/** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
+const systemReduce = ref(false)
+
+/** 是否跳过过渡：旧做法 或 手动模拟减少动态效果 */
+const instant = computed(() => mode.value === 'unmount' || mockReduce.value)
 
 /** 本次关闭后，面板仍在文档中的帧数 */
 const frames = ref(0)
@@ -54,15 +65,17 @@ let fallbackTimer = 0
 /** 打开时等待两帧的两个编号（关闭时可取消） */
 let openFrame1 = 0
 let openFrame2 = 0
+/** 系统「减少动态效果」的媒体查询对象：用来提示，不直接决定行为 */
+let motionQuery: MediaQueryList | null = null
 
 /** 面板节点状态文案 */
 const nodeText = computed(() => (visible.value ? '在文档中' : '已移除'))
 
 // ---------- 工具 ----------
 
-/** 系统是否开启减少动态效果：开启时不做过渡，直接切换 */
-function prefersReduced(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+/** 系统「减少动态效果」变化：只更新提示，演示行为仍由手动开关决定 */
+function onMotionChange(event: MediaQueryListEvent): void {
+  systemReduce.value = event.matches
 }
 
 /** 还原页面滚动：只在确实锁过的时候还原，避免覆盖页面原有值 */
@@ -125,8 +138,8 @@ async function openDrawer(): Promise<void> {
   await nextTick()
   closeBtnRef.value?.focus()
 
-  // 旧模式与减少动态效果：直接到位，不跑过渡
-  if (mode.value === 'unmount' || prefersReduced()) {
+  // 旧模式与模拟减少动态效果：直接到位，不跑过渡
+  if (instant.value) {
     shown.value = true
     return
   }
@@ -147,7 +160,7 @@ function requestClose(): void {
   closing.value = true
   cancelOpenFrames()
 
-  if (mode.value === 'unmount' || prefersReduced()) {
+  if (instant.value) {
     startFrameWatch()
     void nextTick(() => {
       finalizeClose()
@@ -220,6 +233,14 @@ function setMode(next: DrawerMode): void {
   transitionEnds.value = 0
 }
 
+/** 切换「模拟减少动态效果」：抽屉开着就先收起，避免状态错位 */
+function toggleMockReduce(): void {
+  if (visible.value) finalizeClose()
+  mockReduce.value = !mockReduce.value
+  frames.value = 0
+  transitionEnds.value = 0
+}
+
 /** 重置：立即卸载、清空全部计时器与计数 */
 function resetAll(): void {
   const wasOpen = visible.value
@@ -241,11 +262,19 @@ function resetAll(): void {
 
 // ---------- 生命周期 ----------
 
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
 onUnmounted(() => {
   window.clearTimeout(fallbackTimer)
   cancelOpenFrames()
   stopFrameWatch()
   document.removeEventListener('keydown', onKeydown)
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
   unlockScroll()
 })
 </script>
@@ -284,11 +313,27 @@ onUnmounted(() => {
       </button>
       <button
         class="btn ghost"
+        :aria-pressed="mockReduce"
+        :class="{ active: mockReduce }"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：跳过动画' : '模拟减少动态效果' }}
+      </button>
+      <button
+        class="btn ghost"
         @click="resetAll"
       >
         重置
       </button>
     </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
+    >
+      系统当前开启了「减少动态效果」。真实项目应当据此直接跳过动画；本案例为了让两种关闭方式的差别看得见，默认仍然播放，点「模拟减少动态效果」可以看跳过时的行为。
+    </p>
 
     <div
       class="stats"
@@ -297,6 +342,7 @@ onUnmounted(() => {
       <span>关闭后仍在文档中的帧数 <b>{{ frames }}</b></span>
       <span>面板过渡结束事件 <b>{{ transitionEnds }}</b> 次</span>
       <span>面板节点 <b>{{ nodeText }}</b></span>
+      <span>本次动画 <b>{{ instant ? '跳过' : '播放' }}</b></span>
     </div>
 
     <div class="page-card">
@@ -311,13 +357,13 @@ onUnmounted(() => {
       <div
         v-if="visible"
         class="dw-mask"
-        :class="{ shown, instant: mode === 'unmount' }"
+        :class="{ shown, instant }"
         @click.self="requestClose"
       >
         <aside
           ref="panelRef"
           class="dw-panel"
-          :class="{ shown, instant: mode === 'unmount' }"
+          :class="{ shown, instant }"
           role="dialog"
           aria-modal="true"
           aria-labelledby="drawer-title"
@@ -375,7 +421,7 @@ onUnmounted(() => {
     <p class="hint">
       先保持「直接卸载」点开再关闭：面板瞬间消失，帧数停在起点，遮罩也没有退场。
       切到「等动画结束」重复一次：面板向右滑出、遮罩淡出，帧数持续累加，过渡结束事件到达后才移除节点。
-      系统开启「减少动态效果」时不做过渡，直接卸载，避免让用户等动画。
+      点「模拟减少动态效果」会跳过过渡直接卸载，这也是真实项目在系统开启该设置时应该做的事。
     </p>
   </div>
 </template>
@@ -443,6 +489,25 @@ onUnmounted(() => {
     background-color: var(--code-bg);
     color: var(--text);
   }
+
+  /* 模拟开关打开时给个明确的选中态 */
+  &.active {
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+}
+
+/* 系统设置提示：只有检测到「减少动态效果」时才出现 */
+.system-note {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--warning);
+  border-left-width: 3px;
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text);
 }
 
 .stats {
@@ -628,11 +693,16 @@ onUnmounted(() => {
   border-top: 1px solid var(--border);
 }
 
-/* 减少动态效果：不做侧滑与淡出，直接切换 */
+/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
+    而本案例正是要展示退场过渡，所以这里把时长还原。真实项目不要照抄这一段，
+    应当像「模拟减少动态效果」打开时那样，直接跳过动画。 */
 @media (prefers-reduced-motion: reduce) {
-  .dw-mask,
+  .dw-mask {
+    transition-duration: 0.22s !important;
+  }
+
   .dw-panel {
-    transition: none;
+    transition-duration: 0.24s !important;
   }
 }
 
