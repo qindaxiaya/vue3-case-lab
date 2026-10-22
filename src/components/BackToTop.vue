@@ -36,9 +36,15 @@ function onWindowScroll(): void {
   })
 }
 
-/** 平滑回到顶部（自行插值，不依赖浏览器 behavior: 'smooth'） */
+/**
+ * 平滑回到顶部
+ * - 不走 behavior: 'smooth'（会被系统设置或浏览器降级成瞬跳）
+ * - 即使用户系统开着「减少动态效果」也保留一段缓动：这是用户主动点的短动作，
+ *   瞬移反而更突兀；只把时长缩短一点（460ms → 320ms）减轻不适
+ */
 function backToTop(): void {
-  smoothScrollTo(0)
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  smoothScrollTo(0, reduce ? 320 : 460, { ignoreReducedMotion: true })
 }
 
 onMounted(() => {

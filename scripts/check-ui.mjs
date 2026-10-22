@@ -245,12 +245,23 @@ const SCENARIOS = [
       )
       await sleep(400)
       const shown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+      const startY = await evaluate(`Math.round(window.scrollY)`)
+      /** 系统是否开着「减少动态效果」：开着时最容易退化成瞬间跳转，这里一并记录 */
+      const reduceMotion = await evaluate(
+        `matchMedia('(prefers-reduced-motion: reduce)').matches`,
+      )
 
       await evaluate(`document.querySelector('.back-top')?.click()`)
-      await sleep(900) // 缓动 460ms + 余量
+      await sleep(150)
+      // 动画中应该还在半路；直接跳顶的话这里已经是 0
+      const midY = await evaluate(`Math.round(window.scrollY)`)
+      await sleep(750) // 缓动 460ms + 余量
 
       return {
         backTopShown: shown,
+        reduceMotion,
+        startY,
+        midY,
         backTopScrollY: await evaluate(`Math.round(window.scrollY)`),
       }
     },
@@ -258,6 +269,9 @@ const SCENARIOS = [
       const failures = []
       if (!(result.cards > 0)) failures.push('列表没有渲染出案例卡片')
       if (!result.backTopShown) failures.push('列表页滚到底没有出现回到顶部按钮')
+      if (!(result.midY > 0) && result.startY > 0) {
+        failures.push(`点击后 150ms 已经到顶（${result.startY} → 0），说明是瞬间跳转而不是平滑滚动`)
+      }
       if (result.backTopScrollY > 4) {
         failures.push(`点击回到顶部后仍停在 ${result.backTopScrollY}px`)
       }
