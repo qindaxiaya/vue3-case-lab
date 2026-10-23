@@ -1,0 +1,174 @@
+// ============================================================
+// 抽屉开关与退场逻辑（与 Demo.vue 的 openDrawer / requestClose 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { computed, nextTick, onUnmounted, ref } from 'vue'
+
+/** 关闭方式：unmount = 直接移除 / transition = 等动画结束再移除 */
+type DrawerMode = 'unmount' | 'transition'
+
+const mode = ref<DrawerMode>('unmount')
+/** 节点是否在文档中：控制抽屉是否渲染 */
+const visible = ref(false)
+/** 是否处于打开位置：控制滑入 / 滑出与遮罩透明度 */
+const shown = ref(false)
+/** 是否正在关闭：防止重复触发 */
+const closing = ref(false)
+
+/** 关闭后节点仍在文档中的帧数 */
+const frames = ref(0)
+/** 面板 transform 过渡结束事件次数 */
+const transitionEnds = ref(0)
+
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
+
+let prevOverflow = ''
+let locked = false
+let frameId = 0
+let fallbackTimer = 0
+let openFrame1 = 0
+let openFrame2 = 0
+
+const nodeText = computed(() => (visible.value ? '在文档中' : '已移除'))
+
+/** 手动模拟「系统开启减少动态效果」：真实项目应按系统设置自动判断 */
+const mockReduce = ref(false)
+/** 是否跳过过渡：旧做法，或模拟减少动态效果 */
+const instant = computed(() => mode.value === 'unmount' || mockReduce.value)
+
+function unlockScroll(): void {
+  if (!locked) return
+  document.body.style.overflow = prevOverflow
+  locked = false
+}
+
+function cancelOpenFrames(): void {
+  if (openFrame1) window.cancelAnimationFrame(openFrame1)
+  if (openFrame2) window.cancelAnimationFrame(openFrame2)
+  openFrame1 = 0
+  openFrame2 = 0
+}
+
+function stopFrameWatch(): void {
+  if (frameId) window.cancelAnimationFrame(frameId)
+  frameId = 0
+}
+
+function startFrameWatch(): void {
+  stopFrameWatch()
+  frames.value = 0
+
+  const tick = (): void => {
+    //! 每帧检查节点是否还在文档里：这就是「退场有没有真的跑」的证据
+    if (!(panelRef.value?.isConnected ?? false)) {
+      frameId = 0
+      return
+    }
+    frames.value++
+    frameId = window.requestAnimationFrame(tick)
+  }
+
+  frameId = window.requestAnimationFrame(tick)
+}
+
+async function openDrawer(): Promise<void> {
+  if (visible.value) return
+  closing.value = false
+  visible.value = true
+  shown.value = false
+
+  //! 先保存原值再锁滚动：关闭时还原成原值，不能写死空字符串
+  prevOverflow = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  locked = true
+  document.addEventListener('keydown', onKeydown)
+
+  await nextTick()
+  if (instant.value) {
+    shown.value = true
+    return
+  }
+
+  //! 等一帧再加打开类：初始位移先生效，过渡才会从屏外滑入
+  openFrame1 = window.requestAnimationFrame(() => {
+    openFrame1 = 0
+    openFrame2 = window.requestAnimationFrame(() => {
+      openFrame2 = 0
+      shown.value = true
+    })
+  })
+}
+
+function requestClose(): void {
+  if (!visible.value || closing.value) return
+  closing.value = true
+  cancelOpenFrames()
+
+  if (instant.value) {
+    startFrameWatch()
+    void nextTick(() => finalizeClose())
+    return
+  }
+
+  shown.value = false
+  startFrameWatch()
+
+  //! 兜底计时器：过渡结束事件可能因后台节流而迟到或不到
+  fallbackTimer = window.setTimeout(() => finalizeClose(), 600)
+}
+
+function finalizeClose(): void {
+  if (!visible.value) return
+  window.clearTimeout(fallbackTimer)
+  fallbackTimer = 0
+  stopFrameWatch()
+
+  visible.value = false
+  shown.value = false
+  closing.value = false
+
+  document.removeEventListener('keydown', onKeydown)
+  unlockScroll()
+  triggerRef.value?.focus()
+}
+
+function onPanelTransitionEnd(event: TransitionEvent): void {
+  //! 子元素的过渡会冒泡上来，必须同时核对目标元素与属性名
+  if (event.target !== event.currentTarget) return
+  if (event.propertyName !== 'transform') return
+  transitionEnds.value++
+  if (closing.value) finalizeClose()
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Escape') return
+  event.preventDefault()
+  requestClose()
+}
+
+onUnmounted(() => {
+  // 离开页面时清掉所有计时器和监听器，并还原滚动
+  window.clearTimeout(fallbackTimer)
+  cancelOpenFrames()
+  stopFrameWatch()
+  document.removeEventListener('keydown', onKeydown)
+  unlockScroll()
+})
+
+export {
+  closing,
+  frames,
+  instant,
+  mockReduce,
+  mode,
+  nodeText,
+  onPanelTransitionEnd,
+  openDrawer,
+  panelRef,
+  requestClose,
+  shown,
+  transitionEnds,
+  triggerRef,
+  visible,
+}

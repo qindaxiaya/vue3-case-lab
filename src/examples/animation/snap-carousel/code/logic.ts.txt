@@ -1,0 +1,194 @@
+// ============================================================
+// 滚动吸附轮播逻辑（与 Demo.vue 的 goTo / readMetrics 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+
+/** 实现方式：manual = 手算 scrollLeft（旧）/ snap = 滚动吸附（新） */
+type CarouselMode = 'manual' | 'snap'
+
+const mode = ref<CarouselMode>('manual')
+const index = ref(0)
+const scrollLeft = ref(0)
+const centerError = ref(0)
+const handCalc = ref(0)
+/** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
+const systemReduce = ref(false)
+/** 手动模拟「系统关闭动画」：打开后跳转直接到位，吸附仍保留 */
+const mockReduce = ref(false)
+
+const trackRef = ref<HTMLElement | null>(null)
+let settleTimer = 0
+let motionQuery: MediaQueryList | null = null
+
+/** 取全部卡片节点：顺序即索引，不需要额外维护数组 */
+function getSlides(): HTMLElement[] {
+  const track = trackRef.value
+  if (!track) return []
+  return Array.from(track.querySelectorAll<HTMLElement>('.slide'))
+}
+
+/** 一张卡片占用的滚动距离 = 卡片宽 + 间距 */
+function measureStep(): number {
+  const track = trackRef.value
+  const first = getSlides()[0]
+  if (!track || !first) return 0
+
+  // 间距从计算样式读，样式改了脚本不用跟着改
+  const styles = window.getComputedStyle(track)
+  const gap =
+    Number.parseFloat(styles.columnGap) || Number.parseFloat(styles.gap) || 0
+  return first.getBoundingClientRect().width + gap
+}
+
+function readMetrics(): void {
+  const track = trackRef.value
+  if (!track) return
+
+  scrollLeft.value = Math.round(track.scrollLeft)
+  const step = measureStep()
+  if (step <= 0) return
+
+  //! 索引从滚动位置反推：滚动是唯一事实来源
+  index.value = Math.min(
+    getSlides().length - 1,
+    Math.max(0, Math.round(track.scrollLeft / step)),
+  )
+
+  //! 居中误差用两个矩形比较，停稳后再量才有意义
+  const slide = getSlides()[index.value]
+  if (!slide) return
+  const trackRect = track.getBoundingClientRect()
+  const slideRect = slide.getBoundingClientRect()
+  const slideCenter = slideRect.left + slideRect.width / 2
+  const trackCenter = trackRect.left + trackRect.width / 2
+  centerError.value = Math.round(Math.abs(slideCenter - trackCenter))
+}
+
+function scheduleSettle(): void {
+  window.clearTimeout(settleTimer)
+  settleTimer = window.setTimeout(() => {
+    settleTimer = 0
+    readMetrics()
+  }, 160)
+}
+
+function goTo(target: number): void {
+  const track = trackRef.value
+  if (!track) return
+
+  const nextIndex = Math.min(getSlides().length - 1, Math.max(0, target))
+  //! 降级时用 auto 直接到位：吸附仍然生效（它属于功能，不是装饰动画）
+  const behavior: ScrollBehavior = mockReduce.value ? 'auto' : 'smooth'
+
+  if (mode.value === 'manual') {
+    const step = measureStep()
+    const maxLeft = track.scrollWidth - track.clientWidth
+    //! 旧做法第 1 处手算：自己算目标位置
+    const wanted = Math.round(step * nextIndex)
+    //! 旧做法第 2 处手算：夹到最大可滚动范围，否则最后一张会差一截
+    const clamped = Math.max(0, Math.min(wanted, maxLeft))
+    handCalc.value = 2
+    track.scrollTo({ left: clamped, behavior })
+  } else {
+    //! 新做法：对齐与滚动都交给浏览器，脚本不碰距离
+    handCalc.value = 0
+    getSlides()[nextIndex]?.scrollIntoView({
+      block: 'nearest',
+      inline: 'center',
+      behavior,
+    })
+  }
+
+  index.value = nextIndex
+  scheduleSettle()
+}
+
+function onScroll(): void {
+  // 滚动事件很密集：先合并到一帧，再读位置
+  window.requestAnimationFrame(readMetrics)
+  scheduleSettle()
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    goTo(index.value - 1)
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    goTo(index.value + 1)
+  }
+}
+
+async function setMode(next: CarouselMode): Promise<void> {
+  if (mode.value === next) return
+  mode.value = next
+  handCalc.value = 0
+  // 吸附会改变对齐方式，等新样式生效后再对齐当前卡片
+  await nextTick()
+  goTo(index.value)
+}
+
+function resetAll(): void {
+  mode.value = 'manual'
+  index.value = 0
+  scrollLeft.value = 0
+  centerError.value = 0
+  handCalc.value = 0
+  trackRef.value?.scrollTo({ left: 0, behavior: 'auto' })
+  scheduleSettle()
+}
+
+function onMotionChange(event: MediaQueryListEvent): void {
+  // 只更新提示文案，不夺走演示
+  systemReduce.value = event.matches
+}
+
+// 演示优先：真实业务应当直接跟随系统设置（开启减少动态效果就用 auto），
+// 本案例为了让平滑滚动可见，只在手动开关打开时才降级
+function toggleMockReduce(): void {
+  // 先停掉等停稳的计时器，避免切换后又被旧回调改写读数
+  window.clearTimeout(settleTimer)
+  settleTimer = 0
+  handCalc.value = 0
+  mockReduce.value = !mockReduce.value
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+  readMetrics()
+})
+
+onUnmounted(() => {
+  //! 离开页面必须清计时器，否则回调还会去读已经卸载的节点
+  window.clearTimeout(settleTimer)
+  settleTimer = 0
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
+})
+
+// 模板要点：
+// 1. 容器 .track 加 tabindex="0" + @scroll.passive + @keydown="onKeydown"
+// 2. 卡片 .slide 写 scroll-snap-align: center
+// 3. 新做法在容器上加 scroll-snap-type: x mandatory，旧做法不加
+// 4. 降级态的类绑定：根节点 :class="{ 'no-motion': mockReduce }"（样式见 styles.css.txt）
+
+export {
+  centerError,
+  goTo,
+  handCalc,
+  index,
+  measureStep,
+  mockReduce,
+  mode,
+  onKeydown,
+  onScroll,
+  readMetrics,
+  resetAll,
+  scrollLeft,
+  setMode,
+  systemReduce,
+  toggleMockReduce,
+}

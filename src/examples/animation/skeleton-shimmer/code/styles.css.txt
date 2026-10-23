@@ -1,0 +1,118 @@
+// ============================================================
+// 骨架屏样式片段（与 Demo.vue 的 .panel / .sk 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 骨架与成品共用同一套盒子 ---------- */
+
+/* 为什么先定盒子：高度一致是「替换不跳动」的前提，颜色只是皮肤 */
+.skeleton-panel {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--demo-radius);
+  background-color: var(--surface);
+}
+
+.sk-head {
+  //! 头部固定 2.5rem：骨架和成品都写死同一个高度，不靠内容把盒子撑开
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sk-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.sk-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.sk-line {
+  //! 每一行正文固定 1rem：不跟随文字长短变化，替换前后高度才能完全一致
+  height: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+.sk-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2rem;
+  margin-top: 0.75rem;
+}
+
+.sk-chip {
+  width: 4.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+}
+
+/* ---------- 2. 灰块 + 横扫高光 ---------- */
+
+.sk {
+  background-color: color-mix(in srgb, var(--border) 62%, transparent);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--primary) 22%, transparent) 50%,
+    transparent 80%
+  );
+  //! 高光比容器宽：background-position 从 160% 走到 -60%，视觉上正好扫过一遍
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  //! 只改 background-position 属于重绘，不触发重新布局，不会干扰占位尺寸
+  animation: shimmer 1.15s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 160% 0;
+  }
+
+  to {
+    background-position: -60% 0;
+  }
+}
+
+/* ---------- 3. 内容到位后的淡出 ---------- */
+
+/* 骨架改成绝对定位：高度交给已经挂载的成品，淡出期间页面不抖动 */
+.skeleton-panel.is-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s var(--ease-out);
+}
+
+/* ---------- 4. 模拟降级：高光静止、骨架不淡出 ---------- */
+
+/* 真实项目把 .is-static 换成「系统开启了减少动态效果」的判断即可 */
+.sk-demo.is-static .sk {
+  //! 高光静止：动画不是理解加载状态的唯一线索，状态文字也要保留
+  animation: none;
+  background-image: none;
+}
+
+.sk-demo.is-static .skeleton-panel.is-overlay {
+  transition: none;
+}
+
+/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把动画压到 0.01ms；本案例要展示高光横扫，
+    所以这里把时长还原。只有「动画就是教学内容」的演示页才需要这样做，真实业务不要照抄 */
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation-duration: 1.15s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

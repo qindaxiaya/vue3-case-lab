@@ -1,0 +1,96 @@
+// ============================================================
+// 滚动吸附轮播样式片段（与 Demo.vue 的 .carousel / .track / .slide 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 轮播容器：自身横向滚动，页面不横向溢出 ---------- */
+
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.track {
+  --gap: 0.75rem;
+  --card-w: 76%;
+
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--gap);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+/*! 首尾留白 = (容器宽 - 卡片宽) / 2 - 间距：让第一张与最后一张也能居中 */
+.track::before,
+.track::after {
+  content: '';
+  flex: 0 0 calc((100% - var(--card-w)) / 2 - var(--gap));
+}
+
+/* ---------- 2. 吸附：容器管方向，子项管对齐点 ---------- */
+
+/*! 只有新做法才开吸附，旧做法保持自由滚动，才能停在两张中间 */
+.carousel.is-snap .track {
+  scroll-snap-type: x mandatory;
+}
+
+.slide {
+  display: flex;
+  flex: 0 0 var(--card-w);
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 9.5rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--demo-radius);
+  background-color: var(--surface);
+  /*! 对齐点写在子项上：把每张卡片的中心对到容器中心 */
+  scroll-snap-align: center;
+}
+
+.slide.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* ---------- 3. 宽屏固定卡片宽度 ---------- */
+
+@media (min-width: 640px) {
+  .track {
+    --card-w: 18rem;
+  }
+}
+
+/* ---------- 4. 减少动态效果：真实项目应降级，演示优先仍播放 ---------- */
+/* 真实项目：系统开启「减少动态效果」时跳转用 behavior: 'auto' 直接到位，
+   并关掉卡片描边、圆点的装饰过渡；吸附必须保留（它决定停在哪，是功能） */
+
+/* 开关打开：装饰过渡直接关掉，吸附不受影响 */
+.no-motion .slide,
+.no-motion .arrow,
+.no-motion .dot::after {
+  transition: none;
+}
+
+/*! 演示优先：站点全局规则在「减少动态效果」下把过渡压到 0.01ms，
+    这里还原时长。真实项目不要照抄，应当改用上面的 .no-motion 分支 */
+@media (prefers-reduced-motion: reduce) {
+  .slide,
+  .arrow,
+  .dot::after {
+    transition-duration: var(--transition) !important;
+  }
+
+  //! 降级状态的优先级更高：开关打开时确实没有过渡
+  .no-motion .slide,
+  .no-motion .arrow,
+  .no-motion .dot::after {
+    transition: none !important;
+  }
+}

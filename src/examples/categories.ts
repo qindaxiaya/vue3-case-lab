@@ -13,6 +13,10 @@ export interface Category {
 
 /** 全部分类（新增分类在此追加即可，顺序即导航顺序） */
 export const categories: Category[] = [
+  // 入门分类在前：CSS / 浏览器基础是查阅顺序的最前面
+  { id: 'css', name: 'CSS 技巧' },
+  { id: 'basics', name: '浏览器基础' },
+  { id: 'animation', name: '动画与交互' },
   { id: 'performance', name: '性能监控' },
   { id: 'observer', name: '观察者' },
   { id: 'virtual', name: '虚拟渲染' },

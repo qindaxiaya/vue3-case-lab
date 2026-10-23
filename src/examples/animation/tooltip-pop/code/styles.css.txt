@@ -1,0 +1,113 @@
+// ============================================================
+// 提示气泡样式片段（与 Demo.vue 的 .stage / .tip-wrap / .tip-bubble 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 演示区：允许气泡越过边界 ---------- */
+
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 上下留出气泡高度：上方居中的气泡不会压到统计条 */
+  min-height: 15rem;
+  /*! 气泡要越过演示区上边界，这里绝不能写 overflow: hidden */
+  overflow: visible;
+  padding: 6rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+}
+
+/* ---------- 2. 定位基准：相对触发器，不用脚本算坐标 ---------- */
+
+.tip-wrap {
+  /*! 相对定位让气泡跟着触发器走，滚动与布局变化都不用重算 */
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+
+/* ---------- 3. 气泡本体：上方居中 + 显隐过渡 ---------- */
+
+.tip-bubble {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  z-index: 2;
+  width: max-content;
+  max-width: min(18rem, 78vw);
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--demo-radius);
+  background-color: var(--text);
+  color: var(--surface);
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  text-align: left;
+  box-shadow: var(--shadow-soft-lg);
+  /*! 隐藏时不挡点击、不参与可见性判断 */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /*! 用 translate 居中，不用知道气泡自身宽度 */
+  transform: translate(-50%, 4px);
+  transition: opacity var(--transition), transform var(--transition),
+    visibility var(--transition);
+}
+
+.tip-bubble.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.tip-arrow {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background-color: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* ---------- 4. 窄屏：改到下方，避免超出视口 ---------- */
+
+@media (max-width: 480px) {
+  .tip-bubble {
+    top: calc(100% + 12px);
+    bottom: auto;
+    transform: translate(-50%, -4px);
+  }
+
+  .tip-bubble.show {
+    transform: translate(-50%, 0);
+  }
+
+  .tip-arrow {
+    top: -4px;
+    bottom: auto;
+  }
+}
+
+/* ---------- 5. 减少动态效果：真实项目应降级，演示优先仍播放 ---------- */
+/* 真实项目：系统开启「减少动态效果」时让气泡直接出现；
+   本案例为了让淡入与位移可见，演示默认仍然播放，点开关才降级 */
+
+/* 开关打开：不做淡入与位移，延迟时机仍然保留（那是功能，不是动画） */
+.tip-bubble.no-motion {
+  transition: none;
+}
+
+/*! 演示优先：站点全局规则在「减少动态效果」下把过渡压到 0.01ms，
+    这里还原时长。真实项目不要照抄，应当改用上面的 .no-motion 分支 */
+@media (prefers-reduced-motion: reduce) {
+  .tip-bubble {
+    transition-duration: var(--transition) !important;
+  }
+
+  //! 降级状态的优先级更高：开关打开时确实没有过渡
+  .tip-bubble.no-motion {
+    transition: none !important;
+  }
+}

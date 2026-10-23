@@ -10,27 +10,122 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
   watch,
+  type Component,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
 import { loadCaseNotes } from '../examples/notes'
-import { getCase } from '../examples/registry'
+import {
+  allCases,
+  getCase,
+  loadCaseSource,
+  loadDemoComponent,
+  type CodeTab,
+  type RegisteredCase,
+} from '../examples/registry'
+import BackToTop from '../components/BackToTop.vue'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
 import NotesPanel from '../components/NotesPanel.vue'
+import { caseKey, useCaseHistory } from '../composables/useCaseHistory'
+import { smoothScrollTo, stopSmoothScroll } from '../utils/scroll'
 
 const route = useRoute()
 const router = useRouter()
 
-// 路由参数查找案例（不存在渲染空状态）
+// 路由参数查找案例（meta 同步可得；演示与源码按需加载）
 const item = computed(() =>
   getCase(String(route.params.categoryId), String(route.params.caseId)),
 )
 
+// ============================================================
+// 按需加载：演示组件 + 源码文本
+// - 每个案例的 Demo.vue / code/*.txt 都是独立 chunk，
+//   只有进入该案例才下载，首屏不再背 60 多个案例的源码
+// - 序号（seq）保证快速切案例时只接受最后一次请求的结果
+// ============================================================
+
+/** 异步资源的加载状态 */
+type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+/** 当前案例的演示组件（加载完成后才渲染） */
+const demoComponent = shallowRef<Component | null>(null)
+const demoStatus = ref<LoadStatus>('idle')
+/** 演示加载序号：路由快速切换时丢弃过期结果 */
+let demoSeq = 0
+
+/** 加载当前案例的演示组件 */
+async function loadDemo(): Promise<void> {
+  const current = item.value
+  const seq = ++demoSeq
+  demoComponent.value = null
+
+  if (!current) {
+    demoStatus.value = 'idle'
+    return
+  }
+
+  demoStatus.value = 'loading'
+  try {
+    const component = await loadDemoComponent(current.categoryId, current.meta.id)
+    if (seq !== demoSeq) return
+    demoComponent.value = component
+    demoStatus.value = 'ready'
+  } catch (error) {
+    if (seq !== demoSeq) return
+    console.error('[case-page] 演示组件加载失败', error)
+    demoStatus.value = 'error'
+  }
+}
+
+/** 核心代码片段（源码 tab 打开后才填充） */
+const codeTabs = ref<CodeTab[]>([])
+/** Demo.vue 完整源码文本（同上） */
+const demoSource = ref('')
+const sourceStatus = ref<LoadStatus>('idle')
+/** 源码加载序号：切案例后旧请求不回填 */
+let sourceSeq = 0
+
+/** 加载当前案例的源码包（Demo 全文 + 全部代码片段，并行请求） */
+async function loadSource(): Promise<void> {
+  const current = item.value
+  if (!current) return
+  // 已就绪 / 正在加载：不重复发起（registry 内部还有 Promise 缓存兜底）
+  if (sourceStatus.value === 'ready' || sourceStatus.value === 'loading') return
+
+  const seq = ++sourceSeq
+  sourceStatus.value = 'loading'
+  try {
+    const bundle = await loadCaseSource(current.categoryId, current.meta.id)
+    if (seq !== sourceSeq) return
+    codeTabs.value = bundle.codeTabs
+    demoSource.value = bundle.demoSource
+    sourceStatus.value = 'ready'
+  } catch (error) {
+    if (seq !== sourceSeq) return
+    console.error('[case-page] 源码加载失败', error)
+    sourceStatus.value = 'error'
+  }
+}
+
+/** 源码加载失败后手动重试 */
+function retrySource(): void {
+  if (sourceStatus.value === 'loading') return
+  sourceStatus.value = 'idle'
+  void loadSource()
+}
+
+/** 悬停 / 聚焦「源码」tab 时预取源码包，点击时通常已经就绪 */
+function prefetchSource(): void {
+  if (sourceStatus.value === 'idle') void loadSource()
+}
+
 /**
- * 路由切换时重置内容 tab
+ * 路由切换时重置内容 tab 与异步资源
  * CasePage 在同一路由记录内复用（只换 params），组件不会重建；
  * 不重置的话，从上一个案例的源码切过来会直接停在源码面板。
+ * 首次进入（watch 不会触发）由下方的 loadDemo() 负责。
  */
 watch(
   () => route.fullPath,
@@ -42,14 +137,120 @@ watch(
     panelMinHeight.value = 0
     notesRenderedResolve?.()
     notesRenderedResolve = null
+
+    // 丢弃上一个案例的源码，避免看到别人的代码
+    sourceSeq++
+    codeTabs.value = []
+    demoSource.value = ''
+    sourceStatus.value = 'idle'
+
+    void loadDemo()
+    // 没有 SBAC 说明的案例要靠代码要点兜底，此时提前加载源码
+    if (item.value && !item.value.meta.explain) void loadSource()
   },
 )
+
+// 首次进入：立刻开始加载演示组件（后续切换由上面的路由 watch 负责）
+void loadDemo()
 
 /** 当前分类展示名（面包屑用，找不到回退为原始 id） */
 const categoryName = computed(
   () =>
     categories.find((c) => c.id === route.params.categoryId)?.name ??
     String(route.params.categoryId),
+)
+
+/** 分类 id → 展示名（相关案例卡片用） */
+function categoryLabel(categoryId: string): string {
+  return categories.find((c) => c.id === categoryId)?.name ?? categoryId
+}
+
+// ============================================================
+// 收藏 + 最近浏览
+// ============================================================
+
+/** 当前案例的持久化键（分类/案例） */
+const currentKey = computed(() =>
+  item.value ? caseKey(item.value.categoryId, item.value.meta.id) : '',
+)
+
+const { isFavorite, toggleFavorite, recordVisit } = useCaseHistory()
+
+/** 当前案例是否已收藏 */
+const favorite = computed(() =>
+  currentKey.value ? isFavorite(currentKey.value) : false,
+)
+
+// 进入/切换案例即记录浏览（immediate 覆盖首屏直接打开）
+watch(
+  currentKey,
+  (key) => {
+    if (key) recordVisit(key)
+  },
+  { immediate: true },
+)
+
+// ============================================================
+// 相关案例 + 上一篇 / 下一篇
+// - 相关：共享标签数最多的 3 个（跨分类，能串起同类能力）
+// - 上下篇：按 registry 的分类 + 字典序，保证顺序稳定可预期
+// ============================================================
+
+/** 共享标签数最多的相关案例（至少共享 1 个标签；不够 3 个用同分类补齐） */
+const relatedCases = computed<RegisteredCase[]>(() => {
+  const current = item.value
+  if (!current) return []
+
+  const others = allCases.filter(
+    (c) => !(c.categoryId === current.categoryId && c.meta.id === current.meta.id),
+  )
+
+  const currentTags = new Set(current.meta.tags)
+  const scored = others
+    .map((c) => ({
+      item: c,
+      score: c.meta.tags.filter((tag) => currentTags.has(tag)).length,
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.item.meta.title.localeCompare(b.item.meta.title),
+    )
+    .map((entry) => entry.item)
+
+  if (scored.length >= 3) return scored.slice(0, 3)
+
+  // 标签不重合时（新分类里的独立技巧很常见）退化成同分类的其他案例，
+  // 保证「相关案例」区始终有内容，而不是空一块
+  const picked = new Set(scored.map((c) => `${c.categoryId}/${c.meta.id}`))
+  const sameCategory = others.filter(
+    (c) =>
+      c.categoryId === current.categoryId
+      && !picked.has(`${c.categoryId}/${c.meta.id}`),
+  )
+
+  return [...scored, ...sameCategory].slice(0, 3)
+})
+
+/** 当前案例在注册表中的下标（-1 表示未收录） */
+const currentIndex = computed(() =>
+  item.value
+    ? allCases.findIndex(
+        (c) => c.categoryId === item.value?.categoryId && c.meta.id === item.value?.meta.id,
+      )
+    : -1,
+)
+
+/** 上一篇（同一顺序上的前一个案例） */
+const prevCase = computed<RegisteredCase | null>(() =>
+  currentIndex.value > 0 ? allCases[currentIndex.value - 1] : null,
+)
+
+/** 下一篇 */
+const nextCase = computed<RegisteredCase | null>(() =>
+  currentIndex.value >= 0 && currentIndex.value < allCases.length - 1
+    ? allCases[currentIndex.value + 1]
+    : null,
 )
 
 /** 难度 → tag 语义色类 */
@@ -101,7 +302,8 @@ const keyPoints = computed<string[]>(() => {
   const points: string[] = []
   const seen = new Set<string>()
 
-  for (const tab of item.value.codeTabs) {
+  // 源码按需加载：未加载时为空（仅作为没有 SBAC 说明时的兜底展示）
+  for (const tab of codeTabs.value) {
     for (const line of tab.content.split('\n')) {
       // 与代码区同一套约定：行首 //! 是重点行
       const match = line.match(/^\s*\/\/!\s?(.+)$/)
@@ -237,14 +439,9 @@ function prefetchNotes(): void {
 }
 
 // ============================================================
-// 平滑滚动（按钮/tab 这类主动操作，自己插值，保证一定平滑）
-// 不依赖 behavior: 'smooth'：系统「减少动态效果」等设置可能把它降级成瞬间跳转
+// 滚动位置计算（tab 切换时对齐用）
+// 逐帧缓动滚动本身在 utils/scroll.ts，回到顶部按钮与列表页共用同一份
 // ============================================================
-
-/** 当前动画令牌：新动画或用户手动滚动时让旧动画停下 */
-let scrollAnimId = 0
-/** 正在进行的滚动动画的清理函数 */
-let stopScrollAnim: (() => void) | null = null
 
 /**
  * 读取元素在文档中的绝对顶部位置
@@ -259,78 +456,6 @@ function getDocumentTop(el: HTMLElement): number {
     node = node.offsetParent as HTMLElement | null
   }
   return top
-}
-
-/**
- * 逐帧缓动滚动到目标位置
- * @param targetY 目标滚动高度（px）
- * @param duration 动画时长（毫秒）
- */
-function smoothScrollTo(targetY: number, duration = 460): void {
-  // 连续点击 / 切换 tab 时先停掉上一段，避免两段动画互相抢
-  stopScrollAnim?.()
-
-  const startY = window.scrollY
-  const distance = targetY - startY
-  if (Math.abs(distance) < 1) return
-
-  const root = document.documentElement
-
-  // 系统开启“减少动态效果”时直接跳转：CSS 的 reduced-motion 管不到这段 JS 动画
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // 让上一段动画的 rAF 失效，避免它下一帧把位置又拉回旧目标
-    scrollAnimId++
-    const prevBehavior = root.style.scrollBehavior
-    root.style.scrollBehavior = 'auto'
-    window.scrollTo(0, targetY)
-    root.style.scrollBehavior = prevBehavior
-    return
-  }
-
-  const id = ++scrollAnimId
-  const prevBehavior = root.style.scrollBehavior
-
-  // 临时关闭 CSS 平滑：否则每帧的 scrollTo 会被再平滑一次，动画收尾拖尾
-  root.style.scrollBehavior = 'auto'
-
-  const startTime = performance.now()
-  // 缓入缓出：起步和收尾都柔和（比线性更像真实滚动）
-  const ease = (t: number): number =>
-    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-
-  /** 结束动画：恢复页面原有的滚动行为并移除监听 */
-  function finish(): void {
-    root.style.scrollBehavior = prevBehavior
-    window.removeEventListener('wheel', onUserScroll)
-    window.removeEventListener('touchstart', onUserScroll)
-    if (stopScrollAnim === finish) stopScrollAnim = null
-  }
-
-  /** 用户自己滚动时立即让出控制权，不跟用户抢 */
-  function onUserScroll(): void {
-    scrollAnimId++
-    finish()
-  }
-
-  stopScrollAnim = finish
-  window.addEventListener('wheel', onUserScroll, { passive: true })
-  window.addEventListener('touchstart', onUserScroll, { passive: true })
-
-  function step(now: number): void {
-    // 令牌变了说明动画已被取消（用户滚动或开始了新动画）
-    if (id !== scrollAnimId) return
-
-    const progress = Math.min(1, (now - startTime) / duration)
-    window.scrollTo(0, startY + distance * ease(progress))
-
-    if (progress < 1) {
-      requestAnimationFrame(step)
-    } else {
-      finish()
-    }
-  }
-
-  requestAnimationFrame(step)
 }
 
 /**
@@ -351,6 +476,10 @@ async function switchTab(next: ContentTab): Promise<void> {
   }
 
   activeTab.value = next
+
+  // 源码按需加载：切到源码 tab 时才开始下载文本（提前发起，减少等待）
+  if (next === 'code') void loadSource()
+
   await nextTick()
 
   // 等 notes 正文渲染完，拿到最终高度后再对齐滚动
@@ -400,43 +529,10 @@ function onTabKeydown(e: KeyboardEvent, current: ContentTab): void {
 }
 
 // ============================================================
-// 回到顶部：滚动超过一屏后出现
+// 生命周期：列表页/详情页共用的回到顶部按钮由 BackToTop 自己管滚动监听
 // ============================================================
 
-/** 按钮是否显示 */
-const showBackTop = ref(false)
-/** 当前阅读进度 0..1（画在按钮外圈的进度环） */
-const scrollProgress = ref(0)
-/** 滚动回调的逐帧节流开关：一帧最多计算一次 */
-let scrollTicking = false
-
-/** 滚动监听：passive + 逐帧节流，避免每个滚动事件都触发响应式更新 */
-function onWindowScroll(): void {
-  if (scrollTicking) return
-  scrollTicking = true
-
-  requestAnimationFrame(() => {
-    const y = window.scrollY
-    showBackTop.value = y > 480
-
-    // 进度 = 已滚距离 / 可滚总距离（内容不足一屏时保持 0）
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    scrollProgress.value = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0
-
-    scrollTicking = false
-  })
-}
-
-/** 平滑回到顶部（自行插值，不依赖浏览器 behavior: 'smooth'） */
-function backToTop(): void {
-  smoothScrollTo(0)
-}
-
 onMounted(async () => {
-  // 刷新时可能已处于滚动位置，先同步一次
-  onWindowScroll()
-  window.addEventListener('scroll', onWindowScroll, { passive: true })
-
   // 先测量再显示滑块，避免首次从左侧 0 位置滑入
   await nextTick()
   syncTabIndicator()
@@ -454,9 +550,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onWindowScroll)
   // 路由离开时停掉滚动动画，避免动画持有已销毁组件的闭包
-  stopScrollAnim?.()
+  stopSmoothScroll()
   cancelAnimationFrame(tabIndicatorRaf)
   tabIndicatorObserver?.disconnect()
 
@@ -539,6 +634,18 @@ const explainBlocks = computed(() => {
             aria-current="page"
           >{{ item.meta.title }}</span>
         </nav>
+
+        <!-- 收藏：本地保存，列表页可只看收藏 -->
+        <button
+          class="fav-btn"
+          :class="{ 'fav-btn--on': favorite }"
+          type="button"
+          :aria-pressed="favorite"
+          @click="toggleFavorite(currentKey)"
+        >
+          <span aria-hidden="true">{{ favorite ? '★' : '☆' }}</span>
+          {{ favorite ? '已收藏' : '收藏' }}
+        </button>
       </div>
 
       <!-- 页头：标题 + 难度/标签一行 + 摘要（文档站紧凑规格） -->
@@ -563,10 +670,34 @@ const explainBlocks = computed(() => {
           {{ item.meta.summary }}
         </p>
       </header>
-      <!-- ① 演示区：直接展示可交互演示 -->
+      <!-- ① 演示区：演示组件按需加载，加载期间显示占位 -->
       <section aria-label="可交互演示">
         <div class="card demo-card">
-          <component :is="item.demoComponent" />
+          <component
+            :is="demoComponent"
+            v-if="demoComponent"
+          />
+          <div
+            v-else-if="demoStatus === 'error'"
+            class="async-placeholder"
+            role="alert"
+          >
+            <p>演示加载失败，请检查网络后重试。</p>
+            <button
+              class="btn-ghost"
+              type="button"
+              @click="loadDemo"
+            >
+              重新加载
+            </button>
+          </div>
+          <div
+            v-else
+            class="async-placeholder"
+            role="status"
+          >
+            演示加载中…
+          </div>
         </div>
       </section>
 
@@ -635,13 +766,16 @@ const explainBlocks = computed(() => {
               aria-controls="panel-code"
               @click="switchTab('code')"
               @keydown="onTabKeydown($event, 'code')"
+              @pointerenter="prefetchSource"
+              @pointerdown="prefetchSource"
+              @focus="prefetchSource"
             >
               源码
               <span
-                v-if="item.codeTabs.length > 1"
+                v-if="item.codeFileCount > 1"
                 class="content-tab-count"
-                :title="`共 ${item.codeTabs.length} 段核心代码`"
-              >{{ item.codeTabs.length }}</span>
+                :title="`共 ${item.codeFileCount} 段核心代码`"
+              >{{ item.codeFileCount }}</span>
             </button>
           </div>
         </div>
@@ -735,47 +869,102 @@ const explainBlocks = computed(() => {
             aria-labelledby="tab-code"
           >
             <CodeWorkbench
-              :tabs="item.codeTabs"
-              :demo-source="item.demoSource"
+              v-if="sourceStatus === 'ready'"
+              :tabs="codeTabs"
+              :demo-source="demoSource"
             />
+            <div
+              v-else-if="sourceStatus === 'error'"
+              class="card async-placeholder async-placeholder--card"
+              role="alert"
+            >
+              <p>源码加载失败，请检查网络后重试。</p>
+              <button
+                class="btn-ghost"
+                type="button"
+                @click="retrySource"
+              >
+                重新加载
+              </button>
+            </div>
+            <div
+              v-else
+              class="card async-placeholder async-placeholder--card"
+              role="status"
+            >
+              源码加载中…
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- 回到顶部：滚动超过一屏后浮现，外圈是阅读进度 -->
-      <Transition name="back-top">
-        <button
-          v-if="showBackTop"
-          class="back-top"
-          type="button"
-          aria-label="回到顶部"
-          @click="backToTop"
+      <!-- ③ 相关案例 + 上一篇 / 下一篇：串起同一类能力，方便连续查阅 -->
+      <section
+        v-if="relatedCases.length || prevCase || nextCase"
+        class="related"
+        aria-labelledby="related-title"
+      >
+        <h2
+          id="related-title"
+          class="related-title"
         >
-          <svg
-            class="back-top-ring"
-            viewBox="0 0 44 44"
-            aria-hidden="true"
+          相关案例
+        </h2>
+
+        <div
+          v-if="relatedCases.length"
+          class="related-grid"
+        >
+          <RouterLink
+            v-for="rel in relatedCases"
+            :key="`related-${rel.categoryId}/${rel.meta.id}`"
+            :to="`/cases/${rel.categoryId}/${rel.meta.id}`"
+            class="related-card card card--interactive"
           >
-            <circle
-              class="back-top-track"
-              cx="22"
-              cy="22"
-              r="20"
-            />
-            <circle
-              class="back-top-bar"
-              cx="22"
-              cy="22"
-              r="20"
-              :style="{ strokeDashoffset: `${125.66 * (1 - scrollProgress)}` }"
-            />
-          </svg>
+            <span class="related-cat">{{ categoryLabel(rel.categoryId) }}</span>
+            <span class="related-name">{{ rel.meta.title }}</span>
+            <span class="related-summary">{{ rel.meta.summary }}</span>
+          </RouterLink>
+        </div>
+
+        <nav
+          class="case-nav"
+          aria-label="上一篇与下一篇"
+        >
+          <RouterLink
+            v-if="prevCase"
+            :to="`/cases/${prevCase.categoryId}/${prevCase.meta.id}`"
+            class="case-nav-link"
+          >
+            <span aria-hidden="true">←</span>
+            <span class="case-nav-label">上一篇</span>
+            <span class="case-nav-title">{{ prevCase.meta.title }}</span>
+          </RouterLink>
           <span
-            class="back-top-arrow"
+            v-else
+            class="case-nav-spacer"
             aria-hidden="true"
-          >↑</span>
-        </button>
-      </Transition>
+          />
+
+          <RouterLink
+            v-if="nextCase"
+            :to="`/cases/${nextCase.categoryId}/${nextCase.meta.id}`"
+            class="case-nav-link case-nav-link--next"
+          >
+            <span class="case-nav-label">下一篇</span>
+            <span class="case-nav-title">{{ nextCase.meta.title }}</span>
+            <span aria-hidden="true">→</span>
+          </RouterLink>
+          <span
+            v-else
+            class="case-nav-spacer"
+            aria-hidden="true"
+          />
+        </nav>
+      </section>
+
+      <!-- 回到顶部：滚动超过一屏后浮现，外圈是阅读进度 -->
+      <BackToTop />
     </template>
   </div>
 </template>
@@ -1034,6 +1223,29 @@ const explainBlocks = computed(() => {
   line-height: 1.65;
 }
 
+/* 异步资源占位：演示 / 源码加载中或失败时显示，固定最小高度避免布局跳动 */
+.async-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 12rem;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.async-placeholder p {
+  margin: 0;
+}
+
+/* 源码面板里的占位本身就是一张卡，高度可以小一些 */
+.async-placeholder--card {
+  min-height: 10rem;
+}
+
 /* ---------- 说明卡 ---------- */
 
 .note-card {
@@ -1206,103 +1418,155 @@ const explainBlocks = computed(() => {
   }
 }
 
-/* ---------- 回到顶部 ---------- */
+/* ---------- 收藏按钮 ---------- */
 
-.back-top {
-  position: fixed;
-  right: 1.75rem;
-  bottom: 1.75rem;
-  z-index: 30;
-  width: 2.85rem;
-  height: 2.85rem;
-  display: grid;
-  place-items: center;
-  font-size: 1rem;
-  color: var(--primary);
+.fav-btn {
+  /* 推到工具条最右侧：返回按钮与面包屑保持左对齐 */
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.34rem 0.8rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--text-secondary);
   background-color: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 50%;
-  box-shadow: var(--shadow-soft-lg);
+  border-radius: 999px;
   cursor: pointer;
   transition:
-    transform var(--transition),
-    border-color var(--transition),
     color var(--transition),
-    box-shadow var(--transition);
+    border-color var(--transition),
+    background-color var(--transition),
+    transform var(--transition);
 }
 
-.back-top:hover {
-  transform: translateY(-3px);
-  color: var(--primary-hover);
+.fav-btn:hover {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.fav-btn:active {
+  transform: scale(0.97);
+}
+
+/* 已收藏：星标实心 + 暖色底，和小小的「收藏」按钮区分开 */
+.fav-btn--on {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 60%, var(--border));
+  background-color: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+/* ---------- 相关案例 ---------- */
+
+.related {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.related-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.related-card:hover {
+  text-decoration: none;
+}
+
+.related-cat {
+  font-size: 0.7rem;
+  color: var(--primary);
+}
+
+.related-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.related-summary {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 上一篇 / 下一篇：贴底的两张窄条，长标题省略不换行 */
+.case-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.case-nav-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  text-decoration: none;
+  transition:
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.case-nav-link:hover {
+  color: var(--primary);
   border-color: var(--primary);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
+  text-decoration: none;
 }
 
-/* 按下回弹：给点击一个明确的触感 */
-.back-top:active {
-  transform: translateY(-1px) scale(0.92);
+.case-nav-link--next {
+  justify-content: flex-end;
+  text-align: right;
 }
 
-.back-top:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 3px var(--primary-soft),
-    var(--shadow-soft-lg);
+.case-nav-label {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
-/* 阅读进度环：贴按钮内圈，从 12 点方向顺时针补齐 */
-.back-top-ring {
-  position: absolute;
-  inset: 2px;
-  transform: rotate(-90deg);
-  pointer-events: none;
+.case-nav-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-weight: 500;
 }
 
-.back-top-track,
-.back-top-bar {
-  fill: none;
-  stroke-width: 2;
-}
-
-.back-top-track {
-  stroke: var(--border);
-}
-
-.back-top-bar {
-  stroke: var(--primary);
-  stroke-linecap: round;
-  /* 圆周长 2πr ≈ 125.66：dashoffset 由进度动态控制 */
-  stroke-dasharray: 125.66;
-  transition: stroke-dashoffset 0.12s linear;
-}
-
-.back-top-arrow {
-  position: relative;
-  line-height: 1;
-  transition: transform var(--transition);
-}
-
-.back-top:hover .back-top-arrow {
-  transform: translateY(-2px);
-}
-
-/* 出现：上浮 + 放大（柔和收尾）；消失：快速收紧 */
-.back-top-enter-active {
-  transition:
-    opacity 0.3s var(--ease-out),
-    transform 0.3s var(--ease-out);
-}
-
-.back-top-leave-active {
-  transition:
-    opacity 0.18s ease-in,
-    transform 0.18s ease-in;
-}
-
-.back-top-enter-from,
-.back-top-leave-to {
-  opacity: 0;
-  transform: translateY(18px) scale(0.7);
+.case-nav-spacer {
+  flex: 1;
 }
 
 /* ---------- 移动端 ---------- */
@@ -1311,6 +1575,24 @@ const explainBlocks = computed(() => {
   .case-page {
     padding: 1.5rem 1.25rem 3rem;
     gap: 1.5rem;
+  }
+
+  /* 移动端收藏按钮单独换行，不与返回/面包屑抢一行 */
+  .fav-btn {
+    margin-left: 0;
+  }
+
+  .related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 上下篇改为纵向堆叠，标题才有空间显示 */
+  .case-nav {
+    flex-direction: column;
+  }
+
+  .case-nav-spacer {
+    display: none;
   }
 
   /* 移动端 tab 组铺满一行，方便点按 */

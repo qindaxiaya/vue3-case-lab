@@ -1,0 +1,73 @@
+// ============================================================
+// 磁性按钮样式片段（与 Demo.vue 的 .stage / .mag-btn 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 磁力范围：监听挂在这里，按钮在旁边也能被带动 ---------- */
+
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  padding: 2.2rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--demo-radius);
+  background-color: var(--code-bg);
+  overflow: hidden;
+}
+
+/* ---------- 2. 按钮：位移用变量 + transform ---------- */
+
+.mag-btn {
+  /*! 变量默认值写 0px：还没接指针事件时按钮就在原位 */
+  --mx: 0px;
+  --my: 0px;
+
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--demo-control-py) + 0.15rem)
+    calc(var(--demo-control-px) + 0.5rem);
+  border: none;
+  border-radius: var(--radius-btn);
+  background-color: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  /*! 只平移，不改宽高与内外边距：不触发重新布局 */
+  transform: translate3d(var(--mx), var(--my), 0);
+  /* 常态只过渡颜色与阴影，不包含 transform */
+  transition: background-color var(--transition), box-shadow var(--transition);
+}
+
+.mag-btn:hover {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-soft-lg);
+}
+
+/*! 只有回弹阶段才过渡 transform：跟手时加过渡会明显慢半拍 */
+.mag-btn.is-returning {
+  transition: transform 0.3s var(--ease-out),
+    background-color var(--transition), box-shadow var(--transition);
+}
+
+.mag-btn.is-following {
+  box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow-soft);
+}
+
+/* ---------- 3. 模拟降级：不跟随，回弹也直接到位 ---------- */
+
+/* 脚本在降级时直接跳过整段跟随；这里把 transform 从过渡列表里去掉作为兜底 */
+.mag-btn.is-static {
+  transition: background-color var(--transition), box-shadow var(--transition);
+}
+
+/* ---------- 4. 演示优先：把被全局规则压短的回弹过渡还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示缓动回弹，
+    所以这里还原时长。真实业务不要照抄，应当直接走上面的不跟随分支 */
+@media (prefers-reduced-motion: reduce) {
+  .mag-btn.is-returning {
+    transition-duration: 0.3s !important;
+  }
+}

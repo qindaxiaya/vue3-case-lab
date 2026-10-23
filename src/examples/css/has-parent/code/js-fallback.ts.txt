@@ -1,0 +1,50 @@
+// ============================================================
+// has 父级选择器被检测前的旧写法（教学对照片段）
+// 与 Demo.vue 的 js 模式逻辑一致；重点行用 //! 标记
+// ============================================================
+
+import { onMounted, onUnmounted, ref } from 'vue'
+
+const thumbCardRef = ref<HTMLElement | null>(null)
+const thumbCheckRef = ref<HTMLInputElement | null>(null)
+const nickRef = ref<HTMLInputElement | null>(null)
+const mailRef = ref<HTMLInputElement | null>(null)
+
+const jsThumbRow = ref(false)
+const jsFormBad = ref(false)
+
+const liveHandlers: Array<[EventTarget, string, EventListener]> = []
+
+function onThumbJs(): void {
+  //! 老写法第 1 步：读原始 DOM 状态（checked），再手工同步响应式变量
+  jsThumbRow.value = thumbCheckRef.value?.checked ?? false
+}
+
+function onFieldJs(): void {
+  //! 老写法第 2 步：逐个必填输入手工比对（新加字段要再补一行判断）
+  const nickEmpty = (nickRef.value?.value ?? '') === ''
+  const mailEmpty = (mailRef.value?.value ?? '') === ''
+  jsFormBad.value = nickEmpty || mailEmpty
+}
+
+function bind(target: EventTarget | null, type: string, handler: EventListener): void {
+  if (!target) return
+  //! 每个会触发行为变化的元素各要一个监听器；卸载时还要记得成对摘除
+  target.addEventListener(type, handler)
+  liveHandlers.push([target, type, handler])
+}
+
+onMounted(() => {
+  bind(thumbCheckRef.value, 'change', onThumbJs)
+  bind(nickRef.value, 'input', onFieldJs)
+  bind(mailRef.value, 'input', onFieldJs)
+  onThumbJs() // 初次也要手动同步一遍，否则首帧状态靠猜
+  onFieldJs()
+})
+
+onUnmounted(() => {
+  for (const [target, type, handler] of liveHandlers) {
+    target.removeEventListener(type, handler)
+  }
+  liveHandlers.length = 0
+})

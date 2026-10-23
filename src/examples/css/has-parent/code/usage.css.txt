@@ -1,0 +1,71 @@
+// ============================================================
+// has 父级选择器教学片段（JS 写法对照 + 纯 CSS 写法）
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+/* ---------- 写法一：旧方案（JS 监听器 + 手动类名，简版完整 30 行） ---------- */
+
+// 1) 缩略图卡片：勾选有缩略图 → 手动给父级加双列类名
+const thumbCard = document.querySelector('.thumb-card')
+const thumbToggle = document.querySelector<HTMLInputElement>('.thumb-toggle')
+
+function applyThumbLayout(): void {
+  //! 要自己读原始 DOM 状态（checked），再手工比对
+  const checked = thumbToggle?.checked ?? false
+  // 状态一变就改父级类名——「行为实现 = 监听器 + 手动类名」
+  thumbCard?.classList.toggle('thumb--row', checked)
+}
+
+//! 每个会触发行为变化的元素各要一个监听器；漏挂 / 卸载不清都会埋雷
+thumbToggle?.addEventListener('change', applyThumbLayout)
+applyThumbLayout() // 初始还没防住：还得手动同步第一帧
+
+// 2) 表单容器：任一必填为空 → 容器加红边类名
+const formBox = document.querySelector('.form-box')
+const requiredInputs = document.querySelectorAll<HTMLInputElement>('.form-box input.req')
+
+function applyFormState(): void {
+  let bad = false
+  requiredInputs.forEach((input) => {
+    //! 每加一个必填字段，这里都要跟着改一行判断
+    if (input.value === '') bad = true
+  })
+  formBox?.classList.toggle('form-box--bad', bad)
+}
+
+requiredInputs.forEach((input) => input.addEventListener('input', applyFormState))
+applyFormState()
+
+/* ---------- 写法二：has 纯 CSS，上面所有 JS 直接删掉 ---------- */
+
+/* 1) 卡片里有缩略图才双列（样式引擎逐帧比对，不需要事件） */
+.thumb-card {
+  display: flex;
+  flex-direction: column;
+}
+
+//! has(.thumb)：卡片存在缩略图元素 → 父级命中双列样式
+//! 取消勾选（元素从文档移除）后自动退出命中，无需事件收尾
+.thumb-card:has(.thumb) {
+  flex-direction: row;
+  align-items: center;
+}
+
+.thumb-card:has(.thumb) .thumb {
+  width: 96px; /* 双列时缩略图收成固定宽 */
+}
+
+/* 2) 必填项为空 → 容器红边 */
+
+//! has(input.req:placeholder-shown)：后代存在「必填且仍为空」的输入即命中
+//! 输入值一变，placeholder-shown 伪类自动翻转，容器红边跟着亮/灭
+.form-box:has(input.req:placeholder-shown) {
+  border-color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 6%, var(--surface));
+}
+
+/* ---------- 何时不用 has ---------- */
+
+// 1. 跨字段业务校验（密码强度规则等）→ 交给真正脚本层，样式只负责展示
+// 2. 需要兼容非常老的浏览器 → 用回监听器方案，或用一小段脚本加兜底类名
+// 3. 子元素状态来自复杂异步流程 → 状态进响应式系统再驱动样式更清晰

@@ -12,6 +12,8 @@
   - `npm run lint` — ESLint 检查（全量，收尾/合并前用）
   - `npx eslint <改动文件> --max-warnings 0` — 只查改动文件（L0/L1 默认用法）
   - `npx vitest run` — 运行测试
+  - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
+  - `npm run check:ui -- --only 抽屉` — 只验一个场景（名字或路由命中，5~10 秒）；改单个案例默认用它，`--base http://localhost:5173` 可直接验 dev
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
@@ -53,6 +55,8 @@
   3. **L2 新案例/跨模块**（新案例、registry/router/构建配置、≥4 个逻辑文件（纯样式批量微调不算），或改动触及共享模块）：完整 DoD + 全量四项 + 人工走查，收尾可派 `verifier` / `case-reviewer` 子代理
   4. 技能按级别触发：L0/L1 不主动加载 `brainstorming` / `writing-plans` / `subagent-driven-development`；用户明确要求走完整流程时以用户指令为准
   5. 停等与提交仍按「工作节奏」：每个任务停下等确认、有页面变化给 dev 地址；连续同类微调可合并成一次确认与一个 commit
+  6. **修复存量案例 bug = L1，且只验目标案例**（2026-10-22 用户要求）：读相关片段（不整文件通读）→ 最小探针确认根因（一次页面取值即可）→ 改 → `npx eslint <该案例目录> --max-warnings 0` + `npm run type-check` + `npm run check:ui -- --only <案例>`。**不跑 build / check:bundle / 全量 check:ui / 全量 lint**；根因确认后再决定要不要落常驻断言
+  7. **影响面超过 1 个案例时先问**：例如「这个毛病 8 个案例都有，只修这一个还是统一改」，不默认扩张；文档（本文件）按批次收尾一次写，不逐条追加
 - **完成前强制验证清单（2026-10-19 教训固化；2026-10-21 收敛：完整清单只用于 L2 新案例/跨模块，L0/L1 按上方分级与影响面验证）**：
   1. 按 `docs/case-definition-of-done.md` 逐条验收（Demo 稳定性 / 对比开关 / 实测数据 / notes 五段 / meta.sell / 375px）
   2. `npx vitest run`（含真实 glob 收录链路 + 内容质量门禁：SBAC 四段齐全 / 卖点≤30 字、摘要≤40 字 / 说明区禁未解释缩写 / notes 五段 / 标题可被搜索命中——新增案例自动扩展校验）
@@ -64,7 +68,7 @@
 
 ## 当前进度
 
-- **阶段**：共 62 案例 / 6 分类（composables 1 · observer 5 · virtual 3 · performance 11 · vue3 17 · practice 25）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 81 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 1 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -110,7 +114,44 @@
 - ✅ 2026-10-21 skills 收口（续做中断会话 `ses_ea3f7735…`）：新增 `docs/skills-and-subagents.md`（20 个技能清单与触发时机、L0/L1/L2 分级、SubAgent 配置与权限语义、重装记录与排障）；`AGENTS.md` 增加任务分级并把强制清单收敛到 L2；新增项目级只读子代理 `case-reviewer` / `verifier`（`opencode debug agents` 实测 `mode=subagent`、`edit: deny`）；lint 常用写法改为单文件。**superpowers 已重装**：`npx skills add obra/superpowers -g -a opencode -s "*" --copy -y`，15 个技能补齐 prompts/scripts/references（`subagent-driven-development` 7 个文件、`systematic-debugging` 11 个、`diagnosing-superpowers` 20 个）；技能实体统一到 `~/.agents/skills`，`~/.config/opencode/skills` 已清空，避免重复来源。实测 `opencode api get /api/skill` = 20 条、全部指向 `.agents`（`frontend-design` 在 `.claude`）、日志无新 duplicate 告警。首轮 `case-reviewer` 审查报 0 P0 / 2 P1 / 8 P2，已逐条修完：统一 eslint `--max-warnings 0` 口径、按 V2 优先级覆盖解释同名技能（不是「随机/静默」）、补 `metadata.opencode/autoinvoke` 正确嵌套、L2 判据改为「≥4 个逻辑文件」、给 `case-reviewer` 追加 deny `git *--output*` 与 `*>*` 并实测拦截成功
 - ✅ 2026-10-21 中文乱码复发并修复：opencode 升到 v2.1.1 后 V1 插件实现不再运行，每次启动报 `failed to load plugin ... Plugin must export a default definition with an id ... Missing key at ["default"]`，UTF-8 前缀实际没注入（不带前缀跑中文命令实测仍是乱码）。`utf8-encoding.ts` 改写为 `export default Plugin.define({ id: "utf8-encoding", setup })` + `ctx.shell.hook("create.before")`：按 `event.shell` 只对 PowerShell 注入、幂等跳过已有设置。实测 `/api/plugin` 中 `utf8-encoding` 为 `active`、日志不再报加载失败、裸跑 `中文测试：你好，世界` 正常显示（进程参数里可见自动加上的前缀）
 - ✅ 2026-10-21 PR #13 已 rebase 合并到 main（两条 commit 保留：详情页 tab 优化、skills 与子代理手册）；CI `Type check, lint, test, build` 39s 通过
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，案例页 `/cases/performance/perf-observer`
+- ✅ 2026-10-21 企业级打包优化：首屏 gzip **521 KB → 91 KB**（-82%），详情页只加载当前案例
+  - `registry.ts` 四类 glob 改「meta 同步 + 资源懒加载」：`allCases`/`getCase` 只给 meta 与 `codeFileCount`，新增 `loadDemoComponent` / `loadCaseSource`（Promise 缓存、失败清缓存可重试）；Demo 进详情页才下载，源码文本点开「源码」tab 才下载
+  - 路由三个页面改 `() => import()`；`CasePage` 加演示/源码加载态与失败重试，切案例时重置状态并丢弃旧源码
+  - `vite.config.ts` 用 `output.codeSplitting.groups` 拆 `vendor-vue` / `vendor-markdown` / `vendor-element-plus` / `vendor-utils`，`chunkSizeWarningLimit: 600`
+  - Element Plus 去掉 353 KB 整包主题，改 `importStyle: 'css'` + `theme-chalk/base.css` + 暗色变量；组件样式只随 3 个用到 EP 的 Demo chunk 下发
+  - 新增 `npm run check:bundle` 体积门禁（首屏 gzip ≤180 KB、单 chunk ≤600 KB、首屏禁「//! 中文」教学标记），CI 在 build 后执行
+  - 产物按「类型 → 用途 → 案例」分目录：`assets/js/{index,vendor,pages,cases/<分类>/<案例>,lib,workers}`、`assets/css/{index,vendor,pages,cases/<分类>/<案例>,themes}`、`assets/{fonts,media}`；`check:bundle` 改递归扫描，路径变化不影响门禁
+  - 机器验收（Chrome CDP）：首页/列表/详情/EP 案例零 console 错误；列表 62 张卡片；详情首屏**不请求**源码 chunk，点「源码」后才请求（125 行代码 + 4 处重点行）；notes 正常渲染；案例间切换不残留上一个案例源码、tab 回到「说明」；375px 无横向溢出；vitest 29/29、type-check、lint、build、check:bundle 全绿
+- ✅ 2026-10-21 全局搜索扩到 notes 正文（正文命中带高亮片段）
+  - 新增 `src/utils/search-index.ts`：纯函数「去 Markdown 标记 → 建文档 → 命中计数 + 片段截取 → 关键词切分 → 与元数据结果合并」，可单测、不依赖浏览器
+  - 新增 `src/composables/useNotesIndex.ts`：首次打开搜索弹窗后 `requestIdleCallback` 构建，62 篇并发 6 分批读、模块级单例缓存、每读完一篇增量刷新结果
+  - `SearchModal.vue`：结果行加「正文」标记与 `<mark>` 高亮片段（不用 `v-html` 防注入），正文索引加载中/不可用有提示；键盘选择不再被增量结果打断
+  - 机器验收（Chrome CDP）：搜「微任务」3 条全部来自正文、搜「虚拟列表」元数据优先 + 6 条正文追加、`structuredClone` 1 条仅正文命中；↑↓ + 回车跳转 `/cases/vue3/reactive-loss`；375px `scrollWidth=375`、面板 351px；零 console 错误；vitest 45/45（新增 16 条）、type-check、lint、build 通过
+- ✅ 2026-10-21 浏览器验收脚本统一（`npm run check:ui`）：此前各会话各写临时 CDP 脚本，跑完只 kill 父进程、`--headless` 有的加有的没加、每轮新建 profile，累计 **111 个 chrome 进程 + 41 个临时配置目录（2.0 GB）**，桌面上不断弹窗口。新增 `scripts/check-ui.mjs`：headless 启动、`--remote-debugging-port=0` 免抢端口、固定 `node_modules/.tmp/chrome-check`、退出整棵进程树 `taskkill /T /F` + 重试清目录；内置 5 个场景（首页 / 列表 / 详情源码按需 / EP 样式 / 375px），有失败退出码 1。实测通过，跑完自动化进程与临时目录均为 0；同时清理了存量的 111 个进程与 2 GB 目录
+- ✅ 2026-10-21 站点体验优化（第二批）：列表页难度筛选（带数量）+ 收藏筛选 + 最近浏览；详情页收藏、浏览记录、相关案例（同标签优先，不够用同分类补齐）、上下篇导航；全局文档标题按路由更新、`skip-link` + `<main id="main-content">`、`NotFoundPage`（`/nope` 走 404 路由）、路由 chunk 加载失败自动刷新一次兜底；新增 `useCaseHistory` + 8 条单测
+- ✅ 2026-10-21 新增 11 个案例（共 73 案例 / 8 分类）：`css` 5 个（grid-auto-fit / container-query / has-parent / fluid-clamp / aspect-ratio-cls）+ `basics` 5 个（event-loop / url-search-params / intl-format / structured-clone / clipboard-api），两个新分类置于分类列表最前；`practice/dynamic-chunk` 用真实动态 import 实测「按需 7.3 KB / 5.8 ms」vs「全量 36.8 KB / 15 ms」、同页二次点击 0 B / 0.8 ms，生产构建复访 300 B（304 头部）
+- ✅ 2026-10-21 工具与门禁修正：`npm run type-check` 原为 `vue-tsc --noEmit`，根 tsconfig 只有 references、实际什么都不检查（本次 build 一次性暴露 12 处类型错误才发现的），改为 `vue-tsc -b`；`.gitignore` 补 `.vitest` / `coverage`；`check:ui` 场景从 5 个扩到 7 个（新增列表难度筛选、无效路由兜底，详情场景加相关案例与上下篇断言），并修正 dev 模式误判（源码 chunk / EP 样式只在 preview 有 hash 资源可数，dev 记 `null` 表示不适用）
+- ✅ 2026-10-21 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 103.8 KB）、`npm run check:ui` 7/7（preview）与 5/5（dev）全绿；11 个新案例在 375px 下 `scrollWidth=375`、零 console 错误；`container-query` 与 `aspect-ratio-cls` 的测量时序坑已在 headless 下复测（见决策记录）
+- ✅ 2026-10-22 案例列表页补回到顶部：把详情页的浮动按钮抽成 `src/components/BackToTop.vue`（滚动 >480px 浮现、外圈滚动进度、点击缓动回顶、hover 上浮 + 进度环），逐帧缓动滚动移到 `src/utils/scroll.ts` 供详情页 tab 对齐与回顶共用；`check:ui` 的列表/详情场景各补「滚到底 → 按钮出现 → 点击回顶 → scrollY≈0」断言，实测 7/7 通过（列表 73 卡片、回顶 0px）；vitest 53/53、type-check、lint、build 全绿
+- ✅ 2026-10-22 新增动画与交互分类 8 个入门案例（共 81 案例 / 9 分类）：`animation` 置于 css / basics 之后
+  - 批 A（CSS 动画基础）：`skeleton-shimmer`（灰块占位 + 微光扫过，对比转圈加载的高度跳动）、`accordion-slide`（`grid-template-rows: 0fr → 1fr`，对比脚本量 `scrollHeight`，面板直接显示读取次数 1 → 0）、`drawer-slide`（`translateX` + 遮罩，等 `transitionend` 再卸载，Esc / 点遮罩 / 滚动锁 / 焦点回归）、`progress-ring`（只写一次 `stroke-dashoffset`，让过渡补中间帧，对比定时器逐帧改属性）
+  - 批 B（交互细节）：`magnetic-button`（指针偏移换算 `translate`，限制最大位移、离开回弹、触摸与减少动态效果跳过）、`snap-carousel`（`scroll-snap-type` + `scrollIntoView` + 滚动位置反推索引，对比手算 `scrollLeft` 与边界夹取）、`tooltip-pop`（自建气泡 180ms 延迟出现 + 上/下方自适应定位 + `role="tooltip"`，对比原生 `title`）、`focus-visible-ring`（`:focus-visible` 焦点环，对比 `outline: none` 裸奔）
+  - 每个案例默认停在「旧做法」一侧，面板可切对比、可重置，卸载清理定时器 / 监听器；notes 第 4 段只用「读取次数 / 监听器数 / 手算处数 / CSS 声明条数」等可核对口径，不写未实测毫秒
+  - `check:ui` 新增 `checkAnimationCases`：8 个案例逐页在 375px 打开，断言无横向溢出、演示区有内容、有可操作按钮、控制台零报错
+  - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 108.9 KB）、`npm run check:ui` 15/15 全绿（列表 81 卡片）
+- ✅ 2026-10-22 修复动画案例在「系统关闭动画效果」时看不到动画：用户机器上浏览器把 `prefers-reduced-motion` 报成 reduce，站点全局规则把过渡压到 0.01ms，`drawer-slide` 的两种关闭方式看起来一模一样
+  - Demo 改为「演示优先」：过渡始终播放，顶部提示系统真实设置，新增「模拟减少动态效果」开关展示跳过分支；`notes` 与教学代码同步说明「真实项目应跟随系统设置」
+  - 演示区用 scoped `@media (prefers-reduced-motion: reduce)` + `!important` 还原过渡时长（全局规则同为 important，靠类选择器更高优先级胜出）
+  - `check:ui` 新增「抽屉退场动画」场景：模拟 reduce 环境，断言关闭 80ms 后节点仍在且面板位移已达 281px、过渡结束后卸载、直接卸载与模拟开关都立刻移除；16 个场景全绿
+- ✅ 2026-10-22 其余 6 个动画案例统一改为「演示优先」（用户选择）：`skeleton-shimmer` / `progress-ring` / `magnetic-button` / `accordion-slide` / `tooltip-pop` / `snap-carousel`
+  - 每个案例都把系统 `prefers-reduced-motion` 降级为「顶部提示 + 手动开关」（`mockReduce`），演示本身始终播放；开关打开时走降级分支（高光静止 / 进度直接跳变 / 不跟随 / 直接展开 / 气泡瞬间出现 / 滚动直接到位）
+  - scoped `@media (prefers-reduced-motion: reduce)` 用 `!important` 还原时长（关键帧动画要同时还原 `animation-duration` 与 `animation-iteration-count`），降级态用 `.is-static` / `.no-motion` 类压回去
+  - notes 与教学代码同步说明「真实项目应跟随系统设置，本案例为了演示仍播放」
+- ✅ 2026-10-22 流程优化（用户要求）：
+  - `check:ui` 新增 `--only <关键字>`：按场景名或路由过滤，单场景 5~10 秒（`npm run check:ui -- --base http://localhost:5173 --only 抽屉` 实测 1 个场景通过）
+  - `AGENTS.md` 任务分级补两条：修复存量案例 bug 固定走 L1（单案例 eslint + type-check + `--only`，不跑 build / bundle / 全量）；影响面超过 1 个案例先问，文档按批次合并提交
+- ✅ 2026-10-22 回到顶部不再瞬跳（补记另一会话的 `7f8a175`）：`smoothScrollTo` 新增 `ignoreReducedMotion` 选项，回到顶部在系统开启「减少动态效果」时仍保留缓动（460ms → 320ms）；`check:ui` 列表场景记录 `reduceMotion` 与点击后 150ms 的 scrollY，并新增「瞬跳」断言。根因与动画案例相同：开发机浏览器就是 reduce
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
 
@@ -162,3 +203,20 @@
 | 2026-10-21 | **superpowers 重装为完整安装，技能实体统一 `~/.agents/skills`** | 旧安装只有 `SKILL.md`，缺官方 prompts/scripts/references；用 `npx skills add obra/superpowers -g -a opencode -s "*" --copy -y` 重装（`--copy` 不建 symlink）。踩坑：同名技能按**固定优先级覆盖**（`~/.config/opencode/skills` > `~/.agents/skills` > `~/.claude/skills` > 内置），旧副本留在 config 目录就会盖住新版，且**日志不一定报** duplicate（.config/.agents 这次完全没报），只能靠 `api get /api/skill` 看 path 才发现；已清空 `~/.config/opencode/skills`，`frontend-design` 留 `~/.claude/skills` 真实目录。以后升级用 `npx skills update -g` |
 | 2026-10-21 | **详情页 tab 指示器 + 吸顶对齐 + notes 首屏无闪** | 主色胶囊用 transform 滑动（0.18s，带柔和阴影）；移除 `v-show` 面板重播动画；首次 notes 用 `rendered` 事件 + 临时 min-height 等正文完成后再滚；吸顶目标用零高度锚点，避开 sticky `offsetTop` 漂移；系统开启「减少动态效果」时，全局仍关闭其余动效，但指示器显式保留短滑，避免被 0.01ms 规则压成瞬移；1200/375、快速连点、减少动态效果实测通过 |
 | 2026-10-21 | **UTF-8 插件必须用 V2 格式，挂 shell 层的 `create.before`** | v2.1.1 起 V1「返回 hook 对象」的实现不再运行，表现为启动日志 `failed to load plugin` + 中文乱码复发（本次先复现：裸跑中文命令输出乱码）。改写为 `export default Plugin.define({ id, setup })` + `ctx.shell.hook("create.before")`；选 shell 层而非 `tool.execute.before`，是因为工具名从 `bash` 变 `shell` 后按名匹配会失效；用 `event.shell` 判断只对 PowerShell 注入。验收：`/api/plugin` 中 `utf8-encoding` = `active` + 裸跑中文命令正常 |
+| 2026-10-21 | **案例资源改懒加载：registry 拆「同步 meta + 异步资源」** | 四个 glob 全 eager 时 62 份 Demo 源码 + 教学代码（约 750 KB 文本，`//!` 标记 735 处与主包完全对应）被逐字内联，首屏 gzip 521 KB。改为 `meta.ts` 保持 eager（列表/搜索要同步拿 62 条标题），Demo / `?raw` / `code/*.txt` 走动态 import；`loadDemoComponent` / `loadCaseSource` 用 Promise 缓存，失败清缓存允许重试。首屏降到 91 KB |
+| 2026-10-21 | **Element Plus 样式改按需（推翻 2026-10-20「整包主题统一」决策）** | 全站只有 `debounce-throttle` / `json-viewer` / `vitest-gate` 用 EP，整包 `index.css` 353 KB（产物 549 KB）性价比极低。改 `importStyle: 'css'` + `theme-chalk/base.css` + `dark/css-vars.css`，组件样式随 Demo chunk 下发；`base.css` 必须留在入口 CSS，否则官方变量晚于 `_element.scss` 生效，浅色主题会被默认蓝覆盖 |
+| 2026-10-21 | **Rolldown 分包用 `codeSplitting.groups` + priority，不用 `manualChunks`** | Vite 8 底层是 Rolldown，`manualChunks` 会被转成单个 codeSplitting 组，且组默认 `includeDependenciesRecursively: true`，把 Vue 运行时卷进 element-plus chunk → 入口被迫预加载 218 KB 且 EP 变成首屏依赖。改用显式分组：Vue 优先级最高先被认领，EP 组关闭递归收编，`theme-chalk` 的 CSS 不参与分组（留在入口保证覆盖顺序） |
+| 2026-10-21 | **新增体积门禁 `npm run check:bundle` 并接入 CI** | 体积回归不会让单测变红（eager glob 就是例子）。脚本读 `dist/index.html` 的首屏资源，校验：首屏 gzip ≤180 KB、非 pdf 单 chunk ≤600 KB、首屏 JS 不得出现「//! 中文」教学标记；CI 在 build 后执行，红灯直接拦住合并 |
+| 2026-10-21 | **全局搜索扩到 notes 正文：索引空闲构建、纯函数可单测** | 标题/摘要/标签继续同步匹配，正文索引在首次打开弹窗后 `requestIdleCallback` 构建（并发 6、单例缓存、边读边刷新），首屏不多下载 190 KB；匹配与片段逻辑放 `utils/search-index.ts` 纯函数（16 条单测），组件只负责调度；正文结果用 `<mark>` 高亮（不用 `v-html` 防注入），片段两行截断；键盘选择只在关键词变化时重置，避免增量结果把选中项弹回第一条 |
+| 2026-10-21 | **构建产物按「类型 → 用途 → 案例」分目录** | 265 个 chunk 全平铺在 `assets/` 里，排查和缓存策略都没法按类处理。`entryFileNames` 固定入口；`chunkFileNames` 用 `facadeModuleId` 把案例 chunk 归到 `js/cases/<分类>/<案例>/`（Demo / Demo.source / 教学代码 / notes），vendor、pages、lib、workers 各自成目录；`assetFileNames` 按扩展名与 `originalFileNames` 把样式归到 `css/{vendor,pages,cases,themes}`，图片/字体/worker 分到 `media`/`fonts`/`js/workers`。只改路径不改体积，`check:bundle` 同步改递归扫描 |
+| 2026-10-21 | **浏览器验收统一走 `npm run check:ui`，禁止临时 Chrome 脚本** | 各会话临时脚本只 kill 父进程、部分没加 `--headless`、每轮新建 profile，累计 111 个 chrome 进程 + 41 个目录（2 GB），桌面不断弹窗。统一脚本：headless、`--remote-debugging-port=0`、固定 `node_modules/.tmp/chrome-check`、退出 `taskkill /T /F` 并重试清理；默认验 preview（4173，可 `--base` 指 dev），失败返回 1。场景从 5 个扩到 7 个：首页 / 列表 / 详情源码按需（+ 相关案例、上下篇断言）/ EP 样式 / 列表难度筛选 / 无效路由兜底 / 375px |
+| 2026-10-21 | **新分类 `css` / `basics` 前置且不合并，入门案例先讲现象再讲原理** | 用户要求补入门、简单常用的例子（可偏 CSS）。拆成「CSS 技巧」与「浏览器基础」两个分类，放在分类列表最前（查阅读顺序）；案例仍走四件套 + notes 五段，Demo 默认停在「错误/旧做法」那一侧，先看到问题再切正确做法 |
+| 2026-10-21 | **选题边界：新分类讲「特性怎么用」，存量案例仍讲「机制为什么」** | 存量 62 个案例里 `reactive-*` / `v-memo` / `time-slicing` 讲的是机制，新分类补齐「CSS 特性怎么用」「浏览器原生 API 怎么用」这类日常高频但原理较轻的内容；`practice/dynamic-chunk` 与 `practice/vite-split` 的界线固定为「运行时动态 import 实测」vs「构建期怎么拆包」，避免两个案例讲同一件事 |
+| 2026-10-21 | **`type-check` 必须用 `vue-tsc -b`** | 根 `tsconfig.json` 只有 `files: []` + references，`vue-tsc --noEmit` 在这种情况下什么都不检查（本次 build 暴露 12 处类型错误才发现）。改为构建模式后才会真正检查 `tsconfig.app.json` / `tsconfig.node.json` 引用的全部文件；CI 与本地口径一致 |
+| 2026-10-21 | **布局偏移 / 容器查询的测量必须「页面可见 + 强制布局」** | `layout-shift` 条目在 `document.visibilityState === 'hidden'` 时根本不产生，rAF 也会被节流，headless 用旧模式（非 `--headless=new`）同样会假阴性；容器查询的 `getComputedStyle` 要读一次 `offsetWidth` 强制结算后再取值。Demo 内统一：`measureDirs` 强制布局 + 双 rAF，另加 120ms 定时器兜底（后台标签页不靠 rAF）；切换占位模式 / 清空列表产生的偏移延迟 220ms 再清零，只统计「图片逐张加载」的账 |
+| 2026-10-21 | **相关案例不足 3 个时用同分类补齐** | 新分类里的独立技巧常常没有共享标签，纯按标签匹配会出现空块；改为「标签命中优先，不够 3 个用同分类其他案例补足」，保证详情页底部始终有可继续点击的入口 |
+| 2026-10-22 | **新增 `animation` 分类，只收「日常高频的动画 / 交互细节」，与 `css` 分工** | 用户点名参照 `practice/ripple-button`，要更多入门常用的动画与样式案例。`css` 收纯布局/特性技巧（grid、容器查询、clamp 等），`animation` 收「一次点击/悬停/展开能看到的动效与交互」（骨架屏、折叠、抽屉、进度环、磁性按钮、吸附轮播、提示气泡、焦点环）；仍是一案例一演示、四件套、notes 五段 |
+| 2026-10-22 | **动画案例的「数据对比」用行为指标，不编造耗时** | 这类案例的收益是体验与正确性（节点是否残留、要读几次高度、焦点是否可见），不是可稳定测出的毫秒；notes 第 4 段统一改用「读取 scrollHeight 次数 / 监听器个数 / 手算距离处数 / CSS 声明条数 / 触发分支数」等可核对口径，演示面板同步显示计数，避免跨环境测量的假精度 |
+| 2026-10-22 | **`check:ui` 增加动画分类逐页抽检，而不是给 8 个案例各写一套断言** | 动画案例交互差异大，逐例定制脚本维护成本高；统一断言「375px 无横向溢出 + 演示区有内容 + 有可操作按钮 + 控制台零报错」，再靠人工走查覆盖「动效是否好看、对比是否有说服力」 |
+| 2026-10-22 | **单个 bug 修复固定走 L1 + `check:ui --only`** | 用户反馈「改一个抽屉花了近 40 分钟」：单案例修复却跑了两次 16 场景全量验收、build、bundle、preview。改为：读相关片段（不整文件通读）→ 一次最小探针确认根因 → 改 → 单案例 eslint + type-check + `check:ui --only <场景>`；只有根因需要长期防回归时才补常驻断言，且不影响单次验收时长 |
+| 2026-10-22 | **影响面超过 1 个案例先问，文档按批次合并** | 8 个动画案例都受系统 reduce 影响时，先让用户选「只修一个 / 统一改 / 全局放行」；`AGENTS.md` 的进度与决策在批次收尾一次写，不再每修一处追加一段、单独 commit |

@@ -1,0 +1,112 @@
+// ============================================================
+// 折叠面板开关逻辑（与 Demo.vue 的 toggle / setMode 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+
+/** 展开方式：js = 读内容高度写行内值 / grid = 0fr 到 1fr 过渡 */
+type PanelMode = 'js' | 'grid'
+
+const mode = ref<PanelMode>('js')
+/** 当前展开的条目：null 表示全部收起（同时只开一条） */
+const openId = ref<string | null>(null)
+/** 旧方案的行内高度表：单位 px */
+const heights = reactive<Record<string, number>>({})
+/** 累计读取 scrollHeight 的次数 */
+const measureReads = ref(0)
+
+/** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
+const systemReduce = ref(false)
+/** 手动模拟「系统关闭动画」：打开后走降级分支（直接到位） */
+const mockReduce = ref(false)
+
+let motionQuery: MediaQueryList | null = null
+
+/** 每次展开需要的量高行数：旧 1 行，新 0 行 */
+const needMeasureLines = computed(() => (mode.value === 'js' ? 1 : 0))
+
+/** 面板一直挂载，收起时高度为 0，仍能读 scrollHeight */
+function getPanel(id: string): HTMLElement | null {
+  return document.getElementById(`faq-panel-${id}`)
+}
+
+function toggle(id: string): void {
+  const isOpen = openId.value === id
+
+  if (mode.value === 'grid') {
+    openId.value = isOpen ? null : id
+    return
+  }
+
+  // 同时只开一条：先把上一条的行内高度归零
+  if (openId.value) heights[openId.value] = 0
+
+  if (isOpen) {
+    heights[id] = 0
+    openId.value = null
+    return
+  }
+
+  //! 每展开一条都要读一次 scrollHeight：读取会强制浏览器先结算布局
+  measureReads.value++
+  const contentHeight = getPanel(id)?.scrollHeight ?? 0
+
+  //! 写像素值而不是 auto：auto 的终点未知，无法参与过渡
+  heights[id] = contentHeight
+  openId.value = id
+}
+
+function setMode(next: PanelMode): void {
+  if (mode.value === next) return
+  mode.value = next
+  openId.value = null
+  //! 切换方案时清掉旧方案留下的行内高度，避免样式互相污染
+  for (const key of Object.keys(heights)) delete heights[key]
+  measureReads.value = 0
+}
+
+// 演示优先：真实业务应当直接跟随系统设置（开启减少动态效果就不跑过渡），
+// 本案例为了让中间帧可见，只在手动开关打开时才降级
+function toggleMockReduce(): void {
+  openId.value = null
+  for (const key of Object.keys(heights)) delete heights[key]
+  measureReads.value = 0
+  mockReduce.value = !mockReduce.value
+}
+
+function onMotionChange(event: MediaQueryListEvent): void {
+  // 只更新提示文案，不夺走演示
+  systemReduce.value = event.matches
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
+onUnmounted(() => {
+  //! 监听必须移除，否则回调会去改已经销毁的状态
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
+})
+
+// 模板里高度绑定写法：
+// :style="mode === 'js' ? { height: `${heights[item.id] ?? 0}px` } : undefined"
+// 降级态的类绑定：挂在每条问答的 section 上 :class="{ 'no-motion': mockReduce }"
+//
+// 无障碍属性（与高度方案无关，两种模式都要有）：
+// 按钮 aria-expanded / aria-controls，面板 role="region" / aria-labelledby
+export {
+  getPanel,
+  heights,
+  measureReads,
+  mockReduce,
+  mode,
+  needMeasureLines,
+  openId,
+  setMode,
+  systemReduce,
+  toggle,
+  toggleMockReduce,
+}

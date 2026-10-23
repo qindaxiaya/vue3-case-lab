@@ -49,3 +49,7 @@ jobs:
       # build 内含 vue-tsc -b，额外验证产物可生成
       - name: Build
         run: npm run build
+
+      # 体积门禁：首屏 gzip 预算 + 单 chunk 体积 + 教学代码不得内联进首屏
+      - name: Bundle budget
+        run: npm run check:bundle

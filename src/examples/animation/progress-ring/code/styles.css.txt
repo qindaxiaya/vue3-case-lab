@@ -1,0 +1,67 @@
+// ============================================================
+// 进度环样式片段（与 Demo.vue 的 .ring / .value 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+
+/* ---------- 1. 画布与起点 ---------- */
+
+.ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  //! 整块画布转 -90 度：圆的起点从三点钟挪到十二点钟，符合进度直觉
+  transform: rotate(-90deg);
+}
+
+.track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--border) 75%, transparent);
+  stroke-width: 10;
+}
+
+/* ---------- 2. 进度弧 ---------- */
+
+.value {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 10;
+  //! 圆头描边：进度从 0 开始增长时，末端不会出现生硬的方角
+  stroke-linecap: round;
+}
+
+/* 只有过渡模式声明过渡：逐帧模式每 16ms 写一次，不需要也不能有过渡 */
+.value.tween {
+  //! 过渡只盯住真正变化的偏移量，范围越小越容易控制
+  transition: stroke-dashoffset 0.8s var(--ease-out);
+}
+
+/* ---------- 3. 行内样式绑定 ---------- */
+/* 脚本只改这两个值：
+   stroke-dasharray  = 2 × π × 半径（整圈长度）
+   stroke-dashoffset = 周长 × (1 - 进度 / 100) */
+.ring .value {
+  stroke-dasharray: 326.73;
+  stroke-dashoffset: 326.73;
+}
+
+/* ---------- 4. 模拟降级：不做过渡，直接跳变 ---------- */
+
+/* 脚本里的跳变分支配合这条规则：数值一次写入，不再补中间帧 */
+.value.tween.is-static {
+  transition: none;
+}
+
+/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
+
+/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示样式过渡补中间帧，
+    所以这里还原时长。真实业务不要照抄，应当直接走上面的跳变分支 */
+@media (prefers-reduced-motion: reduce) {
+  .value.tween {
+    transition-duration: 0.8s !important;
+  }
+
+  /* 降级状态优先级更高：即使系统开着减少动态效果，也不补中间帧 */
+  .value.tween.is-static {
+    transition: none !important;
+  }
+}

@@ -42,7 +42,7 @@ const shortcut = isMac ? '⌘ K' : 'Ctrl K'
         stroke-linecap="round"
       />
     </svg>
-    <span class="search-placeholder">搜索案例或标签</span>
+    <span class="search-placeholder">搜索案例、标签或正文</span>
     <kbd
       class="search-kbd"
       aria-hidden="true"

@@ -1,0 +1,28 @@
+// ============================================================
+// Intl 按语言格式化 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+function render(locale: string, orderTime: Date, paidAt: Date): void {
+  //! 日期时间：dateStyle/timeStyle 两档组合，各语言的书写规则浏览器自带
+  console.log(new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short' }).format(orderTime))
+
+  //! 相对时间：format(-3, 'day') 直接给「3 days ago / 3 天前 / 3日前」
+  const diffDays = Math.round((paidAt.getTime() - Date.now()) / 86_400_000)
+  console.log(new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(diffDays, 'day'))
+
+  //! 货币：指定币种代码（CNY），符号位置与小数位按语言习惯摆放
+  console.log(new Intl.NumberFormat(locale, { style: 'currency', currency: 'CNY' }).format(123456.78))
+
+  //! 千分位：不需要任何正则，分组符号随语言自动切换
+  console.log(new Intl.NumberFormat(locale).format(1234567.89))
+}
+
+// ---------- 对照：手写拼接为什么撑不住多语言 ----------
+// 只会中文写法的四套函数（日期星期表 / 相对时间分支 / 货币符号 / 千分位正则）
+// 每新增一种语言就要再复制一份改文案；Intl 这些全免——只声明 locale。
+
+// ---------- 实践建议 ----------
+// 1. 语言环境统一从应用入口收拢（如 i18n 的 locale），格式化时只传这一处
+// 2. 格式化器可以复用：同一 locale 的 Intl 实例先 new 好再反复 format，省解析
+// 3. 后端给的 ISO 时间先转 Date 再交给 Intl，别拿字符串自己切片

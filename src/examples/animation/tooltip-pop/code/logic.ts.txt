@@ -1,0 +1,201 @@
+// ============================================================
+// 提示气泡逻辑（与 Demo.vue 的 scheduleShow / onPointerEnter 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+/** native = 原生 title（旧）/ custom = 自建气泡（新） */
+type TipMode = 'native' | 'custom'
+type TipSource = '—' | '鼠标' | '键盘'
+
+/** 鼠标悬停多久后出现：原生 title 这个值不可控 */
+const SHOW_DELAY = 180
+
+const mode = ref<TipMode>('native')
+const shown = ref(false)
+const source = ref<TipSource>('—')
+const pending = ref(false)
+const elapsedText = ref('—')
+const touchSkipped = ref(0)
+
+/** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
+const systemReduce = ref(false)
+/** 手动模拟「系统关闭动画」：打开后气泡直接出现，延迟仍然保留 */
+const mockReduce = ref(false)
+
+let motionQuery: MediaQueryList | null = null
+
+let showTimer = 0
+let armedAt = 0
+/** 指针是否停在触发器上 */
+let hovered = false
+/** 触发器是否持有键盘焦点 */
+let focused = false
+
+const stateText = computed(() => {
+  if (mode.value === 'native') return '由浏览器绘制（页面读不到）'
+  if (shown.value) return '气泡显示中'
+  if (pending.value) return '等待延迟结束'
+  return '未显示'
+})
+
+/** 清掉延迟计时器：切模式、重置、卸载都要调用 */
+function clearShowTimer(): void {
+  if (showTimer) window.clearTimeout(showTimer)
+  showTimer = 0
+  pending.value = false
+}
+
+function showNow(from: Exclude<TipSource, '—'>): void {
+  //! 实际用时现场量：配置值不等于真正显示的时刻
+  const elapsed = armedAt > 0 ? Math.round(performance.now() - armedAt) : 0
+  armedAt = 0
+  shown.value = true
+  source.value = from
+  elapsedText.value = `${elapsed}ms`
+}
+
+function scheduleShow(from: '鼠标' | '键盘'): void {
+  clearShowTimer()
+  if (mode.value !== 'custom') return
+
+  source.value = from
+
+  if (from === '键盘') {
+    //! 键盘聚焦立即显示：Tab 已经选中了元素，再等就是卡顿
+    showNow('键盘')
+    return
+  }
+
+  armedAt = performance.now()
+  pending.value = true
+  //! 延迟出现：指针只是路过时不弹，减少打扰
+  showTimer = window.setTimeout(() => {
+    showTimer = 0
+    pending.value = false
+    showNow('鼠标')
+  }, SHOW_DELAY)
+}
+
+function hideTip(): void {
+  clearShowTimer()
+  armedAt = 0
+  shown.value = false
+}
+
+function onPointerEnter(event: PointerEvent): void {
+  if (mode.value !== 'custom') return
+
+  //! 触摸指针跳过：手指没有悬停，按住就弹气泡会挡住操作
+  if (event.pointerType !== 'mouse') {
+    touchSkipped.value++
+    return
+  }
+
+  hovered = true
+  scheduleShow('鼠标')
+}
+
+function onPointerLeave(): void {
+  if (mode.value !== 'custom') return
+  // 移出立即收起；如果键盘焦点还在这里，气泡继续显示
+  hovered = false
+  if (focused) return
+  hideTip()
+}
+
+function onFocusIn(): void {
+  if (mode.value !== 'custom') return
+  focused = true
+  scheduleShow('键盘')
+}
+
+function onFocusOut(): void {
+  if (mode.value !== 'custom') return
+  // 失焦立即收起；鼠标还停在按钮上时保持显示
+  focused = false
+  if (hovered) return
+  hideTip()
+}
+
+function setMode(next: TipMode): void {
+  if (mode.value === next) return
+  clearShowTimer()
+  shown.value = false
+  armedAt = 0
+  elapsedText.value = '—'
+  source.value = '—'
+  mode.value = next
+}
+
+function resetAll(): void {
+  clearShowTimer()
+  mode.value = 'native'
+  shown.value = false
+  source.value = '—'
+  elapsedText.value = '—'
+  touchSkipped.value = 0
+  armedAt = 0
+}
+
+// 演示优先：真实业务应当直接跟随系统设置（开启减少动态效果就不做淡入），
+// 本案例为了让淡入可见，只在手动开关打开时才降级
+function toggleMockReduce(): void {
+  clearShowTimer()
+  shown.value = false
+  armedAt = 0
+  elapsedText.value = '—'
+  source.value = '—'
+  touchSkipped.value = 0
+  mockReduce.value = !mockReduce.value
+}
+
+function onMotionChange(event: MediaQueryListEvent): void {
+  // 只更新提示文案，不夺走演示
+  systemReduce.value = event.matches
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  systemReduce.value = motionQuery.matches
+  motionQuery.addEventListener('change', onMotionChange)
+})
+
+onUnmounted(() => {
+  //! 卸载时清定时器：否则到点回调会去改已经销毁的状态
+  clearShowTimer()
+  armedAt = 0
+  //! 媒体查询监听同样要移除
+  motionQuery?.removeEventListener('change', onMotionChange)
+  motionQuery = null
+})
+
+// 模板要点：
+// 1. 触发器绑定 pointerenter / pointerleave / focusin / focusout
+// 2. 气泡写 role="tooltip" + :aria-hidden="!shown"
+// 3. 触发器写 :aria-describedby="mode === 'custom' ? 'tip-bubble' : undefined"
+// 4. 原生模式只保留 :title，页面不接管显示逻辑
+// 5. 降级态的类绑定：:class="{ show: shown, 'no-motion': mockReduce }"（样式见 styles.css.txt）
+
+export {
+  SHOW_DELAY,
+  clearShowTimer,
+  elapsedText,
+  hideTip,
+  mockReduce,
+  mode,
+  onFocusIn,
+  onFocusOut,
+  onPointerEnter,
+  onPointerLeave,
+  pending,
+  resetAll,
+  scheduleShow,
+  setMode,
+  shown,
+  source,
+  stateText,
+  systemReduce,
+  toggleMockReduce,
+  touchSkipped,
+}

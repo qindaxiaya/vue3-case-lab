@@ -35,6 +35,45 @@ npm run dev
 | `npm run type-check` | vue-tsc 类型检查 |
 | `npm run lint` | ESLint（禁止 `any`） |
 | `npx vitest run` | 运行测试（含案例收录与内容质量门禁） |
+| `npm run check:bundle` | 首屏体积门禁（build 后执行） |
+| `npm run check:ui` | 浏览器端验收（headless，需先 build + preview） |
+
+## 打包策略
+
+- **路由级懒加载**：首页 / 列表 / 详情各自成 chunk，首页不再下载案例页依赖
+- **案例资源按需**：`registry.ts` 只把 `meta.ts` 留作同步数据；Demo、`Demo.vue?raw`、`code/*.txt` 在打开案例或源码 tab 时才加载，并在会话内缓存
+- **第三方分包**：`vite.config.ts` 用 `output.codeSplitting.groups` 拆出 `vendor-vue` / `vendor-markdown` / `vendor-element-plus` / `vendor-utils`
+- **Element Plus 样式按需**：只引入 `theme-chalk/base.css` 与暗色变量，组件样式随对应 Demo chunk 下发
+- **体积门禁**：`npm run check:bundle` 检查首屏 gzip 上限、单 chunk 体积，并禁止教学代码标记出现在首屏包；CI 在 build 后执行
+
+实测（2026-10-21）：首屏 gzip 从 521 KB 降到 91 KB；详情页按需追加约 40 KB（含语法高亮运行时），源码 tab 再加载该案例自己的文本。
+
+### 产物结构
+
+产物按「类型 → 用途 → 案例」分目录，不再把几百个 chunk 平铺在 `assets/` 一层。规则写在 `vite.config.ts` 的 `chunkFileName` / `assetFileName` 里，新增资源类型时按同样思路扩展即可。
+
+```
+dist/
+├── index.html
+├── favicon.svg
+└── assets/
+    ├── js/
+    │   ├── index-<hash>.js           # 应用入口
+    │   ├── vendor/                   # vue / markdown / element-plus / utils
+    │   ├── pages/                    # HomePage / CaseListPage / CasePage
+    │   ├── cases/<分类>/<案例>/       # Demo、Demo.source、教学代码、notes
+    │   ├── lib/                      # pdf.js 运行时
+    │   └── workers/                  # pdf.worker
+    └── css/
+        ├── index-<hash>.css          # 站点样式 + Element Plus 基础变量
+        ├── vendor/                   # Element Plus 组件样式
+        ├── pages/                    # 路由页样式
+        ├── cases/<分类>/<案例>/       # 案例 scoped 样式
+        ├── themes/                   # highlight.js 亮/暗主题
+        └── chunks/                   # 其它共享样式
+```
+
+图片、字体、其它二进制资源分别落到 `assets/media/`、`assets/fonts/`、`assets/misc/`（当前项目还没用到）。
 
 ## 目录结构
 
@@ -58,6 +97,7 @@ src/
 
 ## 质量门禁
 
-- `.github/workflows/ci.yml`：push `main` / PR / 手动触发，依次跑 `npm ci`、type-check、lint、vitest、build
+- `.github/workflows/ci.yml`：push `main` / PR / 手动触发，依次跑 `npm ci`、type-check、lint、vitest、build、check:bundle
+- 页面验收统一用 `npm run check:ui`：headless 跑首页 / 列表 / 详情源码按需 / EP 样式 / 375px 五个场景，退出时整棵杀进程并清理临时配置，不弹窗口、不留残留
 - `main` 启用 ruleset：必须走 PR、必需检查通过、禁止强推/删除、只允许线性历史
 - 案例内容由测试自动校验：SBAC 四段、摘要与卖点长度、notes 五段、标题可搜索

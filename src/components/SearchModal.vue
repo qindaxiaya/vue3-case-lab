@@ -1,14 +1,21 @@
 // ============================================================
 // 搜索弹窗：半透明遮罩 + 居中面板
 // - 点击顶栏搜索框打开，Esc / 点遮罩关闭
-// - 输入即过滤（标题 / 摘要 / 标签），结果以卡片模块展示
+// - 输入即过滤：标题 / 摘要 / 标签（同步）+ notes.md 正文（索引就绪后）
+// - 正文命中显示带高亮的上下文片段，元数据命中沿用摘要
 // - 上下键选择、回车或点击直接进入案例详情
 // ============================================================
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { categories } from '../examples/categories'
-import { allCases, filterCases } from '../examples/registry'
+import { allCases, filterCases, type RegisteredCase } from '../examples/registry'
+import { useNotesIndex } from '../composables/useNotesIndex'
+import {
+  highlightParts,
+  mergeSearchHits,
+  type SearchResult,
+} from '../utils/search-index'
 
 const props = defineProps<{
   /** 弹窗是否打开（由顶栏持有） */
@@ -34,30 +41,76 @@ const listEl = ref<HTMLElement | null>(null)
 /** 打开弹窗前页面原本的滚动锁状态，关闭时原样还原 */
 let prevOverflow = ''
 
-/** 全量匹配数（用于顶部计数，列表本身最多展示 8 条） */
-const matchCount = computed(() => {
-  const q = keyword.value.trim()
-  return q ? filterCases(allCases, q).length : 0
+/** 正文索引（首次打开后空闲时构建，之后全局复用） */
+const {
+  status: indexStatus,
+  ensure: ensureNotesIndex,
+  search: searchNotes,
+} = useNotesIndex()
+
+/** 分类 id + 案例 id → 注册表条目（合并结果只有 id，需要回查标题/难度/摘要） */
+const caseIndex = new Map(
+  allCases.map((item) => [`${item.categoryId}/${item.meta.id}`, item]),
+)
+
+/** 结果行：合并结果 + 对应的注册表条目 */
+type SearchRow = SearchResult & { item: RegisteredCase }
+
+/** 当前关键词（去首尾空白；空串表示未搜索） */
+const query = computed(() => keyword.value.trim())
+
+/** 元数据命中（标题 / 摘要 / 标签），保持 registry 的分类与字典序 */
+const metaHits = computed(() =>
+  query.value ? filterCases(allCases, query.value) : [],
+)
+
+/** 正文命中（索引未就绪时为空数组，就绪后自动重算） */
+const noteHits = computed(() =>
+  query.value ? searchNotes(query.value) : [],
+)
+
+/** 不截断的合并结果：用于「找到 N 个」计数 */
+const allHits = computed(() =>
+  mergeSearchHits(metaHits.value, noteHits.value, 0),
+)
+
+/** 面板里实际展示的结果（最多 8 条），补齐案例元数据后交给模板 */
+const results = computed<SearchRow[]>(() => {
+  // 没有关键词时给 6 条推荐，避免打开后一片空白
+  if (!query.value) {
+    return allCases.slice(0, 6).map((item) => ({
+      categoryId: item.categoryId,
+      caseId: item.meta.id,
+      viaNotes: false,
+      snippet: '',
+      item,
+    }))
+  }
+
+  return allHits.value
+    .slice(0, 8)
+    .map((hit) => {
+      const item = caseIndex.get(`${hit.categoryId}/${hit.caseId}`)
+      return item ? { ...hit, item } : null
+    })
+    .filter((row): row is SearchRow => row !== null)
 })
 
-/** 结果计数文案（超过 8 条时说明只展示前 8 条） */
+/** 结果计数文案（超过 8 条时说明只展示前 8 条，并带上正文索引进度） */
 const metaText = computed(() => {
-  const q = keyword.value.trim()
-  if (!q) return '推荐案例'
-  return matchCount.value > 8
-    ? `找到 ${matchCount.value} 个案例，展示前 8 个`
-    : `找到 ${matchCount.value} 个案例`
-})
+  if (!query.value) return '推荐案例'
 
-/**
- * 展示的结果
- * - 有关键词：标题 / 摘要 / 标签命中，最多 8 条
- * - 无关键词：给 6 条推荐，避免打开后一片空白
- */
-const results = computed(() => {
-  const q = keyword.value.trim()
-  if (!q) return allCases.slice(0, 6)
-  return filterCases(allCases, q).slice(0, 8)
+  // 正文索引按需构建：给出一次「加载中」提示，避免用户以为搜不到正文
+  const indexTip
+    = indexStatus.value === 'loading'
+      ? '（正在加载正文索引…）'
+      : indexStatus.value === 'failed'
+        ? '（正文索引不可用，仅搜索标题与标签）'
+        : ''
+
+  return allHits.value.length > results.value.length
+    ? `找到 ${allHits.value.length} 个案例，展示前 ${results.value.length} 个${indexTip}`
+    : `找到 ${allHits.value.length} 个案例${indexTip}`
 })
 
 /** 分类 id → 中文名 */
@@ -86,13 +139,15 @@ function difficultyClass(difficulty: string): string {
   return map[difficulty] ?? ''
 }
 
-/** 打开/关闭副作用：聚焦、清空、锁页面滚动 */
+/** 打开/关闭副作用：聚焦、清空、锁页面滚动、启动正文索引 */
 watch(
   () => props.open,
   async (open) => {
     if (open) {
       keyword.value = ''
       activeIndex.value = 0
+      // 正文索引在空闲时构建，不阻塞输入；重复打开复用同一份
+      void ensureNotesIndex()
       // 记录原值，关闭时还原，避免覆盖其他组件设置的 overflow
       prevOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
@@ -104,9 +159,14 @@ watch(
   },
 )
 
-/** 结果变化时回到第一条 */
-watch(results, () => {
+/** 结果变化时只做边界校正：正文索引增量到达时不打断键盘选择 */
+watch(query, () => {
   activeIndex.value = 0
+})
+
+watch(results, (rows) => {
+  // 结果变少（索引重算/输入变化）时，避免下标越界导致没有选中项
+  if (activeIndex.value >= rows.length) activeIndex.value = 0
 })
 
 /** 键盘移动选中项（循环） */
@@ -132,7 +192,7 @@ function goCase(categoryId: string, caseId: string): void {
 function openActive(): void {
   const item = results.value[activeIndex.value]
   if (!item) return
-  goCase(item.categoryId, item.meta.id)
+  goCase(item.categoryId, item.caseId)
 }
 
 /** 输入框内键盘操作：上下选择 / 回车进入 / Esc 关闭 */
@@ -184,7 +244,7 @@ onBeforeUnmount(() => {
               v-model="keyword"
               class="search-field"
               type="search"
-              placeholder="搜索案例标题、标签或摘要……"
+              placeholder="搜索标题、标签、摘要或正文……"
               autocomplete="off"
               @keydown="onKeydown"
             >
@@ -212,30 +272,55 @@ onBeforeUnmount(() => {
             class="result-list"
           >
             <li
-              v-for="(item, index) in results"
-              :key="`${item.categoryId}/${item.meta.id}`"
+              v-for="(row, index) in results"
+              :key="`${row.categoryId}/${row.caseId}`"
             >
               <button
                 class="result-item"
                 :class="{ 'result-item--active': index === activeIndex }"
                 type="button"
-                @click="goCase(item.categoryId, item.meta.id)"
+                @click="goCase(row.categoryId, row.caseId)"
                 @mouseenter="activeIndex = index"
               >
                 <div class="result-head">
-                  <span class="result-title">{{ item.meta.title }}</span>
+                  <span class="result-title">{{ row.item.meta.title }}</span>
                   <span class="tag tag--primary result-cat">
-                    {{ categoryName(item.categoryId) }}
+                    {{ categoryName(row.categoryId) }}
                   </span>
                   <span
                     class="tag result-diff"
-                    :class="difficultyClass(item.meta.difficulty)"
+                    :class="difficultyClass(row.item.meta.difficulty)"
                   >
-                    {{ difficultyLabel(item.meta.difficulty) }}
+                    {{ difficultyLabel(row.item.meta.difficulty) }}
                   </span>
+                  <!-- 只有正文命中才出现，说明关键词出现在 notes 正文里 -->
+                  <span
+                    v-if="row.viaNotes"
+                    class="tag result-via"
+                  >正文</span>
                 </div>
-                <p class="result-summary">
-                  {{ item.meta.summary }}
+
+                <!-- 正文命中：显示带高亮的上下文片段；否则回退到摘要 -->
+                <p
+                  v-if="row.snippet"
+                  class="result-snippet"
+                >
+                  <template
+                    v-for="(part, partIndex) in highlightParts(row.snippet, keyword)"
+                    :key="partIndex"
+                  >
+                    <mark
+                      v-if="part.hit"
+                      class="result-hit"
+                    >{{ part.text }}</mark>
+                    <span v-else>{{ part.text }}</span>
+                  </template>
+                </p>
+                <p
+                  v-else
+                  class="result-summary"
+                >
+                  {{ row.item.meta.summary }}
                 </p>
               </button>
             </li>
@@ -248,7 +333,7 @@ onBeforeUnmount(() => {
           >
             <p>没有匹配「{{ keyword }}」的案例</p>
             <p class="result-empty-tip">
-              试试「虚拟列表」「防抖」「路由」「动画」等关键词
+              试试「虚拟列表」「防抖」「长动画帧」「useId」等关键词
             </p>
           </div>
 
@@ -405,6 +490,36 @@ onBeforeUnmount(() => {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+}
+
+/* 正文命中片段：与摘要同样两行截断，长片段不撑高面板 */
+.result-snippet {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 命中关键词高亮：主色浅底 + 主色文字，亮暗色都够对比 */
+.result-hit {
+  padding: 0 0.1rem;
+  color: var(--primary);
+  background-color: var(--primary-soft);
+  border-radius: 0.2rem;
+}
+
+/* 「正文」标记：比分类标签更轻，不抢标题注意力 */
+.result-via {
+  font-size: 0.68rem;
+  padding: 0.05rem 0.45rem;
+  color: var(--primary);
+  background-color: var(--primary-soft);
+  border-color: transparent;
 }
 
 /* ---------- 空结果 ---------- */

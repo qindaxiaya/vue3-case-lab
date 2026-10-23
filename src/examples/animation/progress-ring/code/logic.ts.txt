@@ -1,0 +1,112 @@
+// ============================================================
+// 进度环驱动逻辑（与 Demo.vue 的 setProgressTarget 一致）
+// 重点行以 //! 标记：展示时高亮，复制时自动去掉标记
+// ============================================================
+import { computed, onUnmounted, ref } from 'vue'
+
+/** 驱动方式：timer = 定时器逐帧改属性 / transition = 只写一次目标值 */
+type RingMode = 'timer' | 'transition'
+
+/** 半径与周长：dasharray 必须与半径算出的周长完全一致 */
+const RADIUS = 52
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+
+const mode = ref<RingMode>('timer')
+const progress = ref(0)
+const target = ref(0)
+const writes = ref(0)
+const ticking = ref(false)
+const instant = ref(false)
+/** 是否模拟「系统开启了减少动态效果」：打开后不做过渡也不逐帧，直接跳到目标值 */
+const mockReduce = ref(false)
+
+let stepTimer = 0
+let instantTimer = 0
+
+/** 偏移量：0% 时等于周长，100% 时为 0 */
+const dashOffset = computed(() => CIRCUMFERENCE * (1 - progress.value / 100))
+
+/** 行内样式：数值保留两位小数，避免过长小数 */
+const ringStyle = computed(() => ({
+  strokeDasharray: CIRCUMFERENCE.toFixed(2),
+  strokeDashoffset: dashOffset.value.toFixed(2),
+}))
+
+function stopTimer(): void {
+  if (stepTimer) window.clearInterval(stepTimer)
+  stepTimer = 0
+  ticking.value = false
+}
+
+function setProgressTarget(next: number): void {
+  const clamped = Math.min(100, Math.max(0, Math.round(next)))
+  target.value = clamped
+  //! 目标一变就停旧计时器：避免多个定时器同时改同一个进度值
+  stopTimer()
+
+  if (clamped === progress.value) return
+
+  // 模拟降级：直接跳到目标值，百分比文字仍然完整更新
+  if (mockReduce.value) {
+    progress.value = clamped
+    writes.value++
+    return
+  }
+
+  if (mode.value === 'transition') {
+    //! 只写一次目标值：中间帧交给 stroke-dashoffset 的样式过渡
+    progress.value = clamped
+    writes.value++
+    return
+  }
+
+  ticking.value = true
+  //! 旧做法：每个周期改一次属性，写入次数与走过的百分点同量级
+  stepTimer = window.setInterval(() => {
+    const diff = clamped - progress.value
+    if (diff === 0) {
+      stopTimer()
+      return
+    }
+    progress.value += diff > 0 ? 1 : -1
+    writes.value++
+  }, 16)
+}
+
+/** 重置：先关过渡再归零，保证两条样式在同一帧生效，不出现回卷 */
+function resetRing(): void {
+  stopTimer()
+  window.clearTimeout(instantTimer)
+  instant.value = true
+  progress.value = 0
+  target.value = 0
+  writes.value = 0
+  instantTimer = window.setTimeout(() => {
+    instant.value = false
+    instantTimer = 0
+  }, 60)
+}
+
+onUnmounted(() => {
+  //! 离开页面必须停掉定时器，否则计时回调会继续访问已卸载组件的状态
+  stopTimer()
+  window.clearTimeout(instantTimer)
+})
+
+// 模板里的关键绑定：
+// :class="{ tween: mode === 'transition' && !instant, 'is-static': mockReduce }"
+// :style="ringStyle"
+export {
+  RADIUS,
+  dashOffset,
+  instant,
+  mockReduce,
+  mode,
+  progress,
+  resetRing,
+  ringStyle,
+  setProgressTarget,
+  target,
+  ticking,
+  writes,
+}

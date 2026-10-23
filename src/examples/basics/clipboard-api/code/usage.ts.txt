@@ -1,0 +1,80 @@
+// ============================================================
+// Clipboard 写入与降级复制 教学片段
+// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// ============================================================
+
+//! 第 1 级：ClipboardItem 富文本写入——html 与 plain 各给一份，客户端自取
+async function copyRich(html: string, plain: string): Promise<void> {
+  const htmlBlob = new Blob([html], { type: 'text/html' })
+  const plainBlob = new Blob([plain], { type: 'text/plain' })
+  await navigator.clipboard.write([
+    new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': plainBlob }),
+  ])
+}
+
+//! 第 2 级：writeText 纯文本——同样要求安全上下文，部分环境会拒授权
+async function copyPlain(plain: string): Promise<void> {
+  await navigator.clipboard.writeText(plain)
+}
+
+//! 第 3 级：老命令 + 隐藏输入框——已标记废弃但兼容面最广，老环境兜底
+function copyLegacy(plain: string): boolean {
+  const area = document.createElement('textarea')
+  area.value = plain
+  area.setAttribute('readonly', '')
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  area.style.pointerEvents = 'none'
+  document.body.appendChild(area)
+  area.select()
+  let ok = false
+  try {
+    ok = document.execCommand('copy')
+  }
+  catch {
+    ok = false
+  }
+  document.body.removeChild(area)
+  return ok
+}
+
+//! 分级降级链路：1 → 2 → 3 逐层试探，哪层通用走哪层；失败给明示文案
+async function copyWithFallback(html: string, plain: string): Promise<number> {
+  if (navigator.clipboard) {
+    try {
+      await copyRich(html, plain)
+      return 1
+    }
+    catch {
+      // 第 1 级被环境拒收：继续下探，而不是把错误抛给用户
+    }
+    try {
+      await copyPlain(plain)
+      return 2
+    }
+    catch {
+      // 第 2 级也被拒（常见于未开安全上下文）：走兜底
+    }
+  }
+  return copyLegacy(plain) ? 3 : 0 // 0 = 全部失败：提示用户手动选文段
+}
+
+// ---------- 读取：user 手动明确触发，失败给明示（不断言、不反复弹权限） ----------
+
+async function readClipboardText(): Promise<string | null> {
+  if (!navigator.clipboard) return null
+  try {
+    const items = await navigator.clipboard.read()
+    const blob = await items[0]!.getType('text/plain')
+    return await blob.text()
+  }
+  catch {
+    // 读取授权常被浏览器限制（NotAllowedError）——返回空并提示手动粘贴，不白屏
+    return null
+  }
+}
+
+// ---------- 实践建议 ----------
+// 1. 复制按钮永远在用户点击内直接调用；await 之前别插太多层逻辑，防丢事件手势
+// 2. 组件卸载/长流程后不要再碰剪贴板，失败一律走「明示提示 + 手动粘贴」出口
+// 3. 富文本复制失败不致命；纯文本兜底早已够用，层级提示帮用户理解差异

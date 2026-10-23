@@ -1,0 +1,77 @@
+// ============================================================
+// 教学片段 1：把大模块改成「点了才 import()」
+// 重点行用 //! 标记——详情页会高亮，复制源码时自动去掉标记
+// ============================================================
+
+// --- 1. 错误写法：静态 import 会打进首屏 ---
+
+// 只要这个文件被首屏引用，报表、数据集、解析器就全部进首屏
+import { buildReport } from './modules/city-report'
+
+document.querySelector('#btn')?.addEventListener('click', () => {
+  render(buildReport())
+})
+
+// --- 2. 正确写法：动态 import()，真正执行到才下载 ---
+
+document.querySelector('#btn')?.addEventListener('click', async () => {
+  //! import() 返回 Promise：这里才会发出请求，打包工具也才知道要单独切文件
+  //! 必须写字符串字面量，Vite / webpack 靠它静态分析，写变量会失效
+  const { buildReport } = await import('./modules/city-report')
+  render(buildReport())
+})
+
+// --- 3. 量出真实代价：新增字节 + 加载耗时 ---
+
+/** 已经统计过的地址：第二次点击时字节记 0，正好说明命中了缓存 */
+const counted = new Set<string>()
+
+function measureChunks(names: string[]): { bytes: number; ms: number | null } {
+  const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[]
+  let bytes = 0
+  let ms: number | null = null
+
+  for (const entry of entries) {
+    if (counted.has(entry.name)) continue
+    // 只统计本项目资源，避免把字体、图片算进来
+    //! 用文件名片段匹配：开发环境是 .ts 源文件，构建后是 assets/xxx-hash.js
+    if (!names.some((name) => entry.name.includes(name))) continue
+    if (!entry.name.includes('/dynamic-chunk/') && !entry.name.includes('/assets/')) continue
+
+    counted.add(entry.name)
+    //! decodedBodySize 是解压后的真实体积；为 0 时退回 transferSize
+    bytes += entry.decodedBodySize || entry.transferSize || 0
+    ms = Math.max(ms ?? 0, Math.round(entry.duration))
+  }
+
+  return { bytes, ms }
+}
+
+async function runOnce(): Promise<void> {
+  const started = performance.now()
+  const { buildReport } = await import('./modules/city-report')
+  const loadMs = performance.now() - started
+  const { bytes } = measureChunks(['city-report', 'city-data'])
+  const runStarted = performance.now()
+  const result = buildReport()
+  const runMs = performance.now() - runStarted
+
+  console.log({ loadMs, runMs, bytes, countries: result.countries.length })
+}
+
+// --- 4. 失败要能重试：错误提示 + 再次点击 ---
+
+/** 加载失败时不要吞掉异常，按钮要能再点一次 */
+async function safeRun(button: HTMLButtonElement, showError: (msg: string) => void) {
+  button.disabled = true
+  try {
+    await runOnce()
+  } catch (error) {
+    //! 网络断开/版本更新后旧文件 404，都会走到这里；给用户可见提示而不是静默失败
+    showError(error instanceof Error ? error.message : '模块加载失败，请重试')
+  } finally {
+    button.disabled = false
+  }
+}
+
+declare function render(value: unknown): void
