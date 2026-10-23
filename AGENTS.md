@@ -150,6 +150,7 @@
 - ✅ 2026-10-22 流程优化（用户要求）：
   - `check:ui` 新增 `--only <关键字>`：按场景名或路由过滤，单场景 5~10 秒（`npm run check:ui -- --base http://localhost:5173 --only 抽屉` 实测 1 个场景通过）
   - `AGENTS.md` 任务分级补两条：修复存量案例 bug 固定走 L1（单案例 eslint + type-check + `--only`，不跑 build / bundle / 全量）；影响面超过 1 个案例先问，文档按批次合并提交
+- ✅ 2026-10-22 回到顶部不再瞬跳（补记另一会话的 `7f8a175`）：`smoothScrollTo` 新增 `ignoreReducedMotion` 选项，回到顶部在系统开启「减少动态效果」时仍保留缓动（460ms → 320ms）；`check:ui` 列表场景记录 `reduceMotion` 与点击后 150ms 的 scrollY，并新增「瞬跳」断言。根因与动画案例相同：开发机浏览器就是 reduce
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
