@@ -1,26 +1,36 @@
 // ============================================================
 // 宏任务与微任务执行顺序 教学片段
-// 重点行用 //! 标记——展示时高亮、复制时自动去标记
+// 重点行以 //! 标记——展示时高亮、复制时自动去掉标记
 // ============================================================
 
-//! 一次点击回调就是一个宏任务；所有异步任务先把它一次排入队列
-function onClick(): void {
-  // 定时器：下一个宏任务（最快也要约 1ms 后才可能执行）
-  setTimeout(() => console.log('4. setTimeout 0ms'), 0)
-  setTimeout(() => console.log('5. setTimeout 200ms'), 200)
+import { computed, ref } from 'vue'
 
-  // 微任务：排在当前宏任务结束后的最前面
-  Promise.resolve().then(() => console.log('2. Promise.then 微任务'))
-  queueMicrotask(() => console.log('3. queueMicrotask 微任务'))
+type TaskId = 'timer0' | 'timer200' | 'then' | 'micro' | 'raf' | 'slow'
 
-  //! 渲染前的逐帧回调：浏览器下一帧绘制前触发，早于页面重绘
-  requestAnimationFrame(() => console.log('6. 逐帧回调（渲染前）'))
+/** 当前勾选的任务：案例里由预设和开关维护 */
+const selected = ref<TaskId[]>(['timer0', 'then', 'micro'])
+const logLines = ref<{ ts: number; kind: string; name: string }[]>([])
 
-  //! 主线程忙 200ms 只拖住当前宏任务，微任务会在忙完后立刻插队到定时器前面
-  busyWait(200)
+/** 运行令牌：重复运行 / 清空后，旧回调不再写日志 */
+let runToken = 0
+/** 统一登记定时器，清空时能一次性取消 */
+const timerIds = new Set<number>()
+let rafId = 0
+let origin = 0
+
+function push(token: number, kind: string, name: string): void {
+  if (token !== runToken) return
+  logLines.value.push({ ts: performance.now() - origin, kind, name })
 }
 
-//! 事件循环一轮的真实顺序：宏任务 → 清空全部微任务 → （到渲染时机）rAF 回调 → 渲染
+function schedule(fn: () => void, delay: number): void {
+  const id = window.setTimeout(() => {
+    timerIds.delete(id)
+    fn()
+  }, delay)
+  timerIds.add(id)
+}
+
 function busyWait(ms: number): void {
   const end = performance.now() + ms
   while (performance.now() < end) {
@@ -28,10 +38,81 @@ function busyWait(ms: number): void {
   }
 }
 
+//! 一次点击回调就是一个宏任务；只把当前勾选的任务排进队列
+function run(): void {
+  runToken++
+  const token = runToken
+  const active = [...selected.value]
+
+  timerIds.forEach((id) => clearTimeout(id))
+  timerIds.clear()
+  if (rafId) cancelAnimationFrame(rafId)
+  rafId = 0
+  logLines.value = []
+  origin = performance.now()
+
+  push(token, 'macro-click', '用户点击回调（本次运行起点）')
+
+  if (active.includes('timer0')) {
+    schedule(() => push(token, 'macro-timer', 'setTimeout 0ms 的回调'), 0)
+  }
+  if (active.includes('timer200')) {
+    schedule(() => push(token, 'macro-timer', 'setTimeout 200ms 的回调'), 200)
+  }
+
+  //! 微任务排在当前宏任务结束后的最前面
+  if (active.includes('then')) {
+    Promise.resolve().then(() => push(token, 'micro-then', 'Promise.then 微任务'))
+  }
+  if (active.includes('micro')) {
+    queueMicrotask(() => push(token, 'micro-qm', 'queueMicrotask 微任务'))
+  }
+
+  //! 渲染前的逐帧回调：浏览器下一帧绘制前触发，早于页面重绘
+  if (active.includes('raf')) {
+    rafId = requestAnimationFrame(() => {
+      rafId = 0
+      push(token, 'frame-raf', '渲染一帧前的逐帧回调')
+    })
+  }
+
+  //! 慢任务只拖住当前宏任务，微任务会在忙完后立刻插队到定时器前面
+  if (active.includes('slow')) {
+    push(token, 'sync-busy', '主线程忙 200ms（同步代码）')
+    busyWait(200)
+  }
+}
+
+//! 直觉预期：按「书写顺序」动态生成，只包含当前勾选的任务
+// 它故意把定时器排在微任务前面，用来和真实输出对照
+const expectLines = computed(() => {
+  const lines = [{ name: '用户点击回调（先同步执行）', kind: 'macro-click' }]
+  if (selected.value.includes('slow')) {
+    lines.push({ name: '主线程忙 200ms（同步代码）', kind: 'sync-busy' })
+  }
+  if (selected.value.includes('timer0')) {
+    lines.push({ name: 'setTimeout 0ms 的回调', kind: 'macro-timer' })
+  }
+  if (selected.value.includes('timer200')) {
+    lines.push({ name: 'setTimeout 200ms 的回调', kind: 'macro-timer' })
+  }
+  if (selected.value.includes('then')) {
+    lines.push({ name: 'Promise.then 微任务', kind: 'micro-then' })
+  }
+  if (selected.value.includes('micro')) {
+    lines.push({ name: 'queueMicrotask 微任务', kind: 'micro-qm' })
+  }
+  if (selected.value.includes('raf')) {
+    lines.push({ name: '渲染一帧前的逐帧回调', kind: 'frame-raf' })
+  }
+  return lines
+})
+
 // ---------- 实践建议 ----------
 
 // 1. 需要马上但异步（比如把本次状态写入快照）用微任务：Promise.then / queueMicrotask
 // 2. 需要下一轮再跑的修补任务才用 setTimeout；0ms 也会插到微任务后面
 // 3. 和绘制同频的逻辑（进度条、拖拽跟随）用逐帧回调，别用定时器硬凑
-// 注意：微任务里再产生微任务会让队列一直清不完（饿死页面），
-//       长链 Promise 不要在同一轮里无限 then 接 then。
+// 4. 重复运行 / 卸载要取消旧定时器与 rAF，并用运行令牌丢弃过期回调
+// 5. 微任务里再产生微任务会让队列一直清不完（饿死页面），
+//    长链 Promise 不要在同一轮里无限 then 接 then。
