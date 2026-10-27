@@ -71,6 +71,8 @@ async function loadPage(): Promise<void> {
 let observer: IntersectionObserver | null = null
 /** 哨兵 DOM（模板 ref） */
 const sentinel = ref<HTMLElement | null>(null)
+/** 列表滚动容器（模板 ref）：给观察器当 root，不用全局 id 查找 */
+const scrollRoot = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   // rootMargin '200px'：哨兵距容器底 200px 就预取——用户滚到底前数据已就位
@@ -84,7 +86,7 @@ onMounted(() => {
       }
     },
     {
-      root: document.getElementById('is-scroll') ?? undefined,
+      root: scrollRoot.value ?? undefined,
       rootMargin: '0px 0px 200px 0px', // 只向下扩 200px（下方向预取）
       threshold: 0,
     },
@@ -114,9 +116,9 @@ onUnmounted(() => {
     </div>
 
     <div class="body">
-      <!-- 列表滚动容器 -->
+      <!-- 列表滚动容器：ref 交给 IntersectionObserver 当 root -->
       <div
-        id="is-scroll"
+        ref="scrollRoot"
         class="list-area"
       >
         <div
