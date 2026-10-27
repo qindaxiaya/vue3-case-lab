@@ -36,6 +36,13 @@ const loadedCount = ref(0)
 /** 是否启用 100px 预加载（rootMargin 对比开关） */
 const usePreload = ref(true)
 
+/**
+ * 是否持续观察已加载的图片
+ * 关闭：加载完成即 unobserve（真实懒加载的常规做法）
+ * 打开：保留观察，能继续看到已加载图片的「滚入 / 滚出」事件
+ */
+const keepObserving = ref(false)
+
 /** 滚动容器（模板 ref）：给观察器当 root，也限定卡片查询范围 */
 const scrollRoot = ref<HTMLElement | null>(null)
 
@@ -47,8 +54,15 @@ interface LogEntry {
   text: string
 }
 
-/** 回调日志（最新在前，最多 6 条） */
+/** 回调日志（最新在前；20 条足够看清一轮「滚入 → 完成 → 滚出」） */
 const logs = ref<LogEntry[]>([])
+const MAX_LOGS = 20
+
+/** 统一写日志：最新在前，超过上限丢弃最旧的一条 */
+function pushLog(id: number, kind: LogEntry['kind'], text: string): void {
+  logs.value.unshift({ id, kind, text })
+  if (logs.value.length > MAX_LOGS) logs.value.pop()
+}
 
 /** 观察器实例（卸载 disconnect 用） */
 let observer: IntersectionObserver | null = null
@@ -74,42 +88,39 @@ function setupObserver(): void {
     (entries) => {
       for (const entry of entries) {
         // 用 data-id 反查是哪张图（entry.target 来自模板 ref）
-        const id = Number((entry.target as HTMLElement).dataset.id)
+        const target = entry.target as HTMLElement
+        const id = Number(target.dataset.id)
+        const img = images.value[id - 1]
+        if (!img) continue
 
-        // 日志 = 加载生命周期：未加载图滚入打「开始加载」，300ms 后打「加载完成」
-        // 注意：rootMargin 开启时加载点在容器外 100px——「完成」时刻用户可能还看不见图
         if (entry.isIntersecting) {
-          if (!images.value[id - 1].loaded) {
-            logs.value.unshift({ id, kind: 'in', text: `第 ${id} 张：滚入 → 开始加载` })
-            if (logs.value.length > 6) logs.value.pop()
+          if (!img.loaded) {
+            // 同一张图在加载完成前可能反复触发：已有计时器就不再重复打「开始加载」
+            if (!loadTimers.has(id)) {
+              pushLog(id, 'in', `第 ${id} 张：滚入 → 开始加载`)
+              loadTimers.set(
+                id,
+                setTimeout(() => {
+                  const current = images.value[id - 1]
+                  if (current && !current.loaded) {
+                    //! 加载完成的同一时刻变色 + 打日志（两者严格同步）
+                    current.loaded = true
+                    loadedCount.value++
+                    pushLog(id, 'loaded', `第 ${id} 张：加载完成`)
+                    //! 加载完成才停止观察：此时这张图不会再触发加载，unobserve 才是安全的
+                    if (!keepObserving.value) observer?.unobserve(target)
+                  }
+                  loadTimers.delete(id)
+                }, 300),
+              )
+            }
+          } else if (keepObserving.value) {
+            // 持续观察模式下，已加载图片再次进入也记录，事件流才完整
+            pushLog(id, 'in', `第 ${id} 张：滚入（已加载）`)
           }
-          // 已加载的图滚入不再打日志（无加载事件，避免误导）
-        } else {
-          logs.value.unshift({ id, kind: 'out', text: `第 ${id} 张：滚出` })
-          if (logs.value.length > 6) logs.value.pop()
-        }
-
-        if (entry.isIntersecting) {
-          // 进入观察区才开始「加载」（真实场景：data-src → src）
-          // 每次进入先取消上次未完成的加载，避免重复计数
-          const old = loadTimers.get(id)
-          if (old) clearTimeout(old)
-          loadTimers.set(
-            id,
-            setTimeout(() => {
-              const img = images.value[id - 1]
-              if (!img.loaded) {
-                //! 加载完成的同一时刻变色 + 打日志（两者严格同步）
-                img.loaded = true
-                loadedCount.value++
-                logs.value.unshift({ id, kind: 'loaded', text: `第 ${id} 张：加载完成` })
-                if (logs.value.length > 6) logs.value.pop()
-              }
-              loadTimers.delete(id)
-            }, 300),
-          )
-          // 加载过就停止观察（真实懒加载的常规释放手段）
-          if (images.value[id - 1].loaded) observer?.unobserve(entry.target)
+        } else if (!img.loaded || keepObserving.value) {
+          // 未加载 / 加载中的图片滚出也记；持续观察时已加载图片的滚出同样保留
+          pushLog(id, 'out', `第 ${id} 张：滚出${img.loaded ? '（已加载）' : ''}`)
         }
       }
     },
@@ -131,7 +142,33 @@ function setupObserver(): void {
 
 /** 切换 rootMargin 配置后重建观察器（v-model 已更新 usePreload，这里不再取反） */
 function rebuildObserver(): void {
+  logs.value = []
   setupObserver()
+}
+
+/** 重置列表：清日志、恢复未加载状态、回到顶部，方便重新演示一轮 */
+function resetList(): void {
+  logs.value = []
+  setupObserver()
+  scrollRoot.value?.scrollTo({ top: 0, behavior: 'auto' })
+}
+
+/**
+ * 切换「持续观察已加载图片」
+ * 打开时把已加载的卡片重新 observe；关闭时把它们 unobserve，回到常规懒加载行为。
+ */
+function onKeepObservingChange(): void {
+  const root = scrollRoot.value
+  if (!root) return
+
+  root.querySelectorAll<HTMLElement>('.lazy-card').forEach((el) => {
+    const id = Number(el.dataset.id)
+    const img = images.value[id - 1]
+    if (!img) return
+
+    if (keepObserving.value) observer?.observe(el)
+    else if (img.loaded) observer?.unobserve(el)
+  })
 }
 
 // ---------- 生命周期 ----------
@@ -161,11 +198,30 @@ onUnmounted(() => {
         >
         rootMargin 100px 预加载
       </label>
+      <label class="switch">
+        <input
+          v-model="keepObserving"
+          type="checkbox"
+          @change="onKeepObservingChange"
+        >
+        持续观察已加载图片
+      </label>
+      <button
+        class="btn-ghost"
+        type="button"
+        @click="resetList"
+      >
+        重置列表
+      </button>
       <span class="stat">
         已加载
         <b>{{ loadedCount }}</b> / {{ images.length }}
       </span>
     </div>
+
+    <p class="hint">
+      关闭「持续观察」时，图片加载完成就 unobserve，日志里不会再有它的「滚出」；打开后可以继续看到已加载图片的滚入 / 滚出，方便观察完整事件流。
+    </p>
 
     <div class="body">
       <!-- 滚动容器（观察器的 root） -->
@@ -202,6 +258,7 @@ onUnmounted(() => {
         >
           滚动左侧列表：未加载的图滚入时记「开始加载」，300ms 后变色同时记「加载完成」。
           开启预加载时，图在滚进容器前就已加载完成（rootMargin 在容器外 100px 触发）。
+          打开「持续观察已加载图片」后，已加载的图滚入 / 滚出也会记录。
         </p>
         <ul
           v-else
@@ -260,6 +317,13 @@ onUnmounted(() => {
     font-family: var(--font-mono);
     color: var(--primary);
   }
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--demo-text-sm);
+  line-height: 1.65;
+  color: var(--text-secondary);
 }
 
 .body {

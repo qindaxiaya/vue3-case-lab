@@ -616,7 +616,7 @@ const SCENARIOS = [
     },
   },
   {
-    name: '懒加载容器滚动',
+    name: '懒加载滚动、重置与持续观察',
     route: '/cases/observer/lazy-image',
     facts: async ({ evaluate }) => {
       /** 从「已加载 X / 30」里取 X */
@@ -630,12 +630,59 @@ const SCENARIOS = [
         if (el) el.scrollTop = el.scrollHeight
       })()`)
       await sleep(900)
-      return { before, after: await readLoaded() }
+      const after = await readLoaded()
+
+      // 重置列表：加载数应回到初始值，日志清空后重新出现新的加载记录
+      const resetClicked = await evaluate(`(() => {
+        const btn = [...document.querySelectorAll('.demo-card button')].find((item) =>
+          item.textContent.includes('重置列表')
+        )
+        if (!btn) return false
+        btn.click()
+        return true
+      })()`)
+      await sleep(900)
+      const afterReset = await readLoaded()
+
+      // 打开持续观察后滚到底：已加载图片滚出应出现「（已加载）」记录
+      const keepChecked = await evaluate(`(() => {
+        const label = [...document.querySelectorAll('.demo-card .switch')].find((item) =>
+          item.textContent.includes('持续观察')
+        )
+        const input = label?.querySelector('input')
+        if (!input) return false
+        input.click()
+        return input.checked
+      })()`)
+      await evaluate(`(() => {
+        const el = document.querySelector('.scroll-area')
+        if (el) el.scrollTop = el.scrollHeight
+      })()`)
+      await sleep(900)
+
+      return {
+        before,
+        after,
+        resetClicked,
+        afterReset,
+        keepChecked,
+        logHasLoadedEvent: await evaluate(
+          `document.querySelector('.log-panel')?.innerText.includes('（已加载）') ?? false`,
+        ),
+      }
     },
     assert: (result) => {
       const failures = []
       if (!(result.after > result.before)) {
         failures.push(`滚动容器后没有加载新图片（${result.before} → ${result.after}）`)
+      }
+      if (!result.resetClicked) failures.push('没有找到「重置列表」按钮')
+      if (result.afterReset !== result.before) {
+        failures.push(`重置后加载数没有回到初始值（${result.afterReset} ≠ ${result.before}）`)
+      }
+      if (!result.keepChecked) failures.push('「持续观察已加载图片」开关没有打开')
+      if (!result.logHasLoadedEvent) {
+        failures.push('持续观察后没有出现已加载图片的滚入/滚出记录')
       }
       return failures
     },

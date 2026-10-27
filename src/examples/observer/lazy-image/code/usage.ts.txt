@@ -10,15 +10,31 @@
  * rootMargin—— 根四周的外扩边距：'100px' = 视口外 100px 就提前触发（预加载带）
  * threshold —— 触发比例阈值：0 = 进入即触发；0.5 = 进一半才触发
  */
+// 是否保留已加载图片的观察：曝光统计用 true，纯懒加载用 false
+let keepObserving = false
+
 const observer = new IntersectionObserver(
   (entries) => {
     for (const entry of entries) {
       //! entry.isIntersecting = 是否相交；ratio = 相交比例（0~1）
-      if (entry.isIntersecting) {
-        loadRealImage(entry.target as HTMLImageElement)
-        //! 加载过立即停止观察——懒加载的标准释放手段（防日后再触发）
-        observer.unobserve(entry.target)
-      }
+      if (!entry.isIntersecting) continue
+
+      const img = entry.target as HTMLImageElement
+      // 同一张图只加载一次：加载中 / 已加载都跳过
+      if (img.dataset.state === 'loading' || img.dataset.state === 'loaded') continue
+      img.dataset.state = 'loading'
+
+      loadRealImage(img)
+      //! 加载完成才停止观察：进入只是开始，完成 / 失败还要接
+      img.addEventListener(
+        'load',
+        () => {
+          img.dataset.state = 'loaded'
+          // 纯懒加载：完成即释放；曝光统计：保留观察，继续收滚入 / 滚出
+          if (!keepObserving) observer.unobserve(img)
+        },
+        { once: true },
+      )
     }
   },
   { rootMargin: '100px', threshold: 0 },
