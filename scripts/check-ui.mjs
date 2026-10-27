@@ -408,6 +408,73 @@ const SCENARIOS = [
     },
   },
   {
+    name: '轮播 rAF 补间',
+    route: '/cases/animation/snap-carousel',
+    facts: async ({ evaluate }) => {
+      /** 全部在页面内按真实时间轴跑：点下一张 → 采样中途 → 采样终点 → 切降级再采样 */
+      return evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const track = () => document.querySelector('.snap-demo .track')
+        const next = () =>
+          [...document.querySelectorAll('.snap-demo button')].find(
+            (item) => item.getAttribute('aria-label') === '下一张'
+          )
+
+        const start = track().scrollLeft
+        next().click()
+        await wait(100)
+        const mid = track().scrollLeft
+        await wait(500)
+        const final = track().scrollLeft
+
+        // 打开「模拟减少动态效果」：下一次跳转应该直接到位，不再有中间帧
+        const toggle = [...document.querySelectorAll('.snap-demo button')].find((item) =>
+          item.textContent.includes('模拟减少动态效果')
+        )
+        toggle.click()
+        await wait(100)
+        next().click()
+        await wait(100)
+        const instant = track().scrollLeft
+        await wait(500)
+        const instantFinal = track().scrollLeft
+
+        // 互斥模式按钮必须是 radio 语义：两项、只有一项 checked、只有一项可 Tab 进入
+        const modes = [...document.querySelectorAll('.snap-demo .modes [role="radio"]')]
+        return {
+          start,
+          mid,
+          final,
+          instant,
+          instantFinal,
+          modes: modes.length,
+          checked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
+          tabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          dotsCurrent: document.querySelectorAll('.snap-demo .dot[aria-current="true"]').length,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      if (!(result.final > 0)) failures.push(`点下一张后没有滚动（${result.final}px）`)
+      if (!(result.mid > 0 && result.mid < result.final - 1)) {
+        failures.push(
+          `点下一张后 100ms 位置是 ${result.mid}px，终点是 ${result.final}px，没有看到补间中间帧`,
+        )
+      }
+      if (Math.abs(result.instant - result.instantFinal) > 2) {
+        failures.push(
+          `模拟降级后 100ms 还在动（${result.instant}px → ${result.instantFinal}px），没有直接到位`,
+        )
+      }
+      if (result.modes !== 2) failures.push(`模式按钮不是 2 个 radio（${result.modes} 个）`)
+      if (result.checked !== 1) failures.push(`模式按钮 checked 数量不是 1（${result.checked} 个）`)
+      if (result.tabbable !== 1) failures.push(`模式按钮可 Tab 进入数量不是 1（${result.tabbable} 个）`)
+      if (result.dotsCurrent !== 1) failures.push(`圆点 aria-current 数量不是 1（${result.dotsCurrent} 个）`)
+      return failures
+    },
+  },
+  {
     name: '抽屉退场动画',
     route: '/cases/animation/drawer-slide',
     facts: async ({ evaluate, send }) => {
