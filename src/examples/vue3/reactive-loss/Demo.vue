@@ -181,6 +181,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode1 === 'wrong' }"
+            :aria-pressed="mode1 === 'wrong'"
             @click="mode1 = 'wrong'"
           >
             丢失写法
@@ -188,6 +189,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode1 === 'right' }"
+            :aria-pressed="mode1 === 'right'"
             @click="mode1 = 'right'"
           >
             toRef 修法
@@ -234,6 +236,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode2 === 'wrong' }"
+            :aria-pressed="mode2 === 'wrong'"
             @click="switchMode2('wrong')"
           >
             丢失写法
@@ -241,6 +244,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode2 === 'right' }"
+            :aria-pressed="mode2 === 'right'"
             @click="switchMode2('right')"
           >
             Object.assign
@@ -287,6 +291,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode3 === 'wrong' }"
+            :aria-pressed="mode3 === 'wrong'"
             @click="mode3 = 'wrong'"
           >
             丢失写法
@@ -294,6 +299,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode3 === 'right' }"
+            :aria-pressed="mode3 === 'right'"
             @click="mode3 = 'right'"
           >
             直接读源对象
@@ -342,6 +348,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode4 === 'wrong' }"
+            :aria-pressed="mode4 === 'wrong'"
             @click="mode4 = 'wrong'"
           >
             丢失写法
@@ -349,6 +356,7 @@ function reset5(): void {
           <button
             class="seg-btn"
             :class="{ active: mode4 === 'right' }"
+            :aria-pressed="mode4 === 'right'"
             @click="mode4 = 'right'"
           >
             toRef(props)
