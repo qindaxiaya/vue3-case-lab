@@ -25,19 +25,41 @@ const routes = [
 
 // --- 3. vendor 拆分：缓存友好 ---
 
+// Vite 8 底层是 Rolldown：manualChunks 会被转成单个 codeSplitting 组，
+// 且默认递归收编依赖，容易把 Vue 运行时卷进别的库。
+//! 用 codeSplitting.groups + priority：Vue 优先级最高，先被认领
 export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        //! 手动分组：升级业务代码时，vue 的 chunk hash 不变，用户不用重下
-        manualChunks: {
-          vue: ['vue', 'vue-router'],
-          markdown: ['marked', 'highlight.js'],
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-vue',
+              test: /node_modules[\\/](?:vue|vue-router|@vue)[\\/]/,
+              priority: 100,
+            },
+            {
+              name: 'vendor-markdown',
+              test: /node_modules[\\/](?:highlight\.js[\\/]lib|marked)[\\/]/,
+              priority: 50,
+            },
+            {
+              name: 'vendor-element-plus',
+              test: /node_modules[\\/](?:element-plus|@element-plus)[\\/]/,
+              priority: 40,
+              //! 不递归收编依赖：否则首屏必需的 CSS 变量会被卷进懒加载 chunk
+              includeDependenciesRecursively: false,
+            },
+          ],
         },
       },
     },
   },
 })
+
+// Vite 7 及以前（Rollup）仍可用 output.manualChunks：
+// output: { manualChunks: { vue: ['vue', 'vue-router'] } }
 
 // --- 4. 按需引入：别整包 import ---
 
@@ -67,8 +89,9 @@ hljs.registerLanguage('xml', xml)
 
 // --- 踩坑清单 ---
 
-//! 1. manualChunks 写死包名，库改名后就失效：用函数按 node_modules 路径分组更稳
-//! 2. 拆 vendor 后循环依赖可能报警告：检查 chunk 之间的引用关系
-//! 3. CDN 外置要配 external + 全局变量，还要处理 SSR/本地开发
-//! 4. gzip / brotli 是服务端能力：构建产物大不等于传输大，看压缩后体积
-//! 5. 别只看总体积：首屏关键路径（critical path）才是用户感知
+//! 1. Vite 8 继续写 manualChunks：会被 Rolldown 递归收编依赖，改用 codeSplitting.groups
+//! 2. 分组 test 写死包名，库改名后就失效：用 node_modules 路径正则更稳
+//! 3. 拆 vendor 后循环依赖可能报警告：检查 chunk 之间的引用关系
+//! 4. CDN 外置要配 external + 全局变量，还要处理 SSR/本地开发
+//! 5. gzip / brotli 是服务端能力：构建产物大不等于传输大，看压缩后体积
+//! 6. 别只看总体积：首屏关键路径（critical path）才是用户感知

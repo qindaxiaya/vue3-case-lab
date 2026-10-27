@@ -9,40 +9,18 @@
 // {
 //   "scripts": {
 //     "dev": "vite",
-//     "test": "vitest run",
-//     "type-check": "vue-tsc --noEmit",
+//     "type-check": "vue-tsc -b",
 //     "lint": "eslint . --max-warnings 0",
-//     "build": "vue-tsc -b && vite build"
+//     "test": "vitest run",
+//     "build": "vue-tsc -b && vite build",
+//     "check:bundle": "node scripts/check-bundle.mjs"
 //   }
 // }
 
 //! 本地能跑的，CI 必须跑同一命令；别在 CI 里另写一份「近似」配置
+//! type-check 用 -b：根 tsconfig 只有 references，--noEmit 不会真正检查子项目
 
-// --- 2. vitest.config.ts ---
-
-import { defineConfig } from 'vitest/config'
-
-export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    //! 覆盖率门禁：低于阈值直接失败
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 70,
-      },
-      //! 只统计 src 下的业务代码，别把配置/类型文件算进去
-      include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.d.ts', 'src/examples/**'],
-    },
-  },
-})
-
-// --- 3. GitHub Actions ---
+// --- 2. GitHub Actions：顺序执行，失败即停 ---
 
 // .github/workflows/ci.yml
 // name: CI
@@ -51,21 +29,35 @@ export default defineConfig({
 //   verify:
 //     runs-on: ubuntu-latest
 //     steps:
-//       - uses: actions/checkout@v4
-//       - uses: actions/setup-node@v4
+//       - uses: actions/checkout@v5
+//       - uses: actions/setup-node@v5
 //         with:
-//           node-version: 20
+//           node-version: 22
 //           cache: npm
-//       - run: npm ci            #! 用 ci 不用 install：严格按锁文件
-//       - run: npm run lint
+//       - run: npm ci
+//!      ↑ 用 ci 不用 install：严格按锁文件
 //       - run: npm run type-check
-//       - run: npx vitest run --coverage
+//       - run: npm run lint
+//       - run: npm test
 //       - run: npm run build
-//       - uses: actions/upload-artifact@v4
-//         if: always()
-//         with:
-//           name: coverage
-//           path: coverage/
+//       - run: npm run check:bundle
+
+//! 任何一步非 0 退出，后面的步骤不再执行，整个 job 变红
+
+// --- 3. 体积门禁：测试发现不了的回归 ---
+
+// scripts/check-bundle.mjs
+// const ENTRY_GZIP_BUDGET = 180 * 1024
+//
+// 检查三项：
+//! 1. 首屏资源（entry + modulepreload + css）gzip 总和超预算 → 失败
+//! 2. 单个 JS chunk 超过 600 KB → 失败（防止懒加载块变成巨无霸）
+//! 3. 首屏 JS 出现「//! 中文」教学标记 → 失败（源码又被同步内联了）
+//
+// if (entryGzip > ENTRY_GZIP_BUDGET) process.exit(1)
+
+//! 本项目真实踩过：四个 glob 全 eager，62 份源码被逐字打进首屏，gzip 521 KB
+//! 类型检查和单测全绿，只有体积门禁能拦住这种回归
 
 // --- 4. 分支保护：门禁才算数 ---
 
@@ -76,7 +68,7 @@ export default defineConfig({
 
 //! pre-commit（husky + lint-staged）：只跑改动文件的 lint/format，快
 //! pre-push：可选跑 type-check
-//! CI：全量 lint + 类型 + 测试 + 构建，慢但完整
+//! CI：全量类型 + 代码检查 + 测试 + 构建 + 体积，慢但完整
 //! 别把全量测试塞进 pre-commit，开发者会绕过（--no-verify）
 
 // --- 6. 测试要测真实链路 ---
@@ -90,8 +82,8 @@ export default defineConfig({
 
 //! 1. 本地 Windows、CI Linux：文件名大小写不一致会挂
 //! 2. 锁文件没提交 / 用了 npm install：依赖版本漂移
-//! 3. 覆盖率阈值定太高没人维护，定太低没意义；先跑一遍看基线再定
-//! 4. 快照测试跨平台换行符差异：配置 snapshotFormat 或统一 LF
-//! 5. 只跑测试不跑构建：类型错误（vue-tsc -b）会漏到线上
+//! 3. 只跑测试不跑构建：类型错误（vue-tsc -b）会漏到线上
+//! 4. 首屏包体悄悄变大：靠体积门禁，不靠人盯构建日志
+//! 5. 快照测试跨平台换行符差异：配置 snapshotFormat 或统一 LF
 //! 6. CI 里忘了设置环境变量：测试访问不到接口，随机失败
 //! 7. 用 --max-warnings 0：警告也要当错误，否则会越积越多
