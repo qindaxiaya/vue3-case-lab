@@ -71,6 +71,9 @@ function sparkPoints(data: number[], max: number): string {
 
 const logEntries = ref<string[]>([])
 
+/** 最近一次重置的时间：忽略「重置」这次点击自己产生的 Event Timing 条目 */
+let resetAt = 0
+
 function pushLog(msg: string): void {
   const time = new Date().toLocaleTimeString()
   logEntries.value.unshift(`[${time}] ${msg}`)
@@ -176,7 +179,8 @@ onMounted(() => {
           interactionId: number
         }
         // 只关心点击类交互；duration = 从输入到下一帧渲染完成
-        if (evt.name === 'click' && evt.interactionId) {
+        // 重置按钮自身也是一次点击：时间早于 resetAt 的条目直接跳过，避免刚清空又冒出一条
+        if (evt.name === 'click' && evt.interactionId && entry.startTime >= resetAt) {
           live.lastClickInp = evt.duration
           pushLog(`点击交互耗时 ${evt.duration.toFixed(1)}ms`)
         }
@@ -218,6 +222,11 @@ const blockMs = ref(80)
 /** 布局偏移演示区（模板 ref）：直接拿 DOM，不用全局 id 查找 */
 const shiftZone = ref<HTMLElement | null>(null)
 
+/** 当前页面里保留的偏移块数量：只用于展示，避免无限追加把页面越撑越长 */
+const shiftBlocks = ref(0)
+/** 偏移块最多保留几个：再多就移除最早的，保证演示可重复且不拖垮页面 */
+const MAX_SHIFT_BLOCKS = 5
+
 /** 按滑块强度同步阻塞主线程（制造 longtask） */
 function makeLongTask(): void {
   const start = performance.now()
@@ -232,12 +241,37 @@ function makeLongTask(): void {
 function makeLayoutShift(): void {
   const host = shiftZone.value
   if (!host) return
+
+  // 先移除最早的块：否则连点十几次会把页面越撑越长，演示反而不好看
+  if (host.children.length >= MAX_SHIFT_BLOCKS) {
+    host.firstElementChild?.remove()
+  }
+
   const block = document.createElement('div')
+  block.className = 'shift-block'
   block.style.cssText =
     'height:60px;border-radius:8px;background:var(--warning-soft);margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:0.9375rem;'
   block.textContent = '布局偏移演示块（CLS +）'
   host.appendChild(block)
-  pushLog('已注入偏移块（CLS 上升）')
+  shiftBlocks.value = host.children.length
+  pushLog(`已注入偏移块（当前 ${shiftBlocks.value} 块，CLS 上升）`)
+}
+
+/**
+ * 重置实验：清掉本次交互产生的数据，方便反复对比
+ * 加载期指标（FP/FCP/LCP/TTFB）是页面打开时的一次性数据，
+ * 清掉也不会重新产生，所以这里明确保留，避免用户误以为按钮失效。
+ */
+function resetExperiment(): void {
+  resetAt = performance.now()
+  metrics.cls = 0
+  clsHistory.value = []
+  fpsHistory.value = []
+  live.lastClickInp = null
+  shiftZone.value?.replaceChildren()
+  shiftBlocks.value = 0
+  logEntries.value = []
+  pushLog('已重置实验数据（加载期指标保留）')
 }
 
 // ---------- 展示格式化 ----------
@@ -269,6 +303,11 @@ function fpsLevel(fps: number): string {
 
 <template>
   <div class="perf-demo">
+    <p class="section-label">
+      实时指标
+      <span>每秒刷新；重置实验只清历史与本次操作</span>
+    </p>
+
     <!-- 实时区：FPS + 内存 + 最近点击交互（打开就在跳动） -->
     <div class="live-row">
       <div class="live-card">
@@ -308,6 +347,11 @@ function fpsLevel(fps: number): string {
         <span class="live-sub">Event Timing 实测</span>
       </div>
     </div>
+
+    <p class="section-label">
+      加载期指标
+      <span>页面打开时采集一次；重置实验不会清掉，避免误以为按钮失效</span>
+    </p>
 
     <!-- 加载指标 + CLS sparkline -->
     <div class="metric-grid">
@@ -384,6 +428,19 @@ function fpsLevel(fps: number): string {
         >
           制造布局偏移
         </button>
+        <button
+          class="btn-ghost"
+          type="button"
+          @click="resetExperiment"
+        >
+          重置实验
+        </button>
+        <span
+          class="shift-count"
+          aria-live="polite"
+        >
+          偏移块 <b>{{ shiftBlocks }}</b> / {{ MAX_SHIFT_BLOCKS }}
+        </span>
       </div>
     </div>
 
@@ -427,6 +484,24 @@ function fpsLevel(fps: number): string {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+}
+
+/* 分区标题：把「实时」与「加载期」分开，避免把一次性指标当成会动的数 */
+.section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 -0.7rem;
+  font-size: var(--demo-text-md);
+  font-weight: 600;
+  color: var(--text);
+
+  span {
+    font-size: var(--demo-text-sm);
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
 }
 
 /* ---------- 实时区（FPS/内存/点击交互） ---------- */
@@ -572,6 +647,17 @@ function fpsLevel(fps: number): string {
   font-size: 0.9375rem;
   color: var(--primary);
   min-width: 3rem;
+}
+
+/* 偏移块计数：和按钮同一行，告诉用户最多保留几个 */
+.shift-count {
+  font-size: var(--demo-text-sm);
+  color: var(--text-secondary);
+
+  b {
+    font-family: var(--font-mono);
+    color: var(--warning);
+  }
 }
 
 /* ---------- 日志 ---------- */
