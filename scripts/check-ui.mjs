@@ -16,12 +16,14 @@
  * 用法：
  *   npm run check:ui                          # 默认验 preview（需要先 build + preview）
  *   npm run check:ui -- --only 抽屉           # 只验名字/路由命中的场景（改单个案例用这个，5~10 秒）
+ *   npm run check:ui -- --case practice/vitest-gate   # 单案例通用巡检（任意案例都能验）
+ *   npm run check:ui -- --sweep               # 全案例巡检：81 条路由 × 375px
  *   node scripts/check-ui.mjs --base http://localhost:5173   # 验 dev 服务器
  *
  * 退出码：全部通过 0，有失败 1（可直接进 CI 或本地门禁）
  */
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
 
 /** 读取 --base 参数，默认验 preview（4173） */
@@ -50,8 +52,58 @@ function pickScenarios(only) {
   )
 }
 
+/** 读取 --case 参数：任意案例的「分类/案例」路径 */
+function readCase() {
+  const index = process.argv.indexOf('--case')
+  if (index > -1 && process.argv[index + 1]) return process.argv[index + 1]
+  return process.env.CHECK_CASE || ''
+}
+
+/** 是否跑全案例巡检（81 条路由 × 375px） */
+function readSweep() {
+  return process.argv.includes('--sweep') || process.env.CHECK_SWEEP === '1'
+}
+
+/** 案例目录根：用来把「只给案例 id」补全成「分类/案例」 */
+const EXAMPLES_DIR = path.resolve('src/examples')
+
+/** 列出全部案例路径（分类/案例），供 --case 与 --sweep 共用 */
+function listCasePaths() {
+  const result = []
+  for (const category of readdirSync(EXAMPLES_DIR)) {
+    const categoryDir = path.join(EXAMPLES_DIR, category)
+    if (!statSync(categoryDir).isDirectory()) continue
+    for (const id of readdirSync(categoryDir)) {
+      const caseDir = path.join(categoryDir, id)
+      if (!statSync(caseDir).isDirectory()) continue
+      if (existsSync(path.join(caseDir, 'meta.ts'))) result.push(`${category}/${id}`)
+    }
+  }
+  return result.sort()
+}
+
+/** 把 --case 的输入规范化：允许 cases/xxx、分类/案例、只给案例 id */
+function resolveCasePath(input) {
+  const normalized = input.replace(/^\/?cases\//, '').replace(/\/+$/, '')
+  if (normalized.includes('/')) {
+    if (!existsSync(path.join(EXAMPLES_DIR, normalized, 'meta.ts'))) {
+      throw new Error(`找不到案例：${normalized}`)
+    }
+    return normalized
+  }
+  const matched = listCasePaths().filter((item) => item.endsWith(`/${normalized}`))
+  if (matched.length === 1) return matched[0]
+  if (matched.length > 1) {
+    throw new Error(`案例 id「${normalized}」不唯一：${matched.join(' / ')}`)
+  }
+  throw new Error(`找不到案例：${normalized}`)
+}
+
+
 const BASE = readBase().replace(/\/$/, '')
 const ONLY = readOnly()
+const CASE = readCase()
+const SWEEP = readSweep()
 /** 内置产物路径断言只在 preview 有意义，dev 是源码直出 */
 const IS_PREVIEW = !/:(5173|5174)$/.test(BASE)
 
@@ -187,6 +239,21 @@ async function connectPage(target) {
     if (message.method === 'Runtime.exceptionThrown') {
       const details = message.params.exceptionDetails
       errors.push(`异常：${details.exception?.description ?? details.text}`)
+    }
+    /**
+     * console.error / console.warn 也要算失败：
+     * Vue 的 [Vue warn]、组件库告警、资源加载失败都走这里，
+     * 只看未捕获异常会漏掉一半「页面看起来正常但已经坏了」的情况
+     */
+    if (message.method === 'Runtime.consoleAPICalled') {
+      const type = message.params.type
+      if (type === 'error' || type === 'warning' || type === 'assert') {
+        const text = message.params.args
+          .map((arg) => arg.value ?? arg.description ?? '')
+          .join(' ')
+          .trim()
+        if (text) errors.push(`${type === 'error' ? 'console.error' : 'console.warn'}：${text}`)
+      }
     }
     if (message.method === 'Network.requestWillBeSent') {
       requests.push(message.params.request.url)
@@ -558,6 +625,139 @@ const ANIMATION_CASES = [
   'focus-visible-ring',
 ]
 
+/** 等演示区挂载：dev 首次编译案例 chunk 可能慢，最多等 10 秒 */
+async function waitForDemo(page, timeoutMs = 10000) {
+  const started = Date.now()
+  while (Date.now() - started < timeoutMs) {
+    const mounted = await page.evaluate(`Boolean(document.querySelector('.demo-card'))`)
+    if (mounted) return true
+    await sleep(250)
+  }
+  return false
+}
+
+/** 采集当前视口下的页面事实（桌面与 375px 共用） */
+async function collectPageFacts(page) {
+  return page.evaluate(`({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+    demoMounted: Boolean(document.querySelector('.demo-card')),
+    demoTextLength: document.querySelector('.demo-card')?.innerText?.trim().length ?? 0,
+    buttons: document.querySelectorAll('.demo-card button').length,
+    /** 按钮 / 输入框 / 下拉 / 可聚焦元素都算「可操作控件」 */
+    interactive: document.querySelectorAll(
+      '.demo-card button, .demo-card input, .demo-card select, .demo-card textarea, .demo-card [tabindex]'
+    ).length,
+  })`)
+}
+
+/**
+ * 单案例通用巡检：--case practice/vitest-gate
+ * 不做案例定制断言，只兜住「打不开 / 没渲染 / 溢出 / 控制台报错」四类硬问题，
+ * 让改任意一个案例都有 5~10 秒的机器验证可用
+ */
+async function checkCase(port, casePath) {
+  const route = `/cases/${casePath}`
+  const target = await openPage(port, BASE + route)
+  const page = await connectPage(target)
+
+  try {
+    // 桌面先看：演示是否挂载、有没有控件、页面有没有横向溢出
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    })
+    await waitForDemo(page)
+    const desktop = await collectPageFacts(page)
+
+    // 再切 375px：窄屏是最容易溢出的场景
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 375,
+      height: 720,
+      deviceScaleFactor: 1,
+      mobile: true,
+    })
+    await sleep(500)
+    const mobile = await collectPageFacts(page)
+
+    const failures = []
+    if (!desktop.demoMounted) failures.push('演示区没有挂载')
+    if (desktop.demoTextLength < 10) failures.push('演示区没有渲染出内容')
+    if (desktop.interactive < 1) failures.push('演示区没有可操作控件')
+    if (desktop.scrollWidth > desktop.innerWidth) {
+      failures.push(`桌面出现横向滚动（${desktop.scrollWidth} > ${desktop.innerWidth}）`)
+    }
+    if (mobile.scrollWidth > mobile.innerWidth) {
+      failures.push(`375px 出现横向滚动（${mobile.scrollWidth} > ${mobile.innerWidth}）`)
+    }
+    failures.push(...page.errors)
+
+    return {
+      name: `单案例 ${casePath}`,
+      route,
+      result: {
+        demoTextLength: desktop.demoTextLength,
+        interactive: desktop.interactive,
+        desktopScrollWidth: desktop.scrollWidth,
+        mobileScrollWidth: mobile.scrollWidth,
+      },
+      failures,
+    }
+  } finally {
+    page.close()
+    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => {})
+  }
+}
+
+/**
+ * 全案例巡检：--sweep [--only 分类/关键字]
+ * 81 条路由逐个在 375px 打开，只断言「挂载 + 无横向溢出 + 零控制台报错」。
+ * 这是静态体检补不了的一层：真实渲染失败、响应式溢出只有跑浏览器才知道。
+ */
+async function sweepCases(port, filter) {
+  const paths = listCasePaths().filter((item) => !filter || item.includes(filter))
+  const results = []
+
+  console.log(`[sweep] 开始巡检 ${paths.length} 个案例（375px）`)
+  for (const [index, casePath] of paths.entries()) {
+    const route = `/cases/${casePath}`
+    const target = await openPage(port, BASE + route)
+    const page = await connectPage(target)
+
+    try {
+      await page.send('Emulation.setDeviceMetricsOverride', {
+        width: 375,
+        height: 720,
+        deviceScaleFactor: 1,
+        mobile: true,
+      })
+      const mounted = await waitForDemo(page, 6000)
+      await sleep(300)
+      const facts = await collectPageFacts(page)
+
+      const failures = []
+      if (!mounted || !facts.demoMounted) failures.push('演示区没有挂载')
+      if (facts.scrollWidth > facts.innerWidth) {
+        failures.push(`375px 出现横向滚动（${facts.scrollWidth} > ${facts.innerWidth}）`)
+      }
+      failures.push(...page.errors)
+
+      results.push({ name: `案例 ${casePath}`, route, result: facts, failures })
+    } finally {
+      page.close()
+      await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => {})
+    }
+
+    // 进度点：81 个案例跑几分钟，没有进度会以为卡死
+    process.stdout.write((index + 1) % 10 === 0 ? `${index + 1} ` : '.')
+  }
+  process.stdout.write('\n')
+
+  return results
+}
+
 async function checkAnimationCases(port) {
   const results = []
 
@@ -620,36 +820,68 @@ try {
   }
 
   const results = []
-  const scenarios = pickScenarios(ONLY)
-  if (scenarios.length === 0) {
-    throw new Error(
-      `--only「${ONLY}」没有命中任何场景，可用场景：${SCENARIOS.map((item) => item.name).join(' / ')}`,
-    )
-  }
-  for (const scenario of scenarios) {
-    results.push(await runScenario(chrome.port, scenario))
-  }
-  // 全量模式才补窄屏与动画分类抽检：--only 要的是「改一个案例只验这一个」
-  if (!ONLY) {
-    results.push(await checkMobile(chrome.port))
-    results.push(...(await checkAnimationCases(chrome.port)))
+  if (CASE) {
+    // 单案例模式：任意案例都能用，不依赖是否写了定制场景
+    results.push(await checkCase(chrome.port, resolveCasePath(CASE)))
+  } else if (SWEEP) {
+    // 全案例巡检：--only 在这里是过滤器（分类 / 关键字），不是场景名
+    results.push(...(await sweepCases(chrome.port, ONLY)))
+  } else {
+    const scenarios = pickScenarios(ONLY)
+    if (scenarios.length === 0) {
+      throw new Error(
+        `--only「${ONLY}」没有命中任何场景，可用场景：${SCENARIOS.map((item) => item.name).join(' / ')}；` +
+          `想验任意案例请用 --case <分类>/<案例>`,
+      )
+    }
+    for (const scenario of scenarios) {
+      results.push(await runScenario(chrome.port, scenario))
+    }
+    // 全量模式才补窄屏与动画分类抽检：--only 要的是「改一个案例只验这一个」
+    if (!ONLY) {
+      results.push(await checkMobile(chrome.port))
+      results.push(...(await checkAnimationCases(chrome.port)))
+    }
   }
 
-  console.log(`\n[check:ui] 目标：${BASE}${ONLY ? `（--only ${ONLY}）` : ''}\n`)
-  for (const item of results) {
-    const facts = Object.entries(item.result)
-      .map(([key, value]) => `${key}=${value}`)
-      .join('  ')
-    console.log(`${item.failures.length === 0 ? '✓' : '✗'} ${item.name}  ${facts}`)
-    for (const failure of item.failures) console.log(`    ↳ ${failure}`)
-  }
+  const mode = CASE
+    ? `--case ${CASE}`
+    : SWEEP
+      ? `--sweep${ONLY ? ` --only ${ONLY}` : ''}`
+      : ONLY
+        ? `--only ${ONLY}`
+        : ''
+  console.log(`\n[check:ui] 目标：${BASE}${mode ? `（${mode}）` : ''}\n`)
 
   const failed = results.filter((item) => item.failures.length > 0)
+
+  if (SWEEP) {
+    // 81 条路由逐条打印会刷屏，只列失败项，通过数看汇总
+    for (const item of failed) {
+      console.log(`✗ ${item.name}`)
+      for (const failure of item.failures) console.log(`    ↳ ${failure}`)
+    }
+    console.log(
+      `\n[check:ui] 全案例巡检：${results.length - failed.length}/${results.length} 通过` +
+        `${failed.length > 0 ? `，${failed.length} 个失败` : ' ✓'}`,
+    )
+  } else {
+    for (const item of results) {
+      const facts = Object.entries(item.result)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('  ')
+      console.log(`${item.failures.length === 0 ? '✓' : '✗'} ${item.name}  ${facts}`)
+      for (const failure of item.failures) console.log(`    ↳ ${failure}`)
+    }
+  }
+
   if (failed.length > 0) {
-    console.error(`\n[check:ui] ${failed.length} 个场景未通过`)
+    console.error(
+      `\n[check:ui] ${failed.length} 个${SWEEP ? '案例' : '场景'}未通过`,
+    )
     exitCode = 1
   } else {
-    console.log(`\n[check:ui] ${results.length} 个场景全部通过 ✓`)
+    console.log(`\n[check:ui] ${results.length} 个${SWEEP ? '案例' : '场景'}全部通过 ✓`)
   }
 } finally {
   shutdown(chrome)

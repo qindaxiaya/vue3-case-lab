@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "audit:cases": "node scripts/audit-cases.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "check:ui": "node scripts/check-ui.mjs",
     "preview": "vite preview",
+    "test": "vitest run",
     "type-check": "vue-tsc -b",
     "lint": "eslint . --max-warnings 0"
   },
