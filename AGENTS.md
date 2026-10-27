@@ -162,6 +162,10 @@
   - `audit:cases` 的「左右」检测收紧为「数字 + 左右」，避免把「左右移动 / 箭头 / 两列 / 两侧」当估算词；P2 从 14 降到 7（全部是真实估算词）
   - 验收：audit 81 案例 0 P0 / 0 P1 / 7 P2；有代码改动的 intl-format / has-parent `check:ui --case` 通过；`--only Intl` 在 dev 与 preview 均显示 26/4；vitest 53/53；type-check、eslint、build 通过
   - 剩余 7 个：raf-loop / raf-throttle / sse-chat / time-slicing / debounce-throttle / image-compress / optimistic-update
+- ✅ 2026-10-27 「约/左右」P2 批 2（4 个案例）：`raf-loop` 改为 60Hz 屏幕 60fps / 16.6ms / 74（本次采样）；`raf-throttle` 修正「每分钟」笔误为「每秒」，渲染 60 次（受刷新率限制）；`sse-chat` 首段 150~390ms（Demo 随机延迟）、重连 3000ms，删掉不稳定的「1.2s id 2/36」，meta 的 120ms 同步改为 150~390ms；`time-slicing` 全量渲染 21ms（本次中位数）
+- ✅ 2026-10-27 「约/左右」P2 批 3（3 个案例）：`debounce-throttle` 节流每 100ms 1 次；`image-compress` 压缩率 96%（面板取整，1 − 60/1690 = 96.45%）；`optimistic-update` 回滚 300ms（接口固定延迟）
+  - 阶段收口：audit 81 案例 **0 P0 / 0 P1 / 0 P2**；vitest 53/53、type-check、lint、build、check:bundle（首屏 gzip 108.9 KB）、全量 `check:ui` 21/21、`--sweep` 81/81 通过
+  - 说明：sse-chat 原 notes/meta 与 Demo 实际 150~390ms 随机延迟不一致，已按代码修正并删除不稳定的 1.2s 快照；raf-throttle 原「每分钟」为笔误
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -235,3 +239,4 @@
 | 2026-10-27 | **案例里的 CI 门禁必须和仓库真实脚本一致** | `vitest-gate` 原来写覆盖率阈值，仓库根本没有 coverage 配置；改为真实的五步：`type-check`（`vue-tsc -b`）、`lint`、`test`（`vitest run`）、`build`、`check:bundle`，并补 `package.json` 的 `test` 脚本。`vite-split` 原来只写 `manualChunks`，改为 Vite 8 的 `codeSplitting.groups`，同时保留旧版写法说明；第 4 段换成 `npm run build` + `check:bundle` 的真实数据（首屏 gzip 108.9 KB） |
 | 2026-10-27 | **机械 P2 先清一轮，行为敏感的改动补常驻断言** | 4 处 `document.getElementById` 统一改模板 ref：能拿容器就 `querySelector` 限定范围（accordion-slide 的 `faqRoot`），观察器 root 直接传 ref（infinite-scroll / lazy-image 的 `scrollRoot`），挂载点直接传 ref（perf-observer 的 `shiftZone`）；教学代码同步，避免「Demo 改了、代码区还是旧写法」。这 4 处会改变交互路径，给 accordion / infinite-scroll / lazy-image / perf-observer 各补一个常驻场景（读取 scrollHeight、预取页数、加载张数、偏移块是否插入），以后 `getElementById` 回归会先在浏览器巡检里露头。`check:ui` 的 `waitForDemo` 同时改为等占位符消失，否则 dev 首次编译会把「演示加载中…」当完成；`--case` 不再硬性要求按钮，无限滚动这类靠滚动触发的演示也能过 |
 | 2026-10-27 | **「约/左右」P2 先区分方向词与估算词，再逐个换成可核对口径** | `audit:cases` 原来把「左右移动 / 箭头 / 两列 / 两侧」也当估算词；改为只报「数字 + 左右」与「约 / 大约 / 估计」。真实估算逐条处理：能数语句就数（snap-carousel 5 行、has-parent 30 行、intl-format 26 行），能用规范值或配置值就写死（4ms、16.6ms、100ms、300ms），不能稳定的写清测量方法与区间（event-loop 1~5ms）。`intl-format` 还暴露了生产构建压缩后 `Function.prototype.toString()` 只剩 1 行的问题，行数改静态值并加 `Intl 行数` 巡检，避免 dev 正常、preview 失真 |
+| 2026-10-27 | **P2 收尾不只替换估算词，顺手修正与代码不一致的旧数据** | 清「约/左右」时发现两类问题：`raf-throttle` 把「每秒」写成「每分钟」；`sse-chat` 的 notes/meta 还停留在「每 120ms、1.2s id 2/36」，而 Demo 实际是 150~390ms 随机延迟，1.2s 的快照不稳定。处理原则：能用规范值或配置值写死的就写死（4ms、16.6ms、100ms、300ms、3000ms），随机/区间数据写清来源与范围，删掉无法复现的单点快照；代码能静态统计的不要依赖生产构建后的 `toString()` |
