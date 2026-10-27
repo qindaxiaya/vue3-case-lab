@@ -434,7 +434,7 @@ onUnmounted(() => {
       <span>本次手算距离 <b>{{ handCalc }} 处</b></span>
       <span>手算结果 <b>{{ handTarget }}</b></span>
       <span>居中误差 <b>{{ centerError }}px</b></span>
-      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : 'rAF 补间（演示）' }}</b></span>
+      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : '逐帧补间（演示）' }}</b></span>
       <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
@@ -512,7 +512,7 @@ onUnmounted(() => {
     <p class="hint">
       旧做法用 scrollLeft 手算：圆点跳转要先算「索引 × 单卡距离」，再夹到最大可滚动范围，两处都算错就会停在半路。
       新做法开滚动吸附，圆点只调 scrollIntoView，索引用滚动位置反推。
-      演示用 rAF 补间保证「减少动态效果」环境下也能看见滑动；真实项目优先用 behavior: 'smooth' 并跟随系统设置降级。
+      演示用逐帧补间（requestAnimationFrame）保证「减少动态效果」环境下也能看见滑动；真实项目优先用 behavior: 'smooth' 并跟随系统设置降级。
       用手随便向右滑一段再松手：旧做法常停在两张中间（居中误差大于 0），新做法会自动吸到整张卡片。
       点「模拟减少动态效果」可查看降级行为：跳转直接到位，吸附本身仍然生效。
     </p>
