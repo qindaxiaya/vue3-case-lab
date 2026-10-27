@@ -139,6 +139,7 @@ onBeforeUnmount(() => {
         <button
           class="seg-btn"
           :class="{ active: mode === 'jump' }"
+          :aria-pressed="mode === 'jump'"
           @click="switchMode('jump')"
         >
           直接拼接
@@ -146,6 +147,7 @@ onBeforeUnmount(() => {
         <button
           class="seg-btn"
           :class="{ active: mode === 'smooth' }"
+          :aria-pressed="mode === 'smooth'"
           @click="switchMode('smooth')"
         >
           rAF 平滑
