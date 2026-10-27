@@ -89,7 +89,10 @@ function parseNotes(source) {
   return {
     sectionCount: sections.length,
     s4HasTable: /\|\s*-{2,}/.test(s4),
-    s4Approximate: /约|左右|大约|估计/.test(s4),
+    s4Approximate:
+      /约|大约|估计|\d[\d.]*\s*(?:行|次|ms|毫秒|秒|s|像素|px|张|个|倍|%|％|帧|条|处|人|天|年)?\s*左右/.test(
+        s4,
+      ),
     s4MentionsMethod: /测量|实测|采集|统计/.test(s4),
     qaCount: source
       .split('\n')
@@ -185,7 +188,7 @@ function auditCase(item) {
   if (noteInfo.sectionCount < 5) add('P1', `notes 只有 ${noteInfo.sectionCount} 段`)
   if (!noteInfo.s4HasTable) add('P1', 'notes 第 4 段没有表格')
   if (!noteInfo.s4MentionsMethod) add('P2', 'notes 第 4 段没写测量方式')
-  if (noteInfo.s4Approximate) add('P2', 'notes 第 4 段用了「约/左右/估计」，确认不是拿估算当实测')
+  if (noteInfo.s4Approximate) add('P2', 'notes 第 4 段出现估算词（约/大约/估计，或数字 + 左右），确认不是拿估算当实测')
   if (noteInfo.qaCount < 3) add('P2', `notes 第 5 段 Q&A 只有 ${noteInfo.qaCount} 条`)
   if (!noteInfo.hasBoundary) add('P2', 'notes 第 5 段没写适用边界')
 
