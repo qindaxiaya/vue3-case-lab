@@ -27,15 +27,16 @@
 
 平滑滚动属于装饰：系统开启「减少动态效果」时，真实项目应当据此降级，把 `scrollIntoView` 与 `scrollTo` 的 `behavior` 换成 `auto`，让滚动直接到位；吸附必须保留，因为它决定「停在哪」，是功能不是动画。本案例为了让平滑滚动看得见，演示默认仍然播放；点「模拟减少动态效果」可以切到降级分支。
 
+有些浏览器在「减少动态效果」开启时会连程序化平滑滚动一起抑制，演示就看不到「滑过去」的过程。案例因此用 `requestAnimationFrame` 自己补间：每一帧按缓动曲线改 `scrollLeft`，不依赖原生 `behavior: 'smooth'`。补间期间还要临时把 `scroll-snap-type` 设为 `none`，否则浏览器会在每一帧把位置吸回对齐点，动画会一顿一顿；补间结束再恢复吸附。真实项目不要照抄这段兜底，优先使用原生平滑滚动并跟随系统设置。
+
 ## 3. 方案：关键代码
 
-以 `goTo`、`readMetrics`（Demo.vue）与 `.track` 定位：
+以 `goTo`、`animateScrollLeft`、`readMetrics`（Demo.vue）与 `.track` 定位：
 
 ```ts
 function goTo(target: number): void {
   const track = trackRef.value!
   const nextIndex = Math.min(SLIDES.length - 1, Math.max(0, target))
-  const behavior: ScrollBehavior = reducedMotion.value ? 'auto' : 'smooth'
 
   if (mode.value === 'manual') {
     const step = measureStep()
@@ -44,15 +45,46 @@ function goTo(target: number): void {
     const wanted = Math.round(step * nextIndex)
     // 为什么第 2 处手算：不夹取的话，最后一张的目标位置会超过可滚动上限
     const clamped = Math.max(0, Math.min(wanted, maxLeft))
-    track.scrollTo({ left: clamped, behavior })
+    animateScrollLeft(track, clamped)
   } else {
-    // 为什么不用算距离：对齐点与滚动范围都交给浏览器
+    // 为什么不用算距离：先让浏览器用 auto 算出对齐位置，读出来当补间终点
+    const start = track.scrollLeft
     getSlides()[nextIndex]?.scrollIntoView({
       block: 'nearest',
       inline: 'center',
-      behavior,
+      behavior: 'auto',
     })
+    const computedTarget = track.scrollLeft
+    track.scrollLeft = start
+    animateScrollLeft(track, computedTarget)
   }
+}
+
+function animateScrollLeft(track: HTMLElement, target: number): void {
+  // 为什么先取消：连续点圆点时，上一段补间还在改 scrollLeft，两段会互相抢
+  cancelScrollAnimation()
+  const start = track.scrollLeft
+  const delta = target - start
+
+  // 为什么补间期间关吸附：否则每一帧都会被浏览器吸回最近的对齐点
+  track.classList.add('is-animating')
+  const startedAt = performance.now()
+  const duration = 360
+  const easeOut = (p: number): number => 1 - (1 - p) ** 3
+
+  const frame = (now: number): void => {
+    const progress = Math.min(1, (now - startedAt) / duration)
+    track.scrollLeft = start + delta * easeOut(progress)
+    if (progress < 1) {
+      scrollRaf = requestAnimationFrame(frame)
+      return
+    }
+    scrollRaf = 0
+    track.scrollLeft = target
+    track.classList.remove('is-animating')
+    readMetrics()
+  }
+  scrollRaf = requestAnimationFrame(frame)
 }
 
 function readMetrics(): void {
@@ -60,7 +92,8 @@ function readMetrics(): void {
   if (!track) return
   const step = measureStep()
   // 为什么从位置反推：滚动是唯一事实来源，索引只是它的读数
-  index.value = Math.round(track.scrollLeft / step)
+  // 补间中先保持目标索引，避免经过中间卡片时圆点来回闪
+  if (!scrollRaf) index.value = Math.round(track.scrollLeft / step)
 }
 ```
 
@@ -84,6 +117,17 @@ function readMetrics(): void {
   scroll-snap-type: x mandatory;
 }
 
+.is-snap .track.is-animating {
+  /* 为什么补间时关掉：否则每一帧都被吸回对齐点，动画会一顿一顿 */
+  scroll-snap-type: none;
+}
+
+.mode:focus-visible {
+  /* 模式按钮是 radio：焦点必须看得见 */
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .slide {
   flex: 0 0 var(--card-w);
   /* 为什么写在子项上：容器决定方向，子项决定对齐点 */
@@ -102,6 +146,8 @@ function readMetrics(): void {
 | 索引来源 | 滚动位置换算 | 滚动位置换算 | 两种模式共用 |
 | 键盘左右键 | 可用 | 可用 | 聚焦轮播后按方向键 |
 | 首尾卡片能否居中 | 取决于留白与夹取是否写对 | 由对齐点与留白保证 | 点第一个 / 最后一个圆点看居中误差 |
+| 补间期间的吸附 | 旧做法没有吸附，不涉及 | 临时 `scroll-snap-type: none`，结束恢复 | 连续点圆点，观察是否一顿一顿 |
+| 模式按钮的键盘语义 | 两个独立开关（`aria-pressed`） | `radiogroup` + `radio` + `aria-checked` | Tab 只停当前项，方向键切换 |
 
 测量说明：
 
@@ -110,12 +156,13 @@ function readMetrics(): void {
 - 数据规模：5 张卡片，窄屏卡片宽度为容器的 76%，宽屏固定 18rem，间距 0.75rem。
 - 环境：桌面鼠标与 375px 视口各试一次；触屏设备上直接用手滑，观察松手后的吸附。
 - 取样：同一次滑动重复几次，旧做法停下的位置每次不同，新做法每次都停在整张卡片。
+- 动画可见性：在系统开启「减少动态效果」的环境下点圆点，80ms 时 `scrollLeft` 应位于起点与终点之间；打开「模拟减少动态效果」后同一时刻应已到终点。演示用 rAF 补间保证可见，真实项目应跟随系统设置降级。
 - 本案例不宣称耗时差异：比较的是「要不要手算距离」「停下时对不对齐」，没有测帧率或滚动耗时。
 
 ## 5. 追问与边界（面试高频）
 
 **Q：`scroll-snap-type` 与 `scroll-behavior: smooth` 冲突吗？**
-不冲突，但不要同时依赖两者。`scroll-behavior` 决定「怎么滚过去」，吸附决定「停在哪」。程序化跳转时显式传 `behavior` 更可控；减少动态效果时，真实项目应当据此降级，把 `behavior` 换成 `auto`，让滚动立即到位，吸附仍然生效（吸附是布局行为，不受动态效果偏好影响）。本案例为了让平滑滚动看得见，演示默认仍然播放；点「模拟减少动态效果」可以查看降级行为。
+不冲突，但不要同时依赖两者。`scroll-behavior` 决定「怎么滚过去」，吸附决定「停在哪」。程序化跳转时显式传 `behavior` 更可控；减少动态效果时，真实项目应当据此降级，把 `behavior` 换成 `auto`，让滚动立即到位，吸附仍然生效（吸附是布局行为，不受动态效果偏好影响）。本案例为了让平滑滚动看得见，演示用 rAF 自己补间，并在补间期间临时关掉吸附、结束后恢复；真实项目不要照抄这段兜底，优先用原生平滑滚动并跟随系统设置。
 
 **Q：为什么索引不用 IntersectionObserver？**
 可以用，但轮播通常只需要「当前第几张」，滚动位置除以单卡距离就够了，一次减法一次除法，不需要额外的观察器与回调。IntersectionObserver 更适合「元素是否进入视口」这类与滚动位置不成线性关系的问题。
@@ -124,7 +171,7 @@ function readMetrics(): void {
 `padding-inline` 也能留出空间，但百分比内边距的参照宽度与卡片百分比宽度的参照宽度容易算拧：卡片宽度百分比参照的是滚动容器的内容盒，内边距百分比参照的是包含块，两边对不上就会出现「第一张居中、最后一张偏一点」。用两个弹性占位，占位与卡片共用同一套百分比参照，公式更好核对。
 
 **Q：键盘用户怎么操作轮播？**
-容器加 `tabindex="0"` 与可读的 `aria-label`，监听左右方向键调用同一个跳转函数；圆点用按钮而不是装饰元素，并给每个圆点写清「跳到第几张」。焦点进入轮播后，方向键换卡、Tab 键离开，符合常见的列表式交互预期。箭头按钮在首尾禁用，避免点了没反应。
+容器加 `tabindex="0"` 与可读的 `aria-label`，监听左右方向键调用同一个跳转函数；圆点用按钮而不是装饰元素，并给每个圆点写清「跳到第几张」。焦点进入轮播后，方向键换卡、Tab 键离开，符合常见的列表式交互预期。箭头按钮在首尾禁用，避免点了没反应。上方的「手算 / 吸附」是互斥选项，所以用 `role="radiogroup"` + `role="radio"` + `aria-checked`：Tab 只停在当前选中项，方向键在两项之间移动并选中；「模拟减少动态效果」是独立开关，才用 `aria-pressed`。
 
 **Q：卡片数量很多时要注意什么？**
 不要一次性渲染几百张卡片。滚动吸附只解决对齐，不解决渲染成本；卡片多时应该配合虚拟滚动，只渲染视口附近的几张。另外强制吸附在长列表里可能让用户「滑不动」，此时可以用 `proximity` 代替 `mandatory`，只在靠近对齐点时才吸。

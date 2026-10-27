@@ -82,6 +82,8 @@ const trackRef = ref<HTMLElement | null>(null)
 let settleTimer = 0
 /** 滚动事件的帧合并编号 */
 let scrollFrame = 0
+/** 跳转补间的帧编号：新跳转要先取消上一段，避免两段动画抢同一个 scrollLeft */
+let scrollRaf = 0
 /** 系统「减少动态效果」的媒体查询对象（卸载时移除监听） */
 let motionQuery: MediaQueryList | null = null
 
@@ -120,8 +122,11 @@ function readMetrics(): void {
   if (step <= 0) return
 
   //! 索引不靠维护一个「上一张 / 下一张」变量，而是从滚动位置反推
-  const raw = track.scrollLeft / step
-  index.value = Math.min(SLIDES.length - 1, Math.max(0, Math.round(raw)))
+  // 补间过程中先保持目标索引高亮，避免经过中间卡片时圆点来回闪；补间结束后再按真实位置校准
+  if (!scrollRaf) {
+    const raw = track.scrollLeft / step
+    index.value = Math.min(SLIDES.length - 1, Math.max(0, Math.round(raw)))
+  }
 
   const slide = getSlides()[index.value]
   if (!slide) return
@@ -139,6 +144,65 @@ function scheduleSettle(): void {
     settleTimer = 0
     readMetrics()
   }, 160)
+}
+
+/** 取消正在跑的跳转补间（新跳转、重置、卸载都要调用） */
+function cancelScrollAnimation(): void {
+  if (scrollRaf) window.cancelAnimationFrame(scrollRaf)
+  scrollRaf = 0
+  trackRef.value?.classList.remove('is-animating')
+}
+
+/**
+ * 演示用的横向滚动补间
+ * 为什么不用原生 smooth：系统开启「减少动态效果」时，部分浏览器会连程序化平滑滚动一起抑制，
+ * 案例就看不到「滑过去」的过程。这里用 rAF 自己补间，保证演示始终可见；
+ * 真实项目优先用 scrollIntoView / scrollTo 的 behavior: 'smooth'，并跟随系统设置降级。
+ */
+function animateScrollLeft(track: HTMLElement, target: number): void {
+  cancelScrollAnimation()
+
+  // 降级分支：直接到位，吸附仍然生效（吸附是功能，不是装饰动画）
+  if (mockReduce.value) {
+    track.scrollLeft = target
+    readMetrics()
+    scheduleSettle()
+    return
+  }
+
+  const start = track.scrollLeft
+  const delta = target - start
+  if (Math.abs(delta) < 1) {
+    track.scrollLeft = target
+    readMetrics()
+    scheduleSettle()
+    return
+  }
+
+  // 动画期间临时关掉吸附：否则浏览器会在每一帧把位置吸回对齐点，补间会一顿一顿
+  track.classList.add('is-animating')
+  const startedAt = performance.now()
+  const duration = 360
+  const easeOut = (p: number): number => 1 - (1 - p) ** 3
+
+  const frame = (now: number): void => {
+    const progress = Math.min(1, (now - startedAt) / duration)
+    track.scrollLeft = start + delta * easeOut(progress)
+
+    if (progress < 1) {
+      scrollRaf = window.requestAnimationFrame(frame)
+      return
+    }
+
+    // 收尾：落回精确目标并恢复吸附，最后再量一次索引与居中误差
+    scrollRaf = 0
+    track.scrollLeft = target
+    track.classList.remove('is-animating')
+    readMetrics()
+    scheduleSettle()
+  }
+
+  scrollRaf = window.requestAnimationFrame(frame)
 }
 
 /** 滚动事件：先合并到一帧再读位置，避免每次事件都强制结算布局 */
@@ -162,8 +226,6 @@ function goTo(target: number): void {
   if (!track) return
 
   const nextIndex = Math.min(SLIDES.length - 1, Math.max(0, target))
-  //! 模拟降级时用 auto 直接到位：吸附仍然生效（它属于功能，不是装饰动画）
-  const behavior: ScrollBehavior = mockReduce.value ? 'auto' : 'smooth'
 
   if (mode.value === 'manual') {
     const step = measureStep()
@@ -174,13 +236,21 @@ function goTo(target: number): void {
     const clamped = Math.max(0, Math.min(wanted, maxLeft))
     handCalc.value = 2
     handTarget.value = `${wanted}px → ${clamped}px`
-    track.scrollTo({ left: clamped, behavior })
+    animateScrollLeft(track, clamped)
   } else {
-    //! 新做法：吸附负责对齐，scrollIntoView 负责滚动，脚本不碰任何距离
+    //! 新做法：先让 scrollIntoView 用 auto 算出目标位置，脚本仍然不碰距离
     handCalc.value = 0
     handTarget.value = '浏览器自己算'
     const slide = getSlides()[nextIndex]
-    slide?.scrollIntoView({ block: 'nearest', inline: 'center', behavior })
+    if (!slide) return
+
+    const start = track.scrollLeft
+    // 用 auto 让浏览器瞬间算出对齐后的 scrollLeft，再读出来作为补间终点
+    slide.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' })
+    const computedTarget = track.scrollLeft
+    // 同步回到起点，下一帧再补间过去；整个过程在同一任务里，不会闪一下
+    track.scrollLeft = start
+    animateScrollLeft(track, computedTarget)
   }
 
   index.value = nextIndex
@@ -205,6 +275,25 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
+/**
+ * 互斥模式按钮的键盘操作
+ * role="radio" 的约定：方向键在选项间移动并选中，Tab 只停在当前选中项。
+ */
+async function onModeKeydown(event: KeyboardEvent): Promise<void> {
+  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+  if (!keys.includes(event.key)) return
+  event.preventDefault()
+
+  // currentTarget 只在事件派发期间有效，await 前先存下来
+  const group = event.currentTarget as HTMLElement
+  // 只有两个选项：方向键直接切到另一个，左右/上下都等价
+  const next: CarouselMode = mode.value === 'manual' ? 'snap' : 'manual'
+
+  await setMode(next)
+  await nextTick()
+  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+}
+
 // ---------- 模式切换与重置 ----------
 
 /** 切换实现方式：等样式生效后重新对齐当前卡片 */
@@ -221,6 +310,7 @@ async function setMode(next: CarouselMode): Promise<void> {
 
 /** 重置：回到第一张、旧做法模式，指标清零 */
 function resetAll(): void {
+  cancelScrollAnimation()
   mode.value = 'manual'
   index.value = 0
   scrollLeft.value = 0
@@ -239,6 +329,7 @@ function toggleMockReduce(): void {
   settleTimer = 0
   if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
   scrollFrame = 0
+  cancelScrollAnimation()
   handCalc.value = 0
   handTarget.value = '—'
   mockReduce.value = !mockReduce.value
@@ -270,6 +361,7 @@ onUnmounted(() => {
   settleTimer = 0
   if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
   scrollFrame = 0
+  cancelScrollAnimation()
   window.removeEventListener('resize', onResize)
   motionQuery?.removeEventListener('change', onMotionChange)
   motionQuery = null
@@ -284,13 +376,16 @@ onUnmounted(() => {
     <div class="bar">
       <div
         class="modes"
-        role="group"
+        role="radiogroup"
         aria-label="轮播实现方式"
+        @keydown="onModeKeydown"
       >
         <button
           class="mode"
           :class="{ active: mode === 'manual' }"
-          :aria-pressed="mode === 'manual'"
+          role="radio"
+          :aria-checked="mode === 'manual'"
+          :tabindex="mode === 'manual' ? 0 : -1"
           @click="setMode('manual')"
         >
           手算 scrollLeft（旧）
@@ -298,7 +393,9 @@ onUnmounted(() => {
         <button
           class="mode"
           :class="{ active: mode === 'snap' }"
-          :aria-pressed="mode === 'snap'"
+          role="radio"
+          :aria-checked="mode === 'snap'"
+          :tabindex="mode === 'snap' ? 0 : -1"
           @click="setMode('snap')"
         >
           滚动吸附（推荐）
@@ -337,7 +434,7 @@ onUnmounted(() => {
       <span>本次手算距离 <b>{{ handCalc }} 处</b></span>
       <span>手算结果 <b>{{ handTarget }}</b></span>
       <span>居中误差 <b>{{ centerError }}px</b></span>
-      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : '平滑滚动' }}</b></span>
+      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : 'rAF 补间（演示）' }}</b></span>
       <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
@@ -407,7 +504,7 @@ onUnmounted(() => {
         :class="{ active: index === slideIndex }"
         type="button"
         :aria-label="`跳到第 ${slideIndex + 1} 张：${slide.title}`"
-        :aria-pressed="index === slideIndex"
+        :aria-current="index === slideIndex ? 'true' : undefined"
         @click="goTo(slideIndex)"
       />
     </div>
@@ -415,6 +512,7 @@ onUnmounted(() => {
     <p class="hint">
       旧做法用 scrollLeft 手算：圆点跳转要先算「索引 × 单卡距离」，再夹到最大可滚动范围，两处都算错就会停在半路。
       新做法开滚动吸附，圆点只调 scrollIntoView，索引用滚动位置反推。
+      演示用 rAF 补间保证「减少动态效果」环境下也能看见滑动；真实项目优先用 behavior: 'smooth' 并跟随系统设置降级。
       用手随便向右滑一段再松手：旧做法常停在两张中间（居中误差大于 0），新做法会自动吸到整张卡片。
       点「模拟减少动态效果」可查看降级行为：跳转直接到位，吸附本身仍然生效。
     </p>
@@ -460,6 +558,11 @@ onUnmounted(() => {
     background-color: var(--surface);
     color: var(--primary);
     box-shadow: var(--shadow-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 }
 
@@ -526,6 +629,11 @@ onUnmounted(() => {
   /* 只有新做法才开启吸附：旧做法保持自由滚动，才能停在两张中间 */
   &.is-snap .track {
     scroll-snap-type: x mandatory;
+  }
+
+  /* rAF 补间期间临时关掉吸附，避免浏览器每帧把位置吸回对齐点 */
+  &.is-snap .track.is-animating {
+    scroll-snap-type: none;
   }
 }
 
