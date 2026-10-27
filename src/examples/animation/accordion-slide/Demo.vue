@@ -56,6 +56,8 @@ const heights = reactive<Record<string, number>>({})
 const measureReads = ref(0)
 /** 最近一次写入的行内高度，方便在面板上看到脚本确实动了手 */
 const lastWrite = ref('—')
+/** FAQ 容器：模板 ref，getPanel 只在组件内部查找，避免全局 id 冲突 */
+const faqRoot = ref<HTMLElement | null>(null)
 
 /** 系统当前是否真的开启了减少动态效果：只用来提示，不夺走演示 */
 const systemReduce = ref(false)
@@ -74,7 +76,8 @@ const needMeasureLines = computed(() => (mode.value === 'js' ? 1 : 0))
 
 /** 按 id 找面板节点：面板一直挂载，收起时高度为 0，仍可读 scrollHeight */
 function getPanel(id: string): HTMLElement | null {
-  return document.getElementById(`faq-panel-${id}`)
+  // 在组件根节点内查找：不用全局 id 查找，避免多实例或 id 冲突
+  return faqRoot.value?.querySelector<HTMLElement>(`#faq-panel-${id}`) ?? null
 }
 
 /** 开关一条问答：旧方案先量高度，新方案只改展开状态 */
@@ -217,7 +220,10 @@ onUnmounted(() => {
       <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
     </div>
 
-    <div class="faq">
+    <div
+      ref="faqRoot"
+      class="faq"
+    >
       <section
         v-for="(item, index) in FAQS"
         :key="item.id"

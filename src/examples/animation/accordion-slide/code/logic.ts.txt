@@ -14,6 +14,8 @@ const openId = ref<string | null>(null)
 const heights = reactive<Record<string, number>>({})
 /** 累计读取 scrollHeight 的次数 */
 const measureReads = ref(0)
+/** FAQ 容器：模板里写 <div ref="faqRoot">，只在组件内部查找面板 */
+const faqRoot = ref<HTMLElement | null>(null)
 
 /** 系统当前是否开启了减少动态效果：只用来提示，不决定演示行为 */
 const systemReduce = ref(false)
@@ -27,7 +29,8 @@ const needMeasureLines = computed(() => (mode.value === 'js' ? 1 : 0))
 
 /** 面板一直挂载，收起时高度为 0，仍能读 scrollHeight */
 function getPanel(id: string): HTMLElement | null {
-  return document.getElementById(`faq-panel-${id}`)
+  //! 用模板 ref 限定范围，避免 document 全局查找命中别的实例
+  return faqRoot.value?.querySelector<HTMLElement>(`#faq-panel-${id}`) ?? null
 }
 
 function toggle(id: string): void {
