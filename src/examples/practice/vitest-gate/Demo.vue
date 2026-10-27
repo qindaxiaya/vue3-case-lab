@@ -17,11 +17,11 @@ interface Step {
 }
 
 const steps = ref<Step[]>([
-  { id: 'unit', label: '单元测试', cmd: 'npx vitest run', ms: 700, status: 'idle' },
   { id: 'type', label: '类型检查', cmd: 'npm run type-check', ms: 1000, status: 'idle' },
   { id: 'lint', label: 'ESLint', cmd: 'npm run lint', ms: 600, status: 'idle' },
+  { id: 'unit', label: '单元测试', cmd: 'npm test', ms: 700, status: 'idle' },
   { id: 'build', label: '生产构建', cmd: 'npm run build', ms: 1200, status: 'idle' },
-  { id: 'cov', label: '覆盖率门禁', cmd: 'vitest run --coverage (≥80%)', ms: 500, status: 'idle' },
+  { id: 'bundle', label: '体积门禁', cmd: 'npm run check:bundle', ms: 400, status: 'idle' },
 ])
 
 const running = ref(false)
@@ -171,25 +171,27 @@ const statusIcon: Record<StepStatus, string> = {
     <pre class="vg-code"><code>// package.json
 {
   "scripts": {
-    "test": "vitest run",
-    "type-check": "vue-tsc --noEmit",
+    "type-check": "vue-tsc -b",
     "lint": "eslint . --max-warnings 0",
-    "build": "vue-tsc -b &amp;&amp; vite build"
+    "test": "vitest run",
+    "build": "vue-tsc -b &amp;&amp; vite build",
+    "check:bundle": "node scripts/check-bundle.mjs"
   }
 }
 
 // .github/workflows/ci.yml
 steps:
   - run: npm ci
-  - run: npm run lint
   - run: npm run type-check
-  - run: npx vitest run --coverage
-  - run: npm run build</code></pre>
+  - run: npm run lint
+  - run: npm test
+  - run: npm run build
+  - run: npm run check:bundle</code></pre>
 
     <p class="vg-hint">
       门禁的意义不是「多跑几个命令」，而是<b>任何一项不过就不能合并</b>。
       本地能过、CI 不过，通常是 Node 版本、锁文件、环境变量或大小写敏感（Linux）差异——
-      这台项目就踩过「测试用内联数据绕过真实 glob」的坑。
+      这台项目就踩过「测试用内联数据绕过真实 glob」的坑，也踩过「首屏包体悄悄变大」的坑。
     </p>
   </div>
 </template>

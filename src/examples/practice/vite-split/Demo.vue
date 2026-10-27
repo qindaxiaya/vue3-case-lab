@@ -23,7 +23,7 @@ const options: Option[] = [
   },
   {
     id: 'vendor',
-    label: 'manualChunks 拆 vendor',
+    label: 'vendor 分组（Vite 8）',
     desc: 'vue / router / 工具库分包，利用长期缓存，不重复下载',
     save: 180,
   },
@@ -126,13 +126,17 @@ const routes = [
   { path: '/cases', component: () => import('./views/CasesView.vue') },
 ]
 
-// 2. vendor 拆分：不常变的库单独一个 chunk
+// 2. vendor 分组：不常变的库单独一个 chunk
+// Vite 8（Rolldown）用 codeSplitting.groups + priority；
+// Vite 7 及以前用 output.manualChunks
 build: {
   rollupOptions: {
     output: {
-      manualChunks: {
-        vue: ['vue', 'vue-router'],
-        markdown: ['marked', 'highlight.js'],
+      codeSplitting: {
+        groups: [
+          { name: 'vendor-vue', test: /node_modules[\\/]vue[\\/]/, priority: 100 },
+          { name: 'vendor-markdown', test: /marked|highlight\.js/, priority: 50 },
+        ],
       },
     },
   },
@@ -146,6 +150,8 @@ hljs.registerLanguage('typescript', ts)</code></pre>
     <p class="vs-hint">
       判断顺序：先用分析器找最大的 chunk → 优先把「非首屏需要」的代码拆出去 →
       再考虑 vendor 缓存与按需引入。别盲目拆太碎，请求数也是成本。
+      Vite 8 的 manualChunks 会被 Rolldown 递归收编依赖，实际项目请用
+      codeSplitting.groups + priority。
     </p>
   </div>
 </template>
