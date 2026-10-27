@@ -7,7 +7,7 @@ export default {
   id: 'reactive-loss',
   title: '响应式丢失的 5 个现场',
   difficulty: 'advanced',
-  tags: ['reactive', 'toRef', 'toRefs', '解构', 'props', '响应式'],
+  tags: ['reactive', 'toRef', 'toRefs', '解构', 'props'],
   summary: '复现解构、整体赋值、浅拷贝等五处响应式丢失，并逐条给出正确写法',
   sell: '改数据页面却不更新：五个丢失现场逐个排查',
   explain: {
