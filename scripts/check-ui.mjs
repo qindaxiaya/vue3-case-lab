@@ -603,6 +603,23 @@ const SCENARIOS = [
     },
   },
   {
+    name: 'Intl 行数',
+    route: '/cases/basics/intl-format',
+    facts: async ({ evaluate }) => ({
+      stats: await evaluate(`document.querySelector('.stats')?.innerText ?? ''`),
+    }),
+    assert: (result) => {
+      const failures = []
+      if (!/手写拼接代码\s*26\s*行/.test(result.stats)) {
+        failures.push('手写代码行数不是 26（生产构建压行后可能失真）')
+      }
+      if (!/Intl 核心代码\s*4\s*行/.test(result.stats)) {
+        failures.push('Intl 核心代码行数不是 4（生产构建压行后可能失真）')
+      }
+      return failures
+    },
+  },
+  {
     name: 'Element Plus 案例样式',
     route: '/cases/practice/debounce-throttle',
     facts: async ({ evaluate }) => {
