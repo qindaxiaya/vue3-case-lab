@@ -849,6 +849,133 @@ const SCENARIOS = [
     },
   },
   {
+    name: '时间切片规模与测量',
+    route: '/cases/performance/time-slicing',
+    facts: async ({ evaluate }) => {
+      /** 用 1 万条 / 每批 1000 跑一轮全量与切片，读取对比表里的真实测量值 */
+      return evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const text = (selector) =>
+          document.querySelector(selector)?.textContent?.trim() ?? ''
+        const setSelect = async (selector, value) => {
+          const element = document.querySelector(selector)
+          element.value = String(value)
+          element.dispatchEvent(new Event('change', { bubbles: true }))
+          await wait(80)
+        }
+        const waitResult = async (selector) => {
+          for (let i = 0; i < 80; i++) {
+            const value = text(selector)
+            if (value && value !== '—' && value !== '未运行') return value
+            await wait(50)
+          }
+          return text(selector)
+        }
+
+        await setSelect('.ts-total', 10000)
+        await setSelect('.ts-batch', 1000)
+
+        document.querySelector('[data-mode="full"]').click()
+        const fullFirstText = await waitResult('[data-result="full-first"]')
+        const fullBlockText = text('[data-result="full-block"]')
+        const fullDurationText = text('[data-result="full-duration"]')
+        const fullTotalText = text('[data-result="full-total"]')
+        const fullFramesText = text('[data-result="full-frames"]')
+
+        document.querySelector('[data-mode="slice"]').click()
+        // 切片渲染中手动点一次「测主线程响应」，验证 event.timeStamp 口径
+        await wait(120)
+        document.querySelector('.ts-demo .btn-act').click()
+        await wait(120)
+        const sliceFirstText = await waitResult('[data-result="slice-first"]')
+        const sliceBlockText = text('[data-result="slice-block"]')
+        const sliceDurationText = text('[data-result="slice-duration"]')
+        const sliceTotalText = text('[data-result="slice-total"]')
+        const sliceFramesText = text('[data-result="slice-frames"]')
+        const sliceClickText = text('[data-result="slice-click"]')
+
+        const modes = [...document.querySelectorAll('.ts-demo .seg [role="radio"]')]
+        return {
+          totalSelect: document.querySelector('.ts-total').value,
+          batchSelect: document.querySelector('.ts-batch').value,
+          fullFirstText,
+          fullBlockText,
+          fullDurationText,
+          fullTotalText,
+          fullFramesText,
+          sliceFirstText,
+          sliceBlockText,
+          sliceDurationText,
+          sliceTotalText,
+          sliceFramesText,
+          sliceClickText,
+          modeCount: modes.length,
+          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
+          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      const parseMs = (value) => {
+        const parsed = Number.parseFloat(value.replace(/[^0-9.]/g, ''))
+        return Number.isFinite(parsed) ? parsed : 0
+      }
+      const fullFirst = parseMs(result.fullFirstText)
+      const fullBlock = parseMs(result.fullBlockText)
+      const fullDuration = parseMs(result.fullDurationText)
+      const sliceFirst = parseMs(result.sliceFirstText)
+      const sliceBlock = parseMs(result.sliceBlockText)
+      const sliceDuration = parseMs(result.sliceDurationText)
+      const sliceFrames = Number.parseInt(result.sliceFramesText, 10)
+
+      if (result.totalSelect !== '10000') {
+        failures.push(`数据量没有切到 10000（${result.totalSelect}）`)
+      }
+      if (result.batchSelect !== '1000') {
+        failures.push(`每批没有切到 1000（${result.batchSelect}）`)
+      }
+      if (!result.fullTotalText.includes('10,000') || !result.sliceTotalText.includes('10,000')) {
+        failures.push(
+          `对比表数据量不是 10,000：${result.fullTotalText} / ${result.sliceTotalText}`,
+        )
+      }
+      if (!(fullFirst > 0 && fullBlock > 0 && fullDuration > 0)) {
+        failures.push(
+          `全量测量值缺失：首帧 ${result.fullFirstText}、阻塞 ${result.fullBlockText}、总耗时 ${result.fullDurationText}`,
+        )
+      }
+      if (!(sliceFirst > 0 && sliceBlock > 0 && sliceDuration > 0)) {
+        failures.push(
+          `切片测量值缺失：首帧 ${result.sliceFirstText}、阻塞 ${result.sliceBlockText}、总耗时 ${result.sliceDurationText}`,
+        )
+      }
+      if (!(fullFirst + 1 >= fullBlock)) {
+        failures.push(
+          `全量首帧早于主线程阻塞：首帧 ${result.fullFirstText} / 阻塞 ${result.fullBlockText}`,
+        )
+      }
+      if (!(sliceFirst < sliceDuration)) {
+        failures.push(
+          `切片首帧没有早于总耗时：首帧 ${result.sliceFirstText} / 总耗时 ${result.sliceDurationText}`,
+        )
+      }
+      if (!(sliceFrames >= 10)) {
+        failures.push(`切片批次数不足 10（${result.sliceFramesText}）`)
+      }
+      if (!result.fullFramesText.includes('1 次全量')) {
+        failures.push(`全量批次数显示异常：${result.fullFramesText}`)
+      }
+      if (!result.sliceClickText.includes('ms')) {
+        failures.push(`切片渲染中点击响应没有测到：${result.sliceClickText}`)
+      }
+      if (result.modeCount !== 2) failures.push(`渲染方式不是 2 个 radio（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`渲染方式 checked 数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeTabbable !== 1) failures.push(`渲染方式可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
+      return failures
+    },
+  },
+  {
     name: '乐观更新提示不挤布局',
     route: '/cases/practice/optimistic-update',
     facts: async ({ evaluate }) => {
