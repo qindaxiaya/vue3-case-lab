@@ -54,19 +54,14 @@ function fmtNumberManual(v: number): string {
   return `${grouped}.${dec ?? '00'}`
 }
 
-// ---------- 行数指标：用函数源码字符串数出来（真实统计） ----------
+// ---------- 行数指标：静态统计（生产构建会压行，不能靠 toString 数） ----------
 
-/** 数一个函数的源码行数（Function.prototype.toString 是运行时的真实源码） */
-function countLines(f: (...args: never[]) => unknown): number {
-  return f.toString().split('\n').length
-}
-
-/** 手写拼接四件套的总行数（跟 Demo 源码里看到的函数完全一致） */
-const manualLineCount
-  = countLines(fmtDateManual)
-    + countLines(fmtRelativeManual)
-    + countLines(fmtCurrencyManual)
-    + countLines(fmtNumberManual)
+/**
+ * 手写四件套的源码行数：源码 24–55 行，四个函数共 26 行（含签名与右括号，不含空行与注释）。
+ * 不用 Function.prototype.toString() 数：生产构建会把函数压成一行，行数会失真。
+ * 改动这四个函数时同步更新这个数字。
+ */
+const manualLineCount = 26
 
 /** Intl 侧：四个格式化表达式直接产出全部输出（语言声明一次，规则浏览器自带） */
 function fmtIntlAll(
@@ -84,13 +79,10 @@ function fmtIntlAll(
 }
 
 /**
- * Intl 核心行数 = 函数里含 new Intl. 的表达式行（4 行，规则数得出来）
- * 用行内容过滤而不是死减行数，将来改写函数统计口径仍然准确
+ * Intl 核心表达式数：四个 new Intl. 调用（4 行）。
+ * 生产构建同样会压行，所以这里用静态值，避免面板在 preview 里变成 1。
  */
-const intlLineCount = fmtIntlAll
-  .toString()
-  .split('\n')
-  .filter((line) => line.includes('new Intl.')).length
+const intlLineCount = 4
 
 // ---------- 语言切换 ----------
 
@@ -165,7 +157,7 @@ function resetAll(): void {
     </div>
 
     <div class="stats">
-      <span>手写拼接代码 <b>{{ manualLineCount }}</b> 行（4 个函数实测）</span>
+      <span>手写拼接代码 <b>{{ manualLineCount }}</b> 行（4 个函数源码统计）</span>
       <span>Intl 核心代码 <b>{{ intlLineCount }}</b> 行（4 个接口）</span>
       <span>当前语言 <b>{{ locale }}</b></span>
       <span>对照行 <b>{{ intlRowKeys }}</b> 条</span>
