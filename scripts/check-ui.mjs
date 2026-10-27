@@ -755,6 +755,100 @@ const SCENARIOS = [
     },
   },
   {
+    name: '事件循环任务开关',
+    route: '/cases/basics/event-loop',
+    facts: async ({ evaluate }) => {
+      /** 预设/任务开关都走真实点击，验证「直觉顺序」会随勾选变化 */
+      return evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const names = () =>
+          [...document.querySelectorAll('.el-demo .lines .line .name')].map((item) =>
+            item.textContent.trim()
+          )
+        const run = () => document.querySelector('.el-demo .btn.run').click()
+
+        // 默认勾选 timer0 + Promise.then + queueMicrotask
+        document.querySelector('[data-mode="expect"]').click()
+        await wait(50)
+        const expectBasic = names()
+
+        document.querySelector('[data-mode="real"]').click()
+        run()
+        await wait(150)
+        const realBasic = names()
+
+        // 只留 Promise.then：验证任务开关真的会改变排入队列的任务
+        document.querySelector('[data-task="timer0"] input').click()
+        document.querySelector('[data-task="micro"] input').click()
+        await wait(50)
+        run()
+        await wait(150)
+        const realThenOnly = names()
+
+        // 慢任务预设：点击 → 忙 200ms → 微任务 → 定时器
+        document.querySelector('[data-preset="slow"]').click()
+        await wait(50)
+        run()
+        await wait(500)
+        const realSlow = names()
+
+        const modes = [...document.querySelectorAll('.el-demo .modes [role="radio"]')]
+        return {
+          expectBasic,
+          realBasic,
+          realThenOnly,
+          realSlow,
+          modeCount: modes.length,
+          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
+          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          taskCount: document.querySelectorAll('.el-demo .task-toggle').length,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      const has = (list, index, text) => (list[index] ?? '').includes(text)
+
+      if (!has(result.expectBasic, 0, '用户点击')) {
+        failures.push(`直觉顺序第 1 行不是点击回调：${result.expectBasic[0] ?? '空'}`)
+      }
+      if (!has(result.expectBasic, 1, 'setTimeout 0ms')) {
+        failures.push(`直觉顺序没有把定时器排在微任务前：${result.expectBasic[1] ?? '空'}`)
+      }
+      if (!has(result.expectBasic, 2, 'Promise.then')) {
+        failures.push(`直觉顺序第 3 行不是 Promise.then：${result.expectBasic[2] ?? '空'}`)
+      }
+      if (!has(result.realBasic, 0, '用户点击')) {
+        failures.push(`真实输出第 1 行不是点击回调：${result.realBasic[0] ?? '空'}`)
+      }
+      if (!has(result.realBasic, 1, 'Promise.then')) {
+        failures.push(`真实输出没有把 Promise.then 排在第 2 位：${result.realBasic[1] ?? '空'}`)
+      }
+      if (!has(result.realBasic, 2, 'queueMicrotask')) {
+        failures.push(`真实输出没有把 queueMicrotask 排在第 3 位：${result.realBasic[2] ?? '空'}`)
+      }
+      if (!has(result.realBasic, 3, 'setTimeout 0ms')) {
+        failures.push(`真实输出没有把定时器排在微任务后：${result.realBasic[3] ?? '空'}`)
+      }
+      if (result.realThenOnly.length !== 2 || !has(result.realThenOnly, 1, 'Promise.then')) {
+        failures.push(`关掉定时器与 queueMicrotask 后应只剩点击 + Promise.then：${result.realThenOnly.join(' / ')}`)
+      }
+      if (!has(result.realSlow, 1, '主线程忙')) {
+        failures.push(`慢任务没有紧跟在点击回调后：${result.realSlow[1] ?? '空'}`)
+      }
+      const slowPromise = result.realSlow.findIndex((item) => item.includes('Promise.then'))
+      const slowTimer = result.realSlow.findIndex((item) => item.includes('setTimeout 0ms'))
+      if (!(slowPromise > 1 && slowTimer > slowPromise)) {
+        failures.push(`慢任务后微任务没有排在定时器前：${result.realSlow.join(' / ')}`)
+      }
+      if (result.modeCount !== 2) failures.push(`输出对照不是 2 个 radio（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`输出对照 checked 数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeTabbable !== 1) failures.push(`输出对照可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
+      if (result.taskCount !== 6) failures.push(`任务开关不是 6 个（${result.taskCount} 个）`)
+      return failures
+    },
+  },
+  {
     name: '乐观更新提示不挤布局',
     route: '/cases/practice/optimistic-update',
     facts: async ({ evaluate }) => {

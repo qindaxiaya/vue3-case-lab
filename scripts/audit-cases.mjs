@@ -121,8 +121,11 @@ function parseDemo(source) {
     flags.push('锁页面滚动但没有卸载还原')
   }
   if (/document\.getElementById/.test(source)) flags.push('用 document.getElementById 找容器')
-  if (/const mode\s*=\s*ref|type Mode/.test(source) && !/aria-pressed/.test(source)) {
-    flags.push('有模式切换但缺 aria-pressed')
+  const hasModeSwitch = /const mode\s*=\s*ref|type Mode/.test(source)
+  const hasPressedSemantics = /aria-pressed/.test(source)
+  const hasRadioSemantics = /role="radio"/.test(source) && /aria-checked/.test(source)
+  if (hasModeSwitch && !hasPressedSemantics && !hasRadioSemantics) {
+    flags.push('有模式切换但缺 aria-pressed / radio 语义')
   }
 
   return {
