@@ -641,7 +641,7 @@ const SCENARIOS = [
     },
   },
   {
-    name: '布局偏移注入',
+    name: '布局偏移注入与重置',
     route: '/cases/performance/perf-observer',
     facts: async ({ evaluate }) => {
       const clicked = await evaluate(`(() => {
@@ -653,10 +653,35 @@ const SCENARIOS = [
         return true
       })()`)
       await sleep(300)
+      const blockAdded = await evaluate(
+        `document.querySelector('.demo-card')?.innerText.includes('布局偏移演示块（CLS +）') ?? false`,
+      )
+      const shiftCountBefore = await evaluate(
+        `document.querySelector('.shift-count')?.innerText ?? ''`,
+      )
+
+      // 重置实验：偏移块、计数、日志都要回到初始态；加载期指标不受影响
+      const resetClicked = await evaluate(`(() => {
+        const btn = [...document.querySelectorAll('.demo-card button')].find((item) =>
+          item.textContent.includes('重置实验')
+        )
+        if (!btn) return false
+        btn.click()
+        return true
+      })()`)
+      await sleep(300)
+
       return {
         clicked,
-        blockAdded: await evaluate(
-          `document.querySelector('.demo-card')?.innerText.includes('布局偏移演示块（CLS +）') ?? false`,
+        blockAdded,
+        shiftCountBefore,
+        resetClicked,
+        blocksAfterReset: await evaluate(`document.querySelectorAll('.shift-block').length`),
+        shiftCountAfter: await evaluate(
+          `document.querySelector('.shift-count')?.innerText ?? ''`,
+        ),
+        logAfterReset: await evaluate(
+          `document.querySelector('.log-panel')?.innerText ?? ''`,
         ),
       }
     },
@@ -665,6 +690,19 @@ const SCENARIOS = [
       if (!result.clicked) failures.push('没有找到「制造布局偏移」按钮')
       if (!result.blockAdded) {
         failures.push('点击后没有插入偏移块（模板 ref 可能没拿到挂载点）')
+      }
+      if (!/偏移块\s*1\s*\/\s*5/.test(result.shiftCountBefore)) {
+        failures.push(`注入后偏移块计数不对：${result.shiftCountBefore}`)
+      }
+      if (!result.resetClicked) failures.push('没有找到「重置实验」按钮')
+      if (result.blocksAfterReset !== 0) {
+        failures.push(`重置后仍残留 ${result.blocksAfterReset} 个偏移块`)
+      }
+      if (!/偏移块\s*0\s*\/\s*5/.test(result.shiftCountAfter)) {
+        failures.push(`重置后偏移块计数没有归零：${result.shiftCountAfter}`)
+      }
+      if (!result.logAfterReset.includes('已重置实验数据')) {
+        failures.push('重置后日志里没有重置记录')
       }
       return failures
     },

@@ -122,3 +122,19 @@ function cleanup() {
   for (const po of observers) po.disconnect()
   observers.length = 0
 }
+
+// --- 步骤九：重置实验数据（只清可重复产生的部分） ---
+
+/**
+ * 重置面板：CLS、历史曲线、日志、偏移块、最近点击交互
+ * FP / FCP / LCP / TTFB 是加载期一次性指标，清掉也不会重新采集，所以保留
+ */
+function resetExperiment() {
+  cls.value = 0
+  clsHistory.value = []
+  fpsHistory.value = []
+  live.lastClickInp = null
+  shiftZone.value?.replaceChildren()
+  logEntries.value = []
+  //! 加载期指标不清：它们已经发生，重置只针对可以反复制造的实验数据
+}
