@@ -215,6 +215,9 @@ onUnmounted(() => {
 /** 卡顿强度（ms）：滑块控制 16–200 */
 const blockMs = ref(80)
 
+/** 布局偏移演示区（模板 ref）：直接拿 DOM，不用全局 id 查找 */
+const shiftZone = ref<HTMLElement | null>(null)
+
 /** 按滑块强度同步阻塞主线程（制造 longtask） */
 function makeLongTask(): void {
   const start = performance.now()
@@ -227,7 +230,7 @@ function makeLongTask(): void {
 
 /** 制造布局偏移：动态插入块推挤下方内容（CLS 实时增长） */
 function makeLayoutShift(): void {
-  const host = document.getElementById('shift-zone')
+  const host = shiftZone.value
   if (!host) return
   const block = document.createElement('div')
   block.style.cssText =
@@ -385,7 +388,7 @@ function fpsLevel(fps: number): string {
     </div>
 
     <!-- 偏移块挂载点 -->
-    <div id="shift-zone" />
+    <div ref="shiftZone" />
 
     <!-- 日志面板 -->
     <div class="log-panel">
