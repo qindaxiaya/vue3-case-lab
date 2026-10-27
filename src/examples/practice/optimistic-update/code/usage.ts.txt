@@ -36,3 +36,8 @@ async function toggleLike(id: number): Promise<void> {
     pending.value = pending.value.filter((item) => item !== id)
   }
 }
+
+// 失败提示不要插在列表上方：内联提示会改变文档流，把下面的卡片顶下去。
+// 用 Teleport 挂到 body + position: fixed 的消息栈，出现/消失都不参与列表布局：
+// <Teleport to="body"><TransitionGroup tag="div" class="toasts">...</TransitionGroup></Teleport>
+// .toasts { position: fixed; right: 1rem; bottom: 1rem; }

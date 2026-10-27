@@ -755,6 +755,92 @@ const SCENARIOS = [
     },
   },
   {
+    name: '乐观更新提示不挤布局',
+    route: '/cases/practice/optimistic-update',
+    facts: async ({ evaluate }) => {
+      /** 切到乐观模式 → 点赞 → 成功提示 → 打开失败开关再点赞 → 失败回滚 */
+      return evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const panelsTop = () =>
+          Math.round(document.querySelector('.ou-demo .panels').getBoundingClientRect().top)
+
+        const mode = [...document.querySelectorAll('.ou-demo .mode')].find((item) =>
+          item.textContent.includes('乐观更新')
+        )
+        mode.click()
+        await wait(80)
+        const before = panelsTop()
+
+        const first = document.querySelectorAll('.ou-demo .like')[0]
+        first.click()
+        await wait(60)
+        const pressedAt60 = first.getAttribute('aria-pressed')
+        const during = panelsTop()
+
+        await wait(350)
+        const afterSuccess = panelsTop()
+        const successText = document.querySelector('.ou-toasts')?.innerText ?? ''
+        const toastStack = document.querySelector('.ou-toasts')
+        const toastPosition = toastStack ? getComputedStyle(toastStack).position : ''
+        const teleported = document.querySelector('.ou-toasts')?.parentElement === document.body
+        const toastCount = document.querySelectorAll('.ou-toast').length
+
+        const failBtn = [...document.querySelectorAll('.ou-demo button')].find((item) =>
+          item.textContent.includes('模拟接口失败')
+        )
+        failBtn.click()
+        await wait(50)
+        const second = document.querySelectorAll('.ou-demo .like')[1]
+        second.click()
+        await wait(60)
+        const secondPressedAt60 = second.getAttribute('aria-pressed')
+        await wait(400)
+        const secondPressedAfter = second.getAttribute('aria-pressed')
+        const afterFail = panelsTop()
+        const failText = document.querySelector('.ou-toasts')?.innerText ?? ''
+
+        return {
+          before,
+          during,
+          afterSuccess,
+          afterFail,
+          pressedAt60,
+          secondPressedAt60,
+          secondPressedAfter,
+          toastCount,
+          toastPosition,
+          teleported,
+          successText,
+          failText,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      if (result.pressedAt60 !== 'true') {
+        failures.push(`乐观更新 60ms 后按钮仍未点亮（aria-pressed=${result.pressedAt60}）`)
+      }
+      if (result.secondPressedAt60 !== 'false') {
+        failures.push(`第二张卡片乐观更新 60ms 后没有立即取消点赞（${result.secondPressedAt60}）`)
+      }
+      if (result.secondPressedAfter !== 'true') {
+        failures.push(`失败后第二张卡片没有回滚（${result.secondPressedAfter}）`)
+      }
+      if (result.toastCount < 1) failures.push('操作后没有出现提示消息')
+      if (result.toastPosition !== 'fixed') {
+        failures.push(`提示没有使用固定定位（position=${result.toastPosition}）`)
+      }
+      if (!result.teleported) failures.push('提示没有 Teleport 到 body')
+      if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
+      if (!result.failText.includes('已撤回')) failures.push('失败回滚提示文案缺失')
+      const tops = [result.before, result.during, result.afterSuccess, result.afterFail]
+      if (Math.max(...tops) - Math.min(...tops) > 1) {
+        failures.push(`提示出现后列表面板被推挤（top: ${tops.join(' / ')}）`)
+      }
+      return failures
+    },
+  },
+  {
     name: 'Intl 行数',
     route: '/cases/basics/intl-format',
     facts: async ({ evaluate }) => ({
