@@ -153,6 +153,11 @@
 - ✅ 2026-10-22 回到顶部不再瞬跳（补记另一会话的 `7f8a175`）：`smoothScrollTo` 新增 `ignoreReducedMotion` 选项，回到顶部在系统开启「减少动态效果」时仍保留缓动（460ms → 320ms）；`check:ui` 列表场景记录 `reduceMotion` 与点击后 150ms 的 scrollY，并新增「瞬跳」断言。根因与动画案例相同：开发机浏览器就是 reduce
 - ✅ 2026-10-27 案例质量基线（批 0）：新增 `npm run audit:cases` 静态体检（81 案例，按 P0/P1/P2 输出，报告写 `node_modules/.tmp/case-audit.md`）；`check:ui` 增加 `--case <分类>/<案例>` 单案例巡检与 `--sweep` 全案例巡检（375px，新增 console.error / console.warn 捕获）；修正 `vitest-gate`（五道真实门禁：type-check / lint / test / build / check:bundle，删除仓库不存在的覆盖率门禁）、`vite-split`（Vite 8 `codeSplitting.groups` + 真实构建数据）、`registry` 注释里的过时案例数
   - 验收：audit 81 案例 0 P0 / 0 P1 / 22 P2；`check:ui --sweep` 81/81；全量 `check:ui` 16/16；vitest 53/53；type-check、eslint、build、check:bundle（首屏 gzip 108.9 KB）通过
+- ✅ 2026-10-27 机械 P2 清理（7 个案例）：4 处 `document.getElementById` 改模板 ref（accordion-slide 用 `faqRoot` + `querySelector`、infinite-scroll / lazy-image 用 `scrollRoot`、perf-observer 用 `shiftZone`），同步更新 `code/logic.ts.txt` 与 `code/usage.ts.txt`；3 个案例补 `aria-pressed`（typewriter-stream 2 个、reactive-loss 8 个、theme-switch 的 v-for 模式按钮）；reactive-loss 的 tags 从 6 个压到 5 个
+  - `check:ui` 修正 `waitForDemo`：改为等 `.demo-card` 里的 `.async-placeholder` 消失，避免 dev 首次编译时把「演示加载中…」当成渲染完成；`--case` 不再把「可操作控件数」当硬失败（无限滚动靠滚动触发）
+  - 新增 4 个常驻场景：折叠面板量高（读取 scrollHeight 0 → 1、高度 87px）、无限滚动预取（20 → 40 条）、懒加载容器滚动（6 → 12 张）、布局偏移注入（`blockAdded=true`）
+  - 验收：audit 81 案例 0 P0 / 0 P1 / **14 P2（全部是 notes 第 4 段「约/左右/估计」）**；7 个案例 `check:ui --case` 通过；全量 `check:ui` 20/20；`--sweep` 81/81；vitest 53/53；type-check、eslint、build、check:bundle（首屏 gzip 108.8 KB）通过
+  - 剩余 14 个「约/左右」P2：magnetic-button / snap-carousel / event-loop / intl-format / container-query / has-parent / raf-loop / raf-throttle / sse-chat / time-slicing / debounce-throttle / image-compress / optimistic-update / effect-scope
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -224,3 +229,4 @@
 | 2026-10-22 | **影响面超过 1 个案例先问，文档按批次合并** | 8 个动画案例都受系统 reduce 影响时，先让用户选「只修一个 / 统一改 / 全局放行」；`AGENTS.md` 的进度与决策在批次收尾一次写，不再每修一处追加一段、单独 commit |
 | 2026-10-27 | **质量升级先建基线：静态体检只查机器能判断的，浏览器巡检兜住渲染** | 81 个案例靠人逐个翻容易漏，新增 `npm run audit:cases`（文件结构 / meta 长度 / notes 五段 / 过时命令 / 清理函数 / aria）与 `check:ui --case`、`--sweep`；静态体检把「约/左右」「document.getElementById」「缺 aria-pressed」标成 P2 工作项，不阻塞批次；真实溢出、未挂载、console.error/warn 由 `--sweep` 在 375px 下兜住。批 0 结果 0 P0 / 0 P1 / 22 P2，81/81 巡检通过 |
 | 2026-10-27 | **案例里的 CI 门禁必须和仓库真实脚本一致** | `vitest-gate` 原来写覆盖率阈值，仓库根本没有 coverage 配置；改为真实的五步：`type-check`（`vue-tsc -b`）、`lint`、`test`（`vitest run`）、`build`、`check:bundle`，并补 `package.json` 的 `test` 脚本。`vite-split` 原来只写 `manualChunks`，改为 Vite 8 的 `codeSplitting.groups`，同时保留旧版写法说明；第 4 段换成 `npm run build` + `check:bundle` 的真实数据（首屏 gzip 108.9 KB） |
+| 2026-10-27 | **机械 P2 先清一轮，行为敏感的改动补常驻断言** | 4 处 `document.getElementById` 统一改模板 ref：能拿容器就 `querySelector` 限定范围（accordion-slide 的 `faqRoot`），观察器 root 直接传 ref（infinite-scroll / lazy-image 的 `scrollRoot`），挂载点直接传 ref（perf-observer 的 `shiftZone`）；教学代码同步，避免「Demo 改了、代码区还是旧写法」。这 4 处会改变交互路径，给 accordion / infinite-scroll / lazy-image / perf-observer 各补一个常驻场景（读取 scrollHeight、预取页数、加载张数、偏移块是否插入），以后 `getElementById` 回归会先在浏览器巡检里露头。`check:ui` 的 `waitForDemo` 同时改为等占位符消失，否则 dev 首次编译会把「演示加载中…」当完成；`--case` 不再硬性要求按钮，无限滚动这类靠滚动触发的演示也能过 |
