@@ -488,6 +488,121 @@ const SCENARIOS = [
     },
   },
   {
+    name: '折叠面板量高',
+    route: '/cases/animation/accordion-slide',
+    facts: async ({ evaluate }) => {
+      /** 默认是「脚本量高」模式：点第一条，确认模板 ref 能拿到面板并读到 scrollHeight */
+      const before = await evaluate(`document.querySelector('.stats')?.innerText ?? ''`)
+      await evaluate(`document.querySelectorAll('.faq-trigger')[0]?.click()`)
+      await sleep(400)
+      return {
+        before,
+        after: await evaluate(`document.querySelector('.stats')?.innerText ?? ''`),
+        panelHeight: await evaluate(
+          `getComputedStyle(document.querySelector('#faq-panel-faq-1')).height`,
+        ),
+        expanded: await evaluate(
+          `document.querySelectorAll('.faq-trigger')[0]?.getAttribute('aria-expanded')`,
+        ),
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!/读取 scrollHeight\s*0\s*次/.test(result.before)) {
+        failures.push('初始「读取 scrollHeight」计数不是 0')
+      }
+      if (!/读取 scrollHeight\s*1\s*次/.test(result.after)) {
+        failures.push('点击后没有读取 scrollHeight（模板 ref 可能没拿到面板）')
+      }
+      if (result.panelHeight === '0px') failures.push('面板高度没有展开')
+      if (result.expanded !== 'true') failures.push('面板 aria-expanded 没有变成 true')
+      return failures
+    },
+  },
+  {
+    name: '无限滚动预取',
+    route: '/cases/observer/infinite-scroll',
+    facts: async ({ evaluate }) => {
+      // 等第一页（20 条）渲染完，再滚到容器底部触发哨兵
+      for (let i = 0; i < 20; i++) {
+        if (await evaluate(`document.querySelectorAll('.list-item').length >= 20`)) break
+        await sleep(200)
+      }
+      const first = await evaluate(`document.querySelectorAll('.list-item').length`)
+      await evaluate(`(() => {
+        const el = document.querySelector('.list-area')
+        if (el) el.scrollTop = el.scrollHeight
+      })()`)
+      await sleep(900)
+      return {
+        first,
+        second: await evaluate(`document.querySelectorAll('.list-item').length`),
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (result.first < 20) failures.push(`第一页没有加载（${result.first} 条）`)
+      if (!(result.second > result.first)) {
+        failures.push(`滚到底后没有加载下一页（${result.first} → ${result.second}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '懒加载容器滚动',
+    route: '/cases/observer/lazy-image',
+    facts: async ({ evaluate }) => {
+      /** 从「已加载 X / 30」里取 X */
+      const readLoaded = () =>
+        evaluate(
+          `Number(((document.querySelector('.stat')?.innerText ?? '').split('/')[0] ?? '').replace(/[^0-9]/g, ''))`,
+        )
+      const before = await readLoaded()
+      await evaluate(`(() => {
+        const el = document.querySelector('.scroll-area')
+        if (el) el.scrollTop = el.scrollHeight
+      })()`)
+      await sleep(900)
+      return { before, after: await readLoaded() }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!(result.after > result.before)) {
+        failures.push(`滚动容器后没有加载新图片（${result.before} → ${result.after}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '布局偏移注入',
+    route: '/cases/performance/perf-observer',
+    facts: async ({ evaluate }) => {
+      const clicked = await evaluate(`(() => {
+        const btn = [...document.querySelectorAll('.demo-card button')].find((item) =>
+          item.textContent.includes('制造布局偏移')
+        )
+        if (!btn) return false
+        btn.click()
+        return true
+      })()`)
+      await sleep(300)
+      return {
+        clicked,
+        blockAdded: await evaluate(
+          `document.querySelector('.demo-card')?.innerText.includes('布局偏移演示块（CLS +）') ?? false`,
+        ),
+      }
+    },
+    assert: (result) => {
+      const failures = []
+      if (!result.clicked) failures.push('没有找到「制造布局偏移」按钮')
+      if (!result.blockAdded) {
+        failures.push('点击后没有插入偏移块（模板 ref 可能没拿到挂载点）')
+      }
+      return failures
+    },
+  },
+  {
     name: 'Element Plus 案例样式',
     route: '/cases/practice/debounce-throttle',
     facts: async ({ evaluate }) => {
@@ -625,12 +740,21 @@ const ANIMATION_CASES = [
   'focus-visible-ring',
 ]
 
-/** 等演示区挂载：dev 首次编译案例 chunk 可能慢，最多等 10 秒 */
+/**
+ * 等演示区真正加载完成：dev 首次编译案例 chunk 可能慢，最多等 10 秒
+ * 只判断 .demo-card 是否存在不够：CasePage 在演示组件到达前就渲染了这张卡，
+ * 里面是「演示加载中…」占位，过早采集会得到空内容
+ */
 async function waitForDemo(page, timeoutMs = 10000) {
   const started = Date.now()
   while (Date.now() - started < timeoutMs) {
-    const mounted = await page.evaluate(`Boolean(document.querySelector('.demo-card'))`)
-    if (mounted) return true
+    const ready = await page.evaluate(`(() => {
+      const card = document.querySelector('.demo-card')
+      if (!card) return false
+      // 占位符还在 = 演示组件还没到（或加载失败）
+      return !card.querySelector('.async-placeholder')
+    })()`)
+    if (ready) return true
     await sleep(250)
   }
   return false
@@ -669,7 +793,7 @@ async function checkCase(port, casePath) {
       deviceScaleFactor: 1,
       mobile: false,
     })
-    await waitForDemo(page)
+    const ready = await waitForDemo(page)
     const desktop = await collectPageFacts(page)
 
     // 再切 375px：窄屏是最容易溢出的场景
@@ -683,9 +807,10 @@ async function checkCase(port, casePath) {
     const mobile = await collectPageFacts(page)
 
     const failures = []
+    if (!ready) failures.push('演示区 10 秒内没有加载完成')
     if (!desktop.demoMounted) failures.push('演示区没有挂载')
     if (desktop.demoTextLength < 10) failures.push('演示区没有渲染出内容')
-    if (desktop.interactive < 1) failures.push('演示区没有可操作控件')
+    // interactive 只作为结果展示，不作为硬失败：无限滚动这类演示靠滚动触发，没有按钮
     if (desktop.scrollWidth > desktop.innerWidth) {
       failures.push(`桌面出现横向滚动（${desktop.scrollWidth} > ${desktop.innerWidth}）`)
     }
@@ -738,7 +863,7 @@ async function sweepCases(port, filter) {
       const facts = await collectPageFacts(page)
 
       const failures = []
-      if (!mounted || !facts.demoMounted) failures.push('演示区没有挂载')
+      if (!mounted || !facts.demoMounted) failures.push('演示区 6 秒内没有加载完成')
       if (facts.scrollWidth > facts.innerWidth) {
         failures.push(`375px 出现横向滚动（${facts.scrollWidth} > ${facts.innerWidth}）`)
       }
