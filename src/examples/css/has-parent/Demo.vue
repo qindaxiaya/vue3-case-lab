@@ -194,7 +194,7 @@ onUnmounted(() => {
     </div>
 
     <div class="stats">
-      <span>实现该行为的 JS 行数 <b>{{ mode === 'js' ? `约 ${JS_LINES}` : 0 }}</b></span>
+      <span>实现该行为的 JS 行数 <b>{{ mode === 'js' ? JS_LINES : 0 }}</b></span>
       <span>生效监听器 <b>{{ listenerCount }}</b> 个</span>
       <span>必填为空 <b>{{ emptyCount }}</b> / 2</span>
       <span>容器红边 <b>{{ formBadLive() ? '点亮' : '熄灭' }}</b></span>
