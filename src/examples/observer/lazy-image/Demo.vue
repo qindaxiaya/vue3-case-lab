@@ -36,6 +36,9 @@ const loadedCount = ref(0)
 /** 是否启用 100px 预加载（rootMargin 对比开关） */
 const usePreload = ref(true)
 
+/** 滚动容器（模板 ref）：给观察器当 root，也限定卡片查询范围 */
+const scrollRoot = ref<HTMLElement | null>(null)
+
 /** 观察器日志条目（图片生命周期事件，与视觉严格同步） */
 interface LogEntry {
   id: number
@@ -111,8 +114,8 @@ function setupObserver(): void {
       }
     },
     {
-      // 交叉根：留空 = 视口（容器 demo 作为 root 见下方 observe 说明）
-      root: document.getElementById('lazy-scroll') ?? undefined,
+      // 交叉根：组件内的滚动容器（模板 ref），留空则退回视口
+      root: scrollRoot.value ?? undefined,
       // 100px 预加载：视口外 100px 就提前触发进入
       rootMargin: usePreload.value ? '100px' : '0px',
       // 进入 0% 即触发（默认）；0.5 需进一半才触发（本例保持 0）
@@ -120,8 +123,8 @@ function setupObserver(): void {
     },
   )
 
-  // 观察所有卡片 DOM
-  document.querySelectorAll<HTMLElement>('#lazy-scroll .lazy-card').forEach((el) => {
+  // 观察所有卡片 DOM：只在组件根节点内查，避免命中页面别处的同名 class
+  scrollRoot.value?.querySelectorAll<HTMLElement>('.lazy-card').forEach((el) => {
     observer!.observe(el)
   })
 }
@@ -167,7 +170,7 @@ onUnmounted(() => {
     <div class="body">
       <!-- 滚动容器（观察器的 root） -->
       <div
-        id="lazy-scroll"
+        ref="scrollRoot"
         class="scroll-area"
         aria-label="图片列表滚动容器"
       >
