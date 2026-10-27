@@ -10,6 +10,8 @@ const list = ref<number[]>([])
 
 let observer: IntersectionObserver | null = null
 const sentinel = ref<HTMLElement | null>(null)
+/** 列表滚动容器：模板 ref，给观察器当 root */
+const scrollRoot = ref<HTMLElement | null>(null)
 
 /** 加载一页（真实项目：调接口） */
 async function loadMore(): Promise<void> {
@@ -39,7 +41,7 @@ onMounted(() => {
       }
     },
     {
-      root: document.getElementById('list') ?? undefined,
+      root: scrollRoot.value ?? undefined,
       rootMargin: '0px 0px 200px 0px', // 上右下左：只扩下边
       threshold: 0,
     },
@@ -54,7 +56,7 @@ onUnmounted(() => {
 })
 
 // 模板结构：
-// <div id="list" style="overflow:auto">
+// <div ref="scrollRoot" style="overflow:auto">
 //   <div v-for="item in list">{{ item }}</div>
 //   <div ref="sentinel" style="height:1px" />  <!-- 哨兵：列表最底部的锚点 -->
 // </div>
