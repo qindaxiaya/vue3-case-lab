@@ -151,6 +151,8 @@
   - `check:ui` 新增 `--only <关键字>`：按场景名或路由过滤，单场景 5~10 秒（`npm run check:ui -- --base http://localhost:5173 --only 抽屉` 实测 1 个场景通过）
   - `AGENTS.md` 任务分级补两条：修复存量案例 bug 固定走 L1（单案例 eslint + type-check + `--only`，不跑 build / bundle / 全量）；影响面超过 1 个案例先问，文档按批次合并提交
 - ✅ 2026-10-22 回到顶部不再瞬跳（补记另一会话的 `7f8a175`）：`smoothScrollTo` 新增 `ignoreReducedMotion` 选项，回到顶部在系统开启「减少动态效果」时仍保留缓动（460ms → 320ms）；`check:ui` 列表场景记录 `reduceMotion` 与点击后 150ms 的 scrollY，并新增「瞬跳」断言。根因与动画案例相同：开发机浏览器就是 reduce
+- ✅ 2026-10-27 案例质量基线（批 0）：新增 `npm run audit:cases` 静态体检（81 案例，按 P0/P1/P2 输出，报告写 `node_modules/.tmp/case-audit.md`）；`check:ui` 增加 `--case <分类>/<案例>` 单案例巡检与 `--sweep` 全案例巡检（375px，新增 console.error / console.warn 捕获）；修正 `vitest-gate`（五道真实门禁：type-check / lint / test / build / check:bundle，删除仓库不存在的覆盖率门禁）、`vite-split`（Vite 8 `codeSplitting.groups` + 真实构建数据）、`registry` 注释里的过时案例数
+  - 验收：audit 81 案例 0 P0 / 0 P1 / 22 P2；`check:ui --sweep` 81/81；全量 `check:ui` 16/16；vitest 53/53；type-check、eslint、build、check:bundle（首屏 gzip 108.9 KB）通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -220,3 +222,5 @@
 | 2026-10-22 | **`check:ui` 增加动画分类逐页抽检，而不是给 8 个案例各写一套断言** | 动画案例交互差异大，逐例定制脚本维护成本高；统一断言「375px 无横向溢出 + 演示区有内容 + 有可操作按钮 + 控制台零报错」，再靠人工走查覆盖「动效是否好看、对比是否有说服力」 |
 | 2026-10-22 | **单个 bug 修复固定走 L1 + `check:ui --only`** | 用户反馈「改一个抽屉花了近 40 分钟」：单案例修复却跑了两次 16 场景全量验收、build、bundle、preview。改为：读相关片段（不整文件通读）→ 一次最小探针确认根因 → 改 → 单案例 eslint + type-check + `check:ui --only <场景>`；只有根因需要长期防回归时才补常驻断言，且不影响单次验收时长 |
 | 2026-10-22 | **影响面超过 1 个案例先问，文档按批次合并** | 8 个动画案例都受系统 reduce 影响时，先让用户选「只修一个 / 统一改 / 全局放行」；`AGENTS.md` 的进度与决策在批次收尾一次写，不再每修一处追加一段、单独 commit |
+| 2026-10-27 | **质量升级先建基线：静态体检只查机器能判断的，浏览器巡检兜住渲染** | 81 个案例靠人逐个翻容易漏，新增 `npm run audit:cases`（文件结构 / meta 长度 / notes 五段 / 过时命令 / 清理函数 / aria）与 `check:ui --case`、`--sweep`；静态体检把「约/左右」「document.getElementById」「缺 aria-pressed」标成 P2 工作项，不阻塞批次；真实溢出、未挂载、console.error/warn 由 `--sweep` 在 375px 下兜住。批 0 结果 0 P0 / 0 P1 / 22 P2，81/81 巡检通过 |
+| 2026-10-27 | **案例里的 CI 门禁必须和仓库真实脚本一致** | `vitest-gate` 原来写覆盖率阈值，仓库根本没有 coverage 配置；改为真实的五步：`type-check`（`vue-tsc -b`）、`lint`、`test`（`vitest run`）、`build`、`check:bundle`，并补 `package.json` 的 `test` 脚本。`vite-split` 原来只写 `manualChunks`，改为 Vite 8 的 `codeSplitting.groups`，同时保留旧版写法说明；第 4 段换成 `npm run build` + `check:bundle` 的真实数据（首屏 gzip 108.9 KB） |
