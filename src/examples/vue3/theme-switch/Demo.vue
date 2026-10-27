@@ -92,6 +92,7 @@ const modeOptions: { key: Mode; label: string }[] = [
           :key="m.key"
           class="seg-btn"
           :class="{ active: mode === m.key }"
+          :aria-pressed="mode === m.key"
           @click="setMode(m.key)"
         >
           {{ m.label }}
