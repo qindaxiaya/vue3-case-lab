@@ -166,8 +166,8 @@
 - ✅ 2026-10-27 「约/左右」P2 批 3（3 个案例）：`debounce-throttle` 节流每 100ms 1 次；`image-compress` 压缩率 96%（面板取整，1 − 60/1690 = 96.45%）；`optimistic-update` 回滚 300ms（接口固定延迟）
   - 阶段收口：audit 81 案例 **0 P0 / 0 P1 / 0 P2**；vitest 53/53、type-check、lint、build、check:bundle（首屏 gzip 108.9 KB）、全量 `check:ui` 21/21、`--sweep` 81/81 通过
   - 说明：sse-chat 原 notes/meta 与 Demo 实际 150~390ms 随机延迟不一致，已按代码修正并删除不稳定的 1.2s 快照；raf-throttle 原「每分钟」为笔误
-- ✅ 2026-10-27 案例质量升级批 A（4 案例）：`animation/snap-carousel` 改 rAF 补间 + radio 模式 + 补间期间关闭吸附；`performance/perf-observer` 实时/加载期分组 + 重置实验 + 偏移块上限 5；`observer/lazy-image` 加载完成才 unobserve + 日志上限 20 + 持续观察开关 + 重置列表；`practice/optimistic-update` 提示改固定消息栈（`Teleport to="body"`，最多 3 条、2.4s 自动消失），面板位置全程不变
-  - 提交：`d269e63` / `4f12d88` / `ba23822` / `9b5ac48`；`snap-carousel` 说明区另修未解释缩写 `rAF`（`c307cb5`）
+- ✅ 2026-10-27 案例质量升级批 A（4 案例）：`animation/snap-carousel` 改 rAF 补间 + radio 模式 + 补间期间关闭吸附；`performance/perf-observer` 实时/加载期分组 + 重置实验 + 偏移块上限 5；`observer/lazy-image` 加载完成才 unobserve + 日志上限 20 + 持续观察开关 + 重置列表；`practice/optimistic-update` 提示改固定消息栈（`Teleport to="body"`，最多 3 条、2.4s 自动消失），面板位置全程不变；更新策略按钮统一改 radio 语义
+  - 提交：`d269e63` / `4f12d88` / `ba23822` / `9b5ac48` / `9c448e4`；`snap-carousel` 说明区另修未解释缩写 `rAF`（`c307cb5`）
   - 验收：四个案例各自 `check:ui --only` 通过；`npx eslint <案例目录>` 与 `npm run type-check` 通过
 - ✅ 2026-10-27 案例质量升级批 B（2 案例）：`basics/event-loop` 改 4 个预设 + 6 个任务开关，「直觉预期」按当前勾选动态生成，输出对照改 radio，`runToken` + `timerIds` 防止旧回调串台；`performance/time-slicing` 默认 3 万 / 300，可选 1/3/5 万与 100/300/1000，新增结果对比表，首帧改 `nextTick` + 双 rAF、最大阻塞按每批计时、点击响应改 `event.timeStamp`
   - `check:ui` 新增两个常驻场景：「事件循环任务开关」验证默认顺序、只留 Promise、慢任务后顺序与 radio 语义；「时间切片规模与测量」用 1 万 / 1000 跑全量与切片，断言对比表数值、切片首帧早于总耗时、渲染中点击可响应
