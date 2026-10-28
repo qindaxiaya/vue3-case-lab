@@ -57,7 +57,7 @@ permissions:
 - 是否存在「造轮子」：手写 debounce/throttle/深拷贝等已被 VueUse 等库解决的通用工具
 
 **样式**
-- 是否用了 Tailwind 或第三方 UI 组件库（仅允许 Element Plus 通用表单控件，且必须按需引入、禁止 `app.use(ElementPlus)`）
+- 是否用了 Tailwind 或第三方 UI 组件库（仅允许 Naive UI 演示区控件，且必须按需引入、主题映射走 `useNaiveTheme.ts`、provider 用共享 `DemoNaive.vue` 放在演示区内而非站点壳）
 - 是否违反了禁 Pinia 约定
 - 是否使用 CSS 变量 / SCSS 变量而不是硬编码颜色，暗色模式下是否可用
 

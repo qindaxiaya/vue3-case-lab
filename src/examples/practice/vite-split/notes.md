@@ -64,13 +64,13 @@ hljs.registerLanguage('typescript', typescript)
 
 | 产物 | 原始体积 | gzip | 加载时机 |
 |---|---|---|---|
-| 首屏合计（入口 + vendor-vue + runtime + 入口 CSS） | 316.1 KB | 108.9 KB | 首屏 |
-| vendor-vue | 107.0 KB | 40.9 KB | 首屏（所有页面都依赖） |
-| vendor-markdown（marked + highlight.js） | 65.9 KB | 21.5 KB | 详情页「深入」/ 源码 |
-| vendor-element-plus | 94.1 KB | 31.8 KB | 只有 3 个用表单控件的案例 |
+| 首屏合计（入口 + vendor-vue + runtime + 入口 CSS） | 304.1 KB | 106.6 KB | 首屏 |
+| vendor-vue | 107.7 KB | 41.1 KB | 首屏（所有页面都依赖） |
+| vendor-markdown（marked + highlight.js） | 64.4 KB | 20.9 KB | 详情页「深入」/ 源码 |
+| vendor-naive-ui（含 css-render / lodash 等依赖） | 330.8 KB | 90.8 KB | 打开用到演示区控件的案例 |
 | pdf.js（按需） | 430.2 KB | 129.3 KB | 打开 PDF 预览案例 |
 
-测量方式：`npm run build` 输出每个 chunk 的 raw / gzip；`npm run check:bundle` 读取 `dist/index.html` 的首屏资源并汇总，本次首屏 gzip 108.9 KB，预算 180 KB，357 个 JS chunk 全部通过单块 600 KB 预算（pdf/worker 按需加载，不参与单块预算）。对比 2026-10-21 改造前的首屏 gzip 521 KB，降幅 79.1%。
+测量方式：`npm run build` 输出每个 chunk 的 raw / gzip；`npm run check:bundle` 读取 `dist/index.html` 的首屏资源并汇总，本次首屏 gzip 106.6 KB，预算 180 KB，356 个 JS chunk 全部通过单块 600 KB 预算（pdf/worker 按需加载，不参与单块预算）。对比 2026-10-21 改造前的首屏 gzip 521 KB，降幅 79.5%。
 
 案例 Demo 里的 1180 KB 是**示意值**，用来讲清每种策略的方向和量级，不是本项目实测；真实数字以上表为准。
 

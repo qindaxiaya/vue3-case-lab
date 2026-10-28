@@ -42,8 +42,8 @@ npm run dev
 
 - **路由级懒加载**：首页 / 列表 / 详情各自成 chunk，首页不再下载案例页依赖
 - **案例资源按需**：`registry.ts` 只把 `meta.ts` 留作同步数据；Demo、`Demo.vue?raw`、`code/*.txt` 在打开案例或源码 tab 时才加载，并在会话内缓存
-- **第三方分包**：`vite.config.ts` 用 `output.codeSplitting.groups` 拆出 `vendor-vue` / `vendor-markdown` / `vendor-element-plus` / `vendor-utils`
-- **Element Plus 样式按需**：只引入 `theme-chalk/base.css` 与暗色变量，组件样式随对应 Demo chunk 下发
+- **第三方分包**：`vite.config.ts` 用 `output.codeSplitting.groups` 拆出 `vendor-vue` / `vendor-markdown` / `vendor-naive-ui` / `vendor-utils`
+- **Naive UI 按需引入**：`NaiveUiResolver` 自动按需 import；样式是 CSS-in-JS 随组件 JS 走，无独立 CSS 文件；`vendor-naive-ui` 组开启递归收编，依赖（css-render/vooks/lodash 等）全部跟着进懒加载 chunk，不进首屏
 - **体积门禁**：`npm run check:bundle` 检查首屏 gzip 上限、单 chunk 体积，并禁止教学代码标记出现在首屏包；CI 在 build 后执行
 
 实测（2026-10-21）：首屏 gzip 从 521 KB 降到 91 KB；详情页按需追加约 40 KB（含语法高亮运行时），源码 tab 再加载该案例自己的文本。
@@ -59,14 +59,13 @@ dist/
 └── assets/
     ├── js/
     │   ├── index-<hash>.js           # 应用入口
-    │   ├── vendor/                   # vue / markdown / element-plus / utils
+    │   ├── vendor/                   # vue / markdown / naive-ui / utils
     │   ├── pages/                    # HomePage / CaseListPage / CasePage
     │   ├── cases/<分类>/<案例>/       # Demo、Demo.source、教学代码、notes
     │   ├── lib/                      # pdf.js 运行时
     │   └── workers/                  # pdf.worker
     └── css/
-        ├── index-<hash>.css          # 站点样式 + Element Plus 基础变量
-        ├── vendor/                   # Element Plus 组件样式
+        ├── index-<hash>.css          # 站点样式（Naive UI 为 CSS-in-JS，无独立组件样式文件）
         ├── pages/                    # 路由页样式
         ├── cases/<分类>/<案例>/       # 案例 scoped 样式
         ├── themes/                   # highlight.js 亮/暗主题
