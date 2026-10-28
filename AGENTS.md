@@ -166,6 +166,14 @@
 - ✅ 2026-10-27 「约/左右」P2 批 3（3 个案例）：`debounce-throttle` 节流每 100ms 1 次；`image-compress` 压缩率 96%（面板取整，1 − 60/1690 = 96.45%）；`optimistic-update` 回滚 300ms（接口固定延迟）
   - 阶段收口：audit 81 案例 **0 P0 / 0 P1 / 0 P2**；vitest 53/53、type-check、lint、build、check:bundle（首屏 gzip 108.9 KB）、全量 `check:ui` 21/21、`--sweep` 81/81 通过
   - 说明：sse-chat 原 notes/meta 与 Demo 实际 150~390ms 随机延迟不一致，已按代码修正并删除不稳定的 1.2s 快照；raf-throttle 原「每分钟」为笔误
+- ✅ 2026-10-27 案例质量升级批 A（4 案例）：`animation/snap-carousel` 改 rAF 补间 + radio 模式 + 补间期间关闭吸附；`performance/perf-observer` 实时/加载期分组 + 重置实验 + 偏移块上限 5；`observer/lazy-image` 加载完成才 unobserve + 日志上限 20 + 持续观察开关 + 重置列表；`practice/optimistic-update` 提示改固定消息栈（`Teleport to="body"`，最多 3 条、2.4s 自动消失），面板位置全程不变
+  - 提交：`d269e63` / `4f12d88` / `ba23822` / `9b5ac48`；`snap-carousel` 说明区另修未解释缩写 `rAF`（`c307cb5`）
+  - 验收：四个案例各自 `check:ui --only` 通过；`npx eslint <案例目录>` 与 `npm run type-check` 通过
+- ✅ 2026-10-27 案例质量升级批 B（2 案例）：`basics/event-loop` 改 4 个预设 + 6 个任务开关，「直觉预期」按当前勾选动态生成，输出对照改 radio，`runToken` + `timerIds` 防止旧回调串台；`performance/time-slicing` 默认 3 万 / 300，可选 1/3/5 万与 100/300/1000，新增结果对比表，首帧改 `nextTick` + 双 rAF、最大阻塞按每批计时、点击响应改 `event.timeStamp`
+  - `check:ui` 新增两个常驻场景：「事件循环任务开关」验证默认顺序、只留 Promise、慢任务后顺序与 radio 语义；「时间切片规模与测量」用 1 万 / 1000 跑全量与切片，断言对比表数值、切片首帧早于总耗时、渲染中点击可响应
+  - `audit:cases` 的模式切换检查同时接受 `aria-pressed` 与 `role="radio"` + `aria-checked`；audit 81 案例 **0 P0 / 0 P1 / 0 P2**
+  - 提交：`2313af1` / `bc6f4a9`
+  - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 109.5 KB）、全量 `npm run check:ui` 25/25；两个案例 `--case` 在 1280 / 375 均无横向溢出、零 console 错误
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -240,3 +248,5 @@
 | 2026-10-27 | **机械 P2 先清一轮，行为敏感的改动补常驻断言** | 4 处 `document.getElementById` 统一改模板 ref：能拿容器就 `querySelector` 限定范围（accordion-slide 的 `faqRoot`），观察器 root 直接传 ref（infinite-scroll / lazy-image 的 `scrollRoot`），挂载点直接传 ref（perf-observer 的 `shiftZone`）；教学代码同步，避免「Demo 改了、代码区还是旧写法」。这 4 处会改变交互路径，给 accordion / infinite-scroll / lazy-image / perf-observer 各补一个常驻场景（读取 scrollHeight、预取页数、加载张数、偏移块是否插入），以后 `getElementById` 回归会先在浏览器巡检里露头。`check:ui` 的 `waitForDemo` 同时改为等占位符消失，否则 dev 首次编译会把「演示加载中…」当完成；`--case` 不再硬性要求按钮，无限滚动这类靠滚动触发的演示也能过 |
 | 2026-10-27 | **「约/左右」P2 先区分方向词与估算词，再逐个换成可核对口径** | `audit:cases` 原来把「左右移动 / 箭头 / 两列 / 两侧」也当估算词；改为只报「数字 + 左右」与「约 / 大约 / 估计」。真实估算逐条处理：能数语句就数（snap-carousel 5 行、has-parent 30 行、intl-format 26 行），能用规范值或配置值就写死（4ms、16.6ms、100ms、300ms），不能稳定的写清测量方法与区间（event-loop 1~5ms）。`intl-format` 还暴露了生产构建压缩后 `Function.prototype.toString()` 只剩 1 行的问题，行数改静态值并加 `Intl 行数` 巡检，避免 dev 正常、preview 失真 |
 | 2026-10-27 | **P2 收尾不只替换估算词，顺手修正与代码不一致的旧数据** | 清「约/左右」时发现两类问题：`raf-throttle` 把「每秒」写成「每分钟」；`sse-chat` 的 notes/meta 还停留在「每 120ms、1.2s id 2/36」，而 Demo 实际是 150~390ms 随机延迟，1.2s 的快照不稳定。处理原则：能用规范值或配置值写死的就写死（4ms、16.6ms、100ms、300ms、3000ms），随机/区间数据写清来源与范围，删掉无法复现的单点快照；代码能静态统计的不要依赖生产构建后的 `toString()` |
+| 2026-10-27 | **事件循环用「预设 + 任务开关」，直觉顺序按勾选动态生成** | 写死预期序列在用户关掉任务后会失真；预设只负责批量勾选，`run()` 只排当前勾选的任务，`expectLines` 按书写顺序动态生成错误对照。输出对照是互斥模式，统一用 `role="radio"` + `aria-checked` + roving tabindex；`audit:cases` 同步接受 `aria-pressed` 或 radio 两种语义。重复运行用 `runToken` + `timerIds` 丢弃旧回调，避免日志串台 |
+| 2026-10-27 | **时间切片固定三项测量口径：首帧 nextTick + 双 rAF、最大阻塞每批、点击响应 event.timeStamp** | 首帧不能在 push 后立刻读；`nextTick` 只等 DOM 更新，双 rAF 才等到绘制。最大阻塞按每批 `push + nextTick` 计时，避免总耗时掩盖单批卡顿；点击响应用 `event.timeStamp` 起算，才能把主线程排队时间算进去。参数变化清空对比结果，避免不同规模硬比；全量渲染期间按钮点不到，所以全量一列的点击响应为「—」 |
