@@ -174,6 +174,7 @@
   - `audit:cases` 的模式切换检查同时接受 `aria-pressed` 与 `role="radio"` + `aria-checked`；audit 81 案例 **0 P0 / 0 P1 / 0 P2**
   - 提交：`2313af1` / `bc6f4a9`
   - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 109.5 KB）、全量 `npm run check:ui` 25/25；两个案例 `--case` 在 1280 / 375 均无横向溢出、零 console 错误
+- ✅ 2026-10-28 PR #15 已 rebase 合并到 main（`perf/enterprise-bundle-optimization`，59 个提交：企业级打包优化、站点体验两批、新分类 css / basics / animation 共 19 案例、质量基线与批 A/B 升级、回到顶部修复全部进主干）；合并前推送后 CI `Type check, lint, test, build` SUCCESS、mergeState CLEAN，合并后本地 main 快进到 `596e40e`，本地与远端特性分支已删除。期间踩坑：dev 服务器常驻时切分支，`unplugin-vue-components` 会立即重新生成 `src/components.d.ts` 挡住 pull，丢弃该文件改动再拉即可
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
