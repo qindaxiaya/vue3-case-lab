@@ -45,11 +45,12 @@ export default defineConfig({
               priority: 50,
             },
             {
-              name: 'vendor-element-plus',
-              test: /node_modules[\\/](?:element-plus|@element-plus)[\\/]/,
+              name: 'vendor-naive-ui',
+              test: /node_modules[\\/]naive-ui[\\/]/,
               priority: 40,
-              //! 不递归收编依赖：否则首屏必需的 CSS 变量会被卷进懒加载 chunk
-              includeDependenciesRecursively: false,
+              //! 递归收编依赖：naive 依赖 css-render / vooks / lodash 等
+              //! 独立小包，必须一起进本 chunk；关掉会被内联进各 Demo
+              //! chunk，与 vendor 形成跨 chunk 循环 import，生产构建挂
             },
           ],
         },

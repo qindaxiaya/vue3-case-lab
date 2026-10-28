@@ -24,7 +24,7 @@
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）；ESLint `no-explicit-any` 为 error
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
 - 禁止第三方 UI 组件库、禁止 Pinia；样式用 Sass（SCSS）+ CSS 变量主题，自建全局类 `btn-primary`/`btn-ghost`/`card`/`tag`，案例 Demo 用自身 scoped SCSS
-  - 例外（2026-10-20 试点）：Element Plus 允许用于 Demo 通用表单控件（输入框 / 下拉 / 多行输入），必须按需引入（unplugin-vue-components + ElementPlusResolver），禁止 `app.use(ElementPlus)` 整包注册；站点壳与教学型组件（Toast/Teleport/弹窗/可编辑表格/自定义指令等）仍自建；Pinia 仍禁止
+  - 例外（2026-10-28 换挡）：**Naive UI** 允许用于演示区控件（按钮 / 单选组 / 输入框 / 下拉），必须按需引入（unplugin-vue-components + NaiveUiResolver），禁止整包 `app.use(naive-ui)`；主题映射在 `src/composables/useNaiveTheme.ts`（浅/暗 token 镜像），演示区经共享组件 `src/components/demo/DemoNaive.vue` 包 provider（abstract，不渲染 wrapper）——不要在站点壳（App.vue 等）包 provider，barrel import 会把整个 naive-ui 拉进首屏；站点壳与教学型组件（Toast/Teleport/弹窗/可编辑表格/自定义指令等）仍自建；Pinia 仍禁止
 - 暗色模式：`.dark` class 策略（`<html class="dark">`，index.html 内联脚本防闪白）+ `localStorage` 键 `moyu-theme` 持久化
 - 案例目录结构（新增案例零注册成本）：
   ```
@@ -42,7 +42,7 @@
 - **不造轮子（2026-10-19 用户拍板）**：
   1. 工程实践类案例优先用现成库/原生 API（VueUse、fuse.js 等），**不手写已解决的通用工具**（debounce/throttle/深拷贝等）——案例代码应贴近真实项目写法
   2. 原生浏览器 API（canvas/Worker/Clipboard/EyeDropper/Observer 系）不算造轮子，直接演示
-  3. UI 组件库仅允许 Element Plus 通用表单控件（2026-10-20 试点，按需引入）；Toast 这类「教学如何做组件」的案例仍自建（注明真实项目可用 vue-toastification 等）
+  3. UI 组件库仅允许 Naive UI 演示区控件（2026-10-28 换挡，按需引入）；Toast 这类「教学如何做组件」的案例仍自建（注明真实项目可用 vue-toastification 等）
 - 案例分类：`performance`（性能监控）、`observer`（观察者）、`virtual`（虚拟渲染）、`vue3`（Vue 3 API）、`composables`（组合式函数）、`practice`（工程实践）
 - Commit：Conventional Commits + 中文描述；每任务收尾必 commit
 - **工作节奏（2026-10-19 用户拍板）**：
@@ -176,6 +176,7 @@
   - 验收：`npx vitest run` 53/53、`npm run type-check`、`npm run lint`、`npm run build`、`npm run check:bundle`（首屏 gzip 109.5 KB）、全量 `npm run check:ui` 25/25；两个案例 `--case` 在 1280 / 375 均无横向溢出、零 console 错误
 - ✅ 2026-10-28 PR #15 已 rebase 合并到 main（`perf/enterprise-bundle-optimization`，59 个提交：企业级打包优化、站点体验两批、新分类 css / basics / animation 共 19 案例、质量基线与批 A/B 升级、回到顶部修复全部进主干）；合并前推送后 CI `Type check, lint, test, build` SUCCESS、mergeState CLEAN，合并后本地 main 快进到 `596e40e`，本地与远端特性分支已删除。期间踩坑：dev 服务器常驻时切分支，`unplugin-vue-components` 会立即重新生成 `src/components.d.ts` 挡住 pull，丢弃该文件改动再拉即可
 - 🔄 2026-10-28 演示区 UI 统一批 1（4 案例，改用 Element Plus）：`event-loop`、`time-slicing`、`snap-carousel`、`optimistic-update` 的对比/模式组改 `el-radio-group` + `el-radio-button`，常规操作按钮改 `el-button`；`_element.scss` 在 `.demo-card` 内统一 EP 按钮/单选组为 36px（移动端 40px）高、站点圆角；`optimistic-update` 提示改用共享 `DemoToastStack`，固定在右上角（顶栏下方 80px）；`check:ui` 断言改为 EP DOM（`.el-radio-button` / `.is-active` / `input:checked`），保留提示 top/right 断言；`audit:cases` 识别 `<el-radio-group>`。`DemoButton` / `DemoSegmented` 已删除。剩余约 24 个互斥模式组与 200+ 案例按钮按批次继续迁移，未一次性铺开
+- ✅ 2026-10-28 演示区 UI 换挡 Naive UI（推翻同日批 1 的 EP 方案）：spike 对比页（`/spike/ui-compare`，决策后已删）肉眼对比后用户拍板「Naive 默认观感更好，长期只维护 themeOverrides 颜色」。卸载 element-plus，`NaiveUiResolver` 按需引入；主题映射 `src/composables/useNaiveTheme.ts`（浅/暗 token 镜像 + 组件级 36px），演示区经共享 `DemoNaive.vue`（abstract provider）包主题上下文——**不能在 App.vue 包 provider**，barrel import 会把整个 naive-ui 拉进首屏（实测首屏 gzip 211.8 KB 爆门禁）；7 个案例改写 el-*→n-*（批 1 四案例 + vitest-gate 选项改数组 / debounce-throttle / json-viewer，教学代码同步）；踩坑：`vendor-naive-ui` 组必须**递归收编**依赖（naive 依赖 css-render/vooks/lodash 等独立小包，关闭递归会被内联进 Demo chunk 形成跨 chunk 循环 import，生产构建 n-select 挂 `Lt is not a function`；Vue 运行时由 vendor-vue priority 100 先认领不受影响）；`n-radio-button` 选中类名是 `--checked`（EP 是 `is-active`）。验收：首屏 gzip **106.6 KB**（换挡前 108.9）、vitest 53/53、type-check、eslint、build、check:bundle、check:ui 25/25、`--sweep` 81/81、audit 0 P0/P1/P2。剩余约 24 个互斥模式组与 200+ 案例按钮按批次继续迁移 n-*
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`
 
 ## 决策记录
@@ -253,3 +254,4 @@
 | 2026-10-27 | **事件循环用「预设 + 任务开关」，直觉顺序按勾选动态生成** | 写死预期序列在用户关掉任务后会失真；预设只负责批量勾选，`run()` 只排当前勾选的任务，`expectLines` 按书写顺序动态生成错误对照。输出对照是互斥模式，统一用 `role="radio"` + `aria-checked` + roving tabindex；`audit:cases` 同步接受 `aria-pressed` 或 radio 两种语义。重复运行用 `runToken` + `timerIds` 丢弃旧回调，避免日志串台 |
 | 2026-10-27 | **时间切片固定三项测量口径：首帧 nextTick + 双 rAF、最大阻塞每批、点击响应 event.timeStamp** | 首帧不能在 push 后立刻读；`nextTick` 只等 DOM 更新，双 rAF 才等到绘制。最大阻塞按每批 `push + nextTick` 计时，避免总耗时掩盖单批卡顿；点击响应用 `event.timeStamp` 起算，才能把主线程排队时间算进去。参数变化清空对比结果，避免不同规模硬比；全量渲染期间按钮点不到，所以全量一列的点击响应为「—」 |
 | 2026-10-28 | **演示区按钮/对比组统一用 Element Plus，提示用共享 DemoToastStack** | 用户明确要求「都使用 Element Plus 的按钮」。EP 使用范围从通用表单控件扩到演示区按钮与单选按钮组：`el-button` / `el-radio-group` 自带语义与键盘行为，样式由 `_element.scss` 在 `.demo-card` 内统一为 36px（移动端 40px）高、站点圆角。提示仍用共享 `DemoToastStack`（右上角、顶栏下方 80px），因为 EP `ElMessage` 默认顶部居中，且 toast-queue 这类教学案例需要自定义队列；这是「Demo 不引用站点内部组件」的唯一例外，仅限演示区 UI。站点壳仍自建，Pinia 仍禁止。按批次迁移，不一次性改 81 个案例 |
+| 2026-10-28 | **演示区 UI 换挡 Naive UI（推翻同日 EP 方案）** | 用户看过 spike 对比页（`/spike/ui-compare`）后拍板：Naive 默认观感更好，长期只需维护 `themeOverrides` 的颜色映射，不用像 EP 那样写整份 `_element.scss` 覆盖层。实施要点：① 主题映射收敛到 `useNaiveTheme.ts`（浅/暗 token 镜像 + 组件级高度 36px），演示区经共享 `DemoNaive.vue`（abstract provider）包裹；**provider 不能放 App.vue**，barrel import 会把整个 naive-ui 拉进首屏（实测 gzip 211.8 KB 爆门禁），放 Demo 内才保持懒加载，首屏降到 106.6 KB；② `vendor-naive-ui` 分包组必须**开启递归收编**：naive 依赖 css-render/vooks/lodash 等是独立 npm 包，关闭递归会被内联进 Demo chunk 形成跨 chunk 循环 import，生产构建报 `Lt is not a function`（dev 正常、只有 preview 挂，容易漏测）；Vue 运行时由 vendor-vue priority 100 先认领，不会被卷走——EP 当年关递归是因为 theme-chalk CSS，Naive 是 CSS-in-JS 无此问题；③ `n-radio-button` 选中类名是 `n-radio-button--checked`（EP 是 `is-active`），`@change` 对应 `@update:value`，红色按钮类型是 `error`（EP 叫 `danger`），n-select 选项走数组（EP 是 el-option 子组件） |
