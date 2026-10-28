@@ -1,7 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, type PluginOption } from 'vite'
 import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import path from 'node:path'
 
 /** 统一成正斜杠：Windows 下路径是反斜杠，判断目录时两边要一致 */
@@ -100,24 +100,8 @@ function assetFileName(asset: {
   const stem = ext ? name.slice(0, -ext.length) : name
 
   if (ext === '.css') {
-    // 入口样式：站点 token + Element Plus 基础变量，必须最早加载
+    // 入口样式：站点 token，必须最早加载
     if (stem === 'index') return 'assets/css/index-[hash][extname]'
-
-    // 第三方样式（Element Plus 组件、组件库 base 等）。
-    // EP 组件的样式文件命名为 el-*.css（el-input / el-select ...），
-    // 直接按前缀归档，避免依赖 originalFileNames 是否带 node_modules 路径
-    const fromVendor =
-      stem.startsWith('el-') ||
-      asset.originalFileNames.some((file) => {
-        const posix = toPosix(file)
-        return (
-          posix.includes('/node_modules/element-plus/') ||
-          posix.includes('/node_modules/@element-plus/')
-        )
-      })
-    if (fromVendor) {
-      return `assets/css/vendor/element-plus-${stem}-[hash][extname]`
-    }
 
     // 路由页样式
     if (PAGE_NAMES.has(stem)) {
@@ -168,12 +152,11 @@ function assetFileName(asset: {
 export default defineConfig({
   plugins: [
     vue(),
-    // 按需引入：模板里写 <el-input> 时自动补 import + 该组件的样式；
-    // importStyle: 'css' 让组件样式跟着 Demo 的 chunk 走，
-    // 不再把 353 KB 的完整主题塞进首屏 CSS（站点只用到 3 个表单控件）。
+    // 按需引入：模板里写 <n-input> 时自动补 import；Naive 的样式是
+    // CSS-in-JS 随组件 JS 一起走，无需也无法单独 import 样式文件
     Components({
       dts: 'src/components.d.ts',
-      resolvers: [ElementPlusResolver({ importStyle: 'css' })],
+      resolvers: [NaiveUiResolver()],
     }),
   ] as PluginOption[],
 
@@ -207,19 +190,19 @@ export default defineConfig({
               test: /node_modules[\\/](?:highlight\.js[\\/]lib|marked)[\\/]/,
               priority: 50,
             },
-            // Element Plus：仅 debounce-throttle / json-viewer / vitest-gate 使用。
-            // theme-chalk 下的 CSS 不参与分组：base.css / dark 变量由 main.ts 引入，
-            // 必须留在入口样式里，保证站点的 _element.scss 能后加载覆盖官方变量
+            // Naive UI：演示区控件（7 个案例 + 后续批次继续铺开）。
+            // 样式是 CSS-in-JS 随 JS 模块走，直接按包名归入本组即可；
+            // Vue 组优先级更高，运行时不会被这里卷走
             {
-              name: 'vendor-element-plus',
-              test: (id: string) =>
-                /node_modules[\\/](?:element-plus|@element-plus)[\\/]/.test(id) &&
-                !id.endsWith('.css'),
+              name: 'vendor-naive-ui',
+              test: /node_modules[\\/]naive-ui[\\/]/,
               priority: 40,
-              // 不要递归收编依赖：EP 组件的样式模块会 import theme-chalk/base.css，
-              // 递归会把首屏必需的 CSS 变量一起卷进懒加载 chunk，
-              // 导致入口被迫预加载整个 EP chunk，且官方变量晚于站点覆盖层生效
-              includeDependenciesRecursively: false,
+              // 必须递归收编依赖：naive 依赖 css-render / vooks / lodash 等
+              // 十来个小包，全部跟着 naive 一起进本 chunk（都是懒加载依赖）；
+              // 若关闭递归这些零散包会被内联进各 Demo chunk，与 vendor 形成
+              // 跨 chunk 循环 import，生产构建下模块初始化顺序错乱（实测
+              // vitest-gate 的 n-select 报「Lt is not a function」）。
+              // Vue 运行时必须仍由 vendor-vue（priority 100）先认领
             },
             // 通用工具库：体积小但复用广，独立一块避免跟业务代码一起失效
             {
