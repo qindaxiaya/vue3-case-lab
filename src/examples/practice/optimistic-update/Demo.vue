@@ -5,7 +5,7 @@
 // - 用 pending 标记阻止同一张卡片重复提交
 // ============================================================
 <script setup lang="ts">
-import { computed, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
 
 type Mode = 'pessimistic' | 'optimistic'
 type LogTone = 'info' | 'ok' | 'bad'
@@ -170,6 +170,18 @@ function setMode(next: Mode): void {
   clearMessages()
 }
 
+/** 互斥的更新策略用 radio 语义：方向键切换，Tab 只停当前项 */
+async function onModeKeydown(event: KeyboardEvent): Promise<void> {
+  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+  if (!keys.includes(event.key) || pendingCount.value > 0) return
+  event.preventDefault()
+
+  const group = event.currentTarget as HTMLElement
+  setMode(mode.value === 'pessimistic' ? 'optimistic' : 'pessimistic')
+  await nextTick()
+  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+}
+
 /** 恢复初始数据与统计 */
 function reset(): void {
   if (pendingCount.value > 0) return
@@ -193,21 +205,28 @@ onUnmounted(() => {
     <div class="bar">
       <div
         class="modes"
-        role="group"
+        role="radiogroup"
         aria-label="更新策略"
+        @keydown="onModeKeydown"
       >
         <button
           class="mode"
+          role="radio"
           :class="{ active: mode === 'pessimistic' }"
-          :aria-pressed="mode === 'pessimistic'"
+          :aria-checked="mode === 'pessimistic'"
+          :tabindex="mode === 'pessimistic' ? 0 : -1"
+          type="button"
           @click="setMode('pessimistic')"
         >
           等响应再改
         </button>
         <button
           class="mode"
+          role="radio"
           :class="{ active: mode === 'optimistic' }"
-          :aria-pressed="mode === 'optimistic'"
+          :aria-checked="mode === 'optimistic'"
+          :tabindex="mode === 'optimistic' ? 0 : -1"
+          type="button"
           @click="setMode('optimistic')"
         >
           乐观更新（推荐）
@@ -382,6 +401,11 @@ onUnmounted(() => {
     background-color: var(--surface);
     color: var(--primary);
     box-shadow: var(--shadow-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 }
 

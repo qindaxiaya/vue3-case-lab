@@ -991,6 +991,7 @@ const SCENARIOS = [
         mode.click()
         await wait(80)
         const before = panelsTop()
+        const modes = [...document.querySelectorAll('.ou-demo .modes [role="radio"]')]
 
         const first = document.querySelectorAll('.ou-demo .like')[0]
         first.click()
@@ -1033,6 +1034,9 @@ const SCENARIOS = [
           teleported,
           successText,
           failText,
+          modeCount: modes.length,
+          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
+          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
         }
       })()`)
     },
@@ -1054,6 +1058,9 @@ const SCENARIOS = [
       if (!result.teleported) failures.push('提示没有 Teleport 到 body')
       if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
       if (!result.failText.includes('已撤回')) failures.push('失败回滚提示文案缺失')
+      if (result.modeCount !== 2) failures.push(`更新策略不是 2 个 radio（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`更新策略 checked 数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeTabbable !== 1) failures.push(`更新策略可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
       const tops = [result.before, result.during, result.afterSuccess, result.afterFail]
       if (Math.max(...tops) - Math.min(...tops) > 1) {
         failures.push(`提示出现后列表面板被推挤（top: ${tops.join(' / ')}）`)
