@@ -6,10 +6,7 @@
 // ============================================================
 <script setup lang="ts">
 import { computed, onUnmounted, reactive, ref } from 'vue'
-import DemoButton from '../../../components/demo/DemoButton.vue'
-import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
 import DemoToastStack from '../../../components/demo/DemoToastStack.vue'
-import type { SegmentedOption } from '../../../components/demo/types'
 
 type Mode = 'pessimistic' | 'optimistic'
 type LogTone = 'info' | 'ok' | 'bad'
@@ -43,11 +40,7 @@ const initialPosts: Post[] = [
 
 const posts = ref<Post[]>(initialPosts.map((post) => ({ ...post })))
 const mode = ref<Mode>('pessimistic')
-/** 更新策略是互斥模式，交给共享分段控件统一渲染 */
-const modeOptions: readonly SegmentedOption[] = [
-  { value: 'pessimistic', label: '等响应再改' },
-  { value: 'optimistic', label: '乐观更新（推荐）' },
-]
+
 const failRequest = ref(false)
 const pendingIds = ref<number[]>([])
 const logs = ref<LogEntry[]>([])
@@ -179,8 +172,8 @@ function setMode(next: Mode): void {
   clearMessages()
 }
 
-/** 共享分段控件发出的是 string | number，这里收窄回更新策略 */
-function onModeChange(next: string | number): void {
+/** Element Plus 单选组发出的是 string | number | boolean | undefined，这里收窄回更新策略 */
+function onModeChange(next: string | number | boolean | undefined): void {
   if (next === 'pessimistic' || next === 'optimistic') setMode(next)
 }
 
@@ -205,29 +198,39 @@ onUnmounted(() => {
 <template>
   <div class="ou-demo">
     <div class="bar">
-      <DemoSegmented
+      <el-radio-group
         class="modes"
         :model-value="mode"
-        :options="modeOptions"
-        label="更新策略"
+        aria-label="更新策略"
         :disabled="pendingCount > 0"
-        @update:model-value="onModeChange"
-      />
-      <DemoButton
-        variant="danger"
-        :active="failRequest"
+        @change="onModeChange"
+      >
+        <el-radio-button
+          value="pessimistic"
+          data-mode="pessimistic"
+        >
+          等响应再改
+        </el-radio-button>
+        <el-radio-button
+          value="optimistic"
+          data-mode="optimistic"
+        >
+          乐观更新（推荐）
+        </el-radio-button>
+      </el-radio-group>
+      <el-button
+        :type="failRequest ? 'danger' : 'default'"
         :aria-pressed="failRequest"
         @click="failRequest = !failRequest"
       >
         {{ failRequest ? '接口失败：开' : '模拟接口失败' }}
-      </DemoButton>
-      <DemoButton
-        variant="ghost"
+      </el-button>
+      <el-button
         :disabled="pendingCount > 0"
         @click="reset"
       >
         重置
-      </DemoButton>
+      </el-button>
     </div>
 
     <div class="stats">

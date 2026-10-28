@@ -5,10 +5,7 @@
 // 面板保留最近一次「全量 / 切片」结果，参数一致时可直接对比。
 // ============================================================
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import DemoButton from '../../../components/demo/DemoButton.vue'
-import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
-import type { SegmentedOption } from '../../../components/demo/types'
+import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 type Mode = 'slice' | 'full'
 
@@ -39,11 +36,7 @@ const rendering = ref(false)
 const progress = ref(0)
 /** 当前模式 */
 const mode = ref<Mode>('slice')
-/** 渲染方式也是互斥模式，交给共享分段控件统一渲染 */
-const modeOptions = computed<readonly SegmentedOption[]>(() => [
-  { value: 'slice', label: `时间切片（${batchSize.value} / 帧）` },
-  { value: 'full', label: '一次性全量' },
-])
+
 /** 首批数据真正出现在屏幕上的耗时 */
 const firstPaintMs = ref<number | null>(null)
 /** 单个任务占住主线程的最长时间 */
@@ -236,8 +229,8 @@ function ping(event: MouseEvent): void {
   }, 0)
 }
 
-/** 互斥的渲染方式用 radio 语义：方向键切换，Tab 只停当前项 */
-function onModeChange(next: string | number): void {
+/** Element Plus 单选组发出的是 string | number | boolean | undefined，这里收窄回渲染方式 */
+function onModeChange(next: string | number | boolean | undefined): void {
   if (next === 'slice') renderSlice()
   else if (next === 'full') renderFull()
 }
@@ -253,28 +246,39 @@ onBeforeUnmount(() => {
   <div class="ts-demo">
     <!-- 控制 -->
     <div class="ts-bar">
-      <DemoSegmented
+      <el-radio-group
         class="seg"
         :model-value="mode"
-        :options="modeOptions"
-        label="渲染方式"
+        aria-label="渲染方式"
         :disabled="rendering"
-        @update:model-value="onModeChange"
-      />
-      <DemoButton
-        variant="ghost"
+        @change="onModeChange"
+      >
+        <el-radio-button
+          value="slice"
+          data-mode="slice"
+        >
+          时间切片（{{ batchSize }} / 帧）
+        </el-radio-button>
+        <el-radio-button
+          value="full"
+          data-mode="full"
+        >
+          一次性全量
+        </el-radio-button>
+      </el-radio-group>
+      <el-button
         :disabled="rendering"
         @click="resetAll"
       >
         清空结果
-      </DemoButton>
-      <DemoButton
+      </el-button>
+      <el-button
         class="btn-act"
-        variant="primary"
+        type="primary"
         @click="ping"
       >
         测主线程响应
-      </DemoButton>
+      </el-button>
     </div>
 
     <!-- 参数 -->
