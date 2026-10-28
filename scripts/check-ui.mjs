@@ -440,7 +440,7 @@ const SCENARIOS = [
         const instantFinal = track().scrollLeft
 
         // 互斥模式按钮：两项、只有一项选中、原生 radio 只有一项 checked
-        const modes = [...document.querySelectorAll('.snap-demo .modes .el-radio-button')]
+        const modes = [...document.querySelectorAll('.snap-demo .modes .n-radio-button')]
         return {
           start,
           mid,
@@ -448,7 +448,7 @@ const SCENARIOS = [
           instant,
           instantFinal,
           modes: modes.length,
-          checked: modes.filter((item) => item.classList.contains('is-active')).length,
+          checked: modes.filter((item) => item.classList.contains('n-radio-button--checked')).length,
           inputChecked: document.querySelectorAll('.snap-demo .modes input[type="radio"]:checked').length,
           dotsCurrent: document.querySelectorAll('.snap-demo .dot[aria-current="true"]').length,
         }
@@ -792,10 +792,10 @@ const SCENARIOS = [
         await wait(500)
         const realSlow = names()
 
-        const modes = [...document.querySelectorAll('.el-demo .modes .el-radio-button')]
+        const modes = [...document.querySelectorAll('.el-demo .modes .n-radio-button')]
         const runButton = document.querySelector('.el-demo [data-action="run"]')
         const activeModeInner = document.querySelector(
-          '.el-demo .modes .el-radio-button.is-active .el-radio-button__inner'
+          '.el-demo .modes .n-radio-button--checked',
         )
         return {
           expectBasic,
@@ -803,10 +803,10 @@ const SCENARIOS = [
           realThenOnly,
           realSlow,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeChecked: modes.filter((item) => item.classList.contains('n-radio-button--checked')).length,
           modeInputChecked: document.querySelectorAll('.el-demo .modes input[type="radio"]:checked').length,
-          epButton: runButton?.classList.contains('el-button') ?? false,
-          epRadio: Boolean(document.querySelector('.el-demo .modes.el-radio-group')),
+          nfmButton: runButton?.classList.contains('n-button') ?? false,
+          nfmRadio: Boolean(document.querySelector('.el-demo .modes.n-radio-group')),
           runHeight: runButton ? Math.round(runButton.getBoundingClientRect().height) : 0,
           modeHeight: activeModeInner ? Math.round(activeModeInner.getBoundingClientRect().height) : 0,
           taskCount: document.querySelectorAll('.el-demo .task-toggle').length,
@@ -852,13 +852,13 @@ const SCENARIOS = [
       if (result.modeCount !== 2) failures.push(`输出对照不是 2 个单选按钮（${result.modeCount} 个）`)
       if (result.modeChecked !== 1) failures.push(`输出对照选中样式数量不是 1（${result.modeChecked} 个）`)
       if (result.modeInputChecked !== 1) failures.push(`输出对照 checked 数量不是 1（${result.modeInputChecked} 个）`)
-      if (!result.epButton) failures.push('运行按钮没有使用 Element Plus 的 el-button')
-      if (!result.epRadio) failures.push('输出对照没有使用 Element Plus 的 el-radio-group')
+      if (!result.nfmButton) failures.push('运行按钮没有使用 Naive UI 的 n-button')
+      if (!result.nfmRadio) failures.push('输出对照没有使用 Naive UI 的 n-radio-group')
       if (result.runHeight < 34 || result.runHeight > 40) {
-        failures.push(`el-button 高度不在 34~40px（${result.runHeight}px）`)
+        failures.push(`n-button 高度不在 34~40px（${result.runHeight}px）`)
       }
       if (result.modeHeight < 34 || result.modeHeight > 40) {
-        failures.push(`el-radio-button 高度不在 34~40px（${result.modeHeight}px）`)
+        failures.push(`n-radio-button 高度不在 34~40px（${result.modeHeight}px）`)
       }
       if (result.taskCount !== 6) failures.push(`任务开关不是 6 个（${result.taskCount} 个）`)
       return failures
@@ -910,7 +910,7 @@ const SCENARIOS = [
         const sliceFramesText = text('[data-result="slice-frames"]')
         const sliceClickText = text('[data-result="slice-click"]')
 
-        const modes = [...document.querySelectorAll('.ts-demo .seg .el-radio-button')]
+        const modes = [...document.querySelectorAll('.ts-demo .seg .n-radio-button')]
         return {
           totalSelect: document.querySelector('.ts-total').value,
           batchSelect: document.querySelector('.ts-batch').value,
@@ -926,7 +926,7 @@ const SCENARIOS = [
           sliceFramesText,
           sliceClickText,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeChecked: modes.filter((item) => item.classList.contains('n-radio-button--checked')).length,
           modeInputChecked: document.querySelectorAll('.ts-demo .seg input[type="radio"]:checked').length,
         }
       })()`)
@@ -1001,13 +1001,13 @@ const SCENARIOS = [
         const panelsTop = () =>
           Math.round(document.querySelector('.ou-demo .panels').getBoundingClientRect().top)
 
-        const mode = [...document.querySelectorAll('.ou-demo .modes .el-radio-button')].find((item) =>
+        const mode = [...document.querySelectorAll('.ou-demo .modes .n-radio-button')].find((item) =>
           item.textContent.includes('乐观更新')
         )
         mode.click()
         await wait(80)
         const before = panelsTop()
-        const modes = [...document.querySelectorAll('.ou-demo .modes .el-radio-button')]
+        const modes = [...document.querySelectorAll('.ou-demo .modes .n-radio-button')]
 
         const first = document.querySelectorAll('.ou-demo .like')[0]
         first.click()
@@ -1056,7 +1056,7 @@ const SCENARIOS = [
           successText,
           failText,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeChecked: modes.filter((item) => item.classList.contains('n-radio-button--checked')).length,
           modeInputChecked: document.querySelectorAll('.ou-demo .modes input[type="radio"]:checked').length,
         }
       })()`)
@@ -1113,35 +1113,35 @@ const SCENARIOS = [
     },
   },
   {
-    name: 'Element Plus 案例样式',
+    name: 'Naive UI 案例样式',
     route: '/cases/practice/debounce-throttle',
     facts: async ({ evaluate }) => {
-      // 首次访问 dev 服务器要现编译 EP 组件，3.2s 可能不够，这里最多再等 6s
+      // 首次访问 dev 服务器要现编译 Naive 组件，3.2s 可能不够，这里最多再等 6s
       for (let i = 0; i < 20; i++) {
-        if (await evaluate(`Boolean(document.querySelector('.demo-card .el-input'))`)) break
+        if (await evaluate(`Boolean(document.querySelector('.demo-card .n-input'))`)) break
         await sleep(300)
       }
 
       return {
-        epInput: await evaluate(`Boolean(document.querySelector('.demo-card .el-input'))`),
-        /** 样式是否真的生效：读计算样式，dev（样式内联注入）与 preview（独立 CSS chunk）都适用 */
-        epStyled: await evaluate(`(() => {
-          const wrapper = document.querySelector('.demo-card .el-input__wrapper')
-          if (!wrapper) return null
-          const style = getComputedStyle(wrapper)
-          return style.boxShadow !== 'none' && style.borderRadius !== '0px'
+        nfInput: await evaluate(`Boolean(document.querySelector('.demo-card .n-input'))`),
+        /** 样式是否真的生效：n-input 的圆角来自组件主题（6px），原生默认是 0 */
+        nfStyled: await evaluate(`(() => {
+          const input = document.querySelector('.demo-card .n-input')
+          if (!input) return null
+          const style = getComputedStyle(input)
+          return style.borderRadius !== '0px' && style.fontFamily.includes('system-ui')
         })()`),
-        /** 组件样式是否走了独立文件：只有 preview 才有 CSS chunk，dev 下为 null（不适用） */
-        epCssLoaded: IS_PREVIEW
-          ? await evaluate(`[...document.styleSheets].some(s => (s.href ?? '').includes('element-plus'))`)
+        /** Naive 样式随 JS 走，不应再出现 element-plus 的独立 CSS 文件（两者都没有时为 true） */
+        noEpCss: IS_PREVIEW
+          ? await evaluate(`![...document.styleSheets].some(s => (s.href ?? '').includes('element-plus'))`)
           : null,
       }
     },
     assert: (result) => {
       const failures = []
-      if (!result.epInput) failures.push('EP 输入框没有渲染')
-      if (result.epStyled === false) failures.push('EP 输入框没有套上组件样式')
-      if (result.epCssLoaded === false) failures.push('EP 组件样式没有加载')
+      if (!result.nfInput) failures.push('Naive 输入框没有渲染')
+      if (result.nfStyled === false) failures.push('Naive 输入框没有套上组件样式')
+      if (result.noEpCss === false) failures.push('还残留着 element-plus 的独立 CSS 文件')
       return failures
     },
   },

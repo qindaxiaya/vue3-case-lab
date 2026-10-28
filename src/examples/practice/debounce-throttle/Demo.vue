@@ -93,82 +93,86 @@ function resetAll(): void {
 </script>
 
 <template>
-  <div class="dt-demo">
-    <!-- 脉冲波形条 -->
-    <div class="wave">
-      <div
-        v-for="p in pulses"
-        :key="p.id"
-        class="pulse"
-        :class="p.kind === 'raw' ? 'pulse--raw' : 'pulse--exec'"
-        :title="p.label"
-      />
-      <p
-        v-if="pulses.length === 0"
-        class="wave-empty"
-      >
-        在下方输入或滚动——灰条=原始事件，彩条=实际执行
-      </p>
-    </div>
-
-    <div class="body">
-      <!-- 防抖场景 -->
-      <section
-        class="scene"
-        aria-label="防抖演示"
-      >
-        <header class="scene-head">
-          <h3>防抖 debounce（500ms）</h3>
-          <span class="ratio">原始 {{ inputRaw }} → 执行 {{ searchExec }}</span>
-        </header>
-        <el-input
-          v-model="keyword"
-          class="input"
-          size="large"
-          placeholder="快速连续打字试试…"
-          aria-label="防抖搜索输入"
-          @input="onInput"
-        />
-        <p class="scene-note">
-          最近搜索：<b>{{ lastSearch }}</b>
-          ——连续打字只触发最后一次（搜索框/窗口 resize 的标准解法）。
-        </p>
-      </section>
-
-      <!-- 节流场景 -->
-      <section
-        class="scene"
-        aria-label="节流演示"
-      >
-        <header class="scene-head">
-          <h3>节流 throttle（100ms）</h3>
-          <span class="ratio">原始 {{ scrollRaw }} → 执行 {{ scrollExec }}</span>
-        </header>
+  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
+  <DemoNaive>
+    <div class="dt-demo">
+      <!-- 脉冲波形条 -->
+      <div class="wave">
         <div
-          class="scroll-box"
-          @scroll.passive="onScroll"
+          v-for="p in pulses"
+          :key="p.id"
+          class="pulse"
+          :class="p.kind === 'raw' ? 'pulse--raw' : 'pulse--exec'"
+          :title="p.label"
+        />
+        <p
+          v-if="pulses.length === 0"
+          class="wave-empty"
         >
-          <div
-            v-for="i in 60"
-            :key="i"
-            class="scroll-item"
-          >
-            滚动行 {{ i }}
-          </div>
-        </div>
-        <p class="scene-note">
-          在此区域快速滚动——原始事件每秒数百次，节流后每 100ms 最多一次（滚动埋点/拖拽的标配）。
+          在下方输入或滚动——灰条=原始事件，彩条=实际执行
         </p>
-      </section>
-    </div>
+      </div>
 
-    <button
-      class="btn-reset"
-      @click="resetAll"
-    >
-      重置计数与波形
-    </button>
-  </div>
+      <div class="body">
+        <!-- 防抖场景 -->
+        <section
+          class="scene"
+          aria-label="防抖演示"
+        >
+          <header class="scene-head">
+            <h3>防抖 debounce（500ms）</h3>
+            <span class="ratio">原始 {{ inputRaw }} → 执行 {{ searchExec }}</span>
+          </header>
+          <!-- Naive 输入框：v-model:value 与 @update:value 同用（v-model 只管值，事件另走测量） -->
+          <n-input
+            v-model:value="keyword"
+            class="input"
+            size="large"
+            placeholder="快速连续打字试试…"
+            aria-label="防抖搜索输入"
+            @update:value="onInput"
+          />
+          <p class="scene-note">
+            最近搜索：<b>{{ lastSearch }}</b>
+            ——连续打字只触发最后一次（搜索框/窗口 resize 的标准解法）。
+          </p>
+        </section>
+
+        <!-- 节流场景 -->
+        <section
+          class="scene"
+          aria-label="节流演示"
+        >
+          <header class="scene-head">
+            <h3>节流 throttle（100ms）</h3>
+            <span class="ratio">原始 {{ scrollRaw }} → 执行 {{ scrollExec }}</span>
+          </header>
+          <div
+            class="scroll-box"
+            @scroll.passive="onScroll"
+          >
+            <div
+              v-for="i in 60"
+              :key="i"
+              class="scroll-item"
+            >
+              滚动行 {{ i }}
+            </div>
+          </div>
+          <p class="scene-note">
+            在此区域快速滚动——原始事件每秒数百次，节流后每 100ms 最多一次（滚动埋点/拖拽的标配）。
+          </p>
+        </section>
+      </div>
+
+      <button
+        class="btn-reset"
+        @click="resetAll"
+      >
+        重置计数与波形
+      </button>
+    </div>
+  </DemoNaive>
 </template>
 
 <style scoped>
@@ -263,16 +267,11 @@ function resetAll(): void {
   color: var(--primary);
 }
 
-/* Element Plus 输入框：铺满宽度，内层字号/高度跟随站点 demo token */
+/* Naive 输入框：铺满宽度，内层字号跟随站点 demo token（高度已由组件主题统一成 36px） */
 .input {
   width: 100%;
 
-  :deep(.el-input__wrapper) {
-    height: var(--demo-control-h);
-    box-sizing: border-box;
-  }
-
-  :deep(.el-input__inner) {
+  :deep(.n-input__input-el) {
     font-size: var(--demo-text-md);
   }
 }
@@ -323,11 +322,6 @@ function resetAll(): void {
 @media (max-width: 768px) {
   .body {
     grid-template-columns: 1fr;
-  }
-
-  /* 触屏下输入框抬到 40px，和全局按钮的触控高度一致 */
-  .input :deep(.el-input__wrapper) {
-    height: var(--demo-control-h-touch);
   }
 }
 </style>
