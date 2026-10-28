@@ -439,8 +439,8 @@ const SCENARIOS = [
         await wait(500)
         const instantFinal = track().scrollLeft
 
-        // 互斥模式按钮必须是 radio 语义：两项、只有一项 checked、只有一项可 Tab 进入
-        const modes = [...document.querySelectorAll('.snap-demo .modes [role="radio"]')]
+        // 互斥模式按钮：两项、只有一项选中、原生 radio 只有一项 checked
+        const modes = [...document.querySelectorAll('.snap-demo .modes .el-radio-button')]
         return {
           start,
           mid,
@@ -448,8 +448,8 @@ const SCENARIOS = [
           instant,
           instantFinal,
           modes: modes.length,
-          checked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
-          tabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          checked: modes.filter((item) => item.classList.contains('is-active')).length,
+          inputChecked: document.querySelectorAll('.snap-demo .modes input[type="radio"]:checked').length,
           dotsCurrent: document.querySelectorAll('.snap-demo .dot[aria-current="true"]').length,
         }
       })()`)
@@ -467,9 +467,9 @@ const SCENARIOS = [
           `模拟降级后 100ms 还在动（${result.instant}px → ${result.instantFinal}px），没有直接到位`,
         )
       }
-      if (result.modes !== 2) failures.push(`模式按钮不是 2 个 radio（${result.modes} 个）`)
-      if (result.checked !== 1) failures.push(`模式按钮 checked 数量不是 1（${result.checked} 个）`)
-      if (result.tabbable !== 1) failures.push(`模式按钮可 Tab 进入数量不是 1（${result.tabbable} 个）`)
+      if (result.modes !== 2) failures.push(`模式按钮不是 2 个单选按钮（${result.modes} 个）`)
+      if (result.checked !== 1) failures.push(`模式按钮选中样式数量不是 1（${result.checked} 个）`)
+      if (result.inputChecked !== 1) failures.push(`模式按钮 checked 数量不是 1（${result.inputChecked} 个）`)
       if (result.dotsCurrent !== 1) failures.push(`圆点 aria-current 数量不是 1（${result.dotsCurrent} 个）`)
       return failures
     },
@@ -792,15 +792,23 @@ const SCENARIOS = [
         await wait(500)
         const realSlow = names()
 
-        const modes = [...document.querySelectorAll('.el-demo .modes [role="radio"]')]
+        const modes = [...document.querySelectorAll('.el-demo .modes .el-radio-button')]
+        const runButton = document.querySelector('.el-demo [data-action="run"]')
+        const activeModeInner = document.querySelector(
+          '.el-demo .modes .el-radio-button.is-active .el-radio-button__inner'
+        )
         return {
           expectBasic,
           realBasic,
           realThenOnly,
           realSlow,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
-          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeInputChecked: document.querySelectorAll('.el-demo .modes input[type="radio"]:checked').length,
+          epButton: runButton?.classList.contains('el-button') ?? false,
+          epRadio: Boolean(document.querySelector('.el-demo .modes.el-radio-group')),
+          runHeight: runButton ? Math.round(runButton.getBoundingClientRect().height) : 0,
+          modeHeight: activeModeInner ? Math.round(activeModeInner.getBoundingClientRect().height) : 0,
           taskCount: document.querySelectorAll('.el-demo .task-toggle').length,
         }
       })()`)
@@ -841,9 +849,17 @@ const SCENARIOS = [
       if (!(slowPromise > 1 && slowTimer > slowPromise)) {
         failures.push(`慢任务后微任务没有排在定时器前：${result.realSlow.join(' / ')}`)
       }
-      if (result.modeCount !== 2) failures.push(`输出对照不是 2 个 radio（${result.modeCount} 个）`)
-      if (result.modeChecked !== 1) failures.push(`输出对照 checked 数量不是 1（${result.modeChecked} 个）`)
-      if (result.modeTabbable !== 1) failures.push(`输出对照可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
+      if (result.modeCount !== 2) failures.push(`输出对照不是 2 个单选按钮（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`输出对照选中样式数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeInputChecked !== 1) failures.push(`输出对照 checked 数量不是 1（${result.modeInputChecked} 个）`)
+      if (!result.epButton) failures.push('运行按钮没有使用 Element Plus 的 el-button')
+      if (!result.epRadio) failures.push('输出对照没有使用 Element Plus 的 el-radio-group')
+      if (result.runHeight < 34 || result.runHeight > 40) {
+        failures.push(`el-button 高度不在 34~40px（${result.runHeight}px）`)
+      }
+      if (result.modeHeight < 34 || result.modeHeight > 40) {
+        failures.push(`el-radio-button 高度不在 34~40px（${result.modeHeight}px）`)
+      }
       if (result.taskCount !== 6) failures.push(`任务开关不是 6 个（${result.taskCount} 个）`)
       return failures
     },
@@ -894,7 +910,7 @@ const SCENARIOS = [
         const sliceFramesText = text('[data-result="slice-frames"]')
         const sliceClickText = text('[data-result="slice-click"]')
 
-        const modes = [...document.querySelectorAll('.ts-demo .seg [role="radio"]')]
+        const modes = [...document.querySelectorAll('.ts-demo .seg .el-radio-button')]
         return {
           totalSelect: document.querySelector('.ts-total').value,
           batchSelect: document.querySelector('.ts-batch').value,
@@ -910,8 +926,8 @@ const SCENARIOS = [
           sliceFramesText,
           sliceClickText,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
-          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeInputChecked: document.querySelectorAll('.ts-demo .seg input[type="radio"]:checked').length,
         }
       })()`)
     },
@@ -969,9 +985,9 @@ const SCENARIOS = [
       if (!result.sliceClickText.includes('ms')) {
         failures.push(`切片渲染中点击响应没有测到：${result.sliceClickText}`)
       }
-      if (result.modeCount !== 2) failures.push(`渲染方式不是 2 个 radio（${result.modeCount} 个）`)
-      if (result.modeChecked !== 1) failures.push(`渲染方式 checked 数量不是 1（${result.modeChecked} 个）`)
-      if (result.modeTabbable !== 1) failures.push(`渲染方式可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
+      if (result.modeCount !== 2) failures.push(`渲染方式不是 2 个单选按钮（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`渲染方式选中样式数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeInputChecked !== 1) failures.push(`渲染方式 checked 数量不是 1（${result.modeInputChecked} 个）`)
       return failures
     },
   },
@@ -985,13 +1001,13 @@ const SCENARIOS = [
         const panelsTop = () =>
           Math.round(document.querySelector('.ou-demo .panels').getBoundingClientRect().top)
 
-        const mode = [...document.querySelectorAll('.ou-demo .modes [role="radio"]')].find((item) =>
+        const mode = [...document.querySelectorAll('.ou-demo .modes .el-radio-button')].find((item) =>
           item.textContent.includes('乐观更新')
         )
         mode.click()
         await wait(80)
         const before = panelsTop()
-        const modes = [...document.querySelectorAll('.ou-demo .modes [role="radio"]')]
+        const modes = [...document.querySelectorAll('.ou-demo .modes .el-radio-button')]
 
         const first = document.querySelectorAll('.ou-demo .like')[0]
         first.click()
@@ -1040,8 +1056,8 @@ const SCENARIOS = [
           successText,
           failText,
           modeCount: modes.length,
-          modeChecked: modes.filter((item) => item.getAttribute('aria-checked') === 'true').length,
-          modeTabbable: modes.filter((item) => item.getAttribute('tabindex') === '0').length,
+          modeChecked: modes.filter((item) => item.classList.contains('is-active')).length,
+          modeInputChecked: document.querySelectorAll('.ou-demo .modes input[type="radio"]:checked').length,
         }
       })()`)
     },
@@ -1069,9 +1085,9 @@ const SCENARIOS = [
       if (!result.teleported) failures.push('提示没有 Teleport 到 body')
       if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
       if (!result.failText.includes('已撤回')) failures.push('失败回滚提示文案缺失')
-      if (result.modeCount !== 2) failures.push(`更新策略不是 2 个 radio（${result.modeCount} 个）`)
-      if (result.modeChecked !== 1) failures.push(`更新策略 checked 数量不是 1（${result.modeChecked} 个）`)
-      if (result.modeTabbable !== 1) failures.push(`更新策略可 Tab 进入数量不是 1（${result.modeTabbable} 个）`)
+      if (result.modeCount !== 2) failures.push(`更新策略不是 2 个单选按钮（${result.modeCount} 个）`)
+      if (result.modeChecked !== 1) failures.push(`更新策略选中样式数量不是 1（${result.modeChecked} 个）`)
+      if (result.modeInputChecked !== 1) failures.push(`更新策略 checked 数量不是 1（${result.modeInputChecked} 个）`)
       const tops = [result.before, result.during, result.afterSuccess, result.afterFail]
       if (Math.max(...tops) - Math.min(...tops) > 1) {
         failures.push(`提示出现后列表面板被推挤（top: ${tops.join(' / ')}）`)

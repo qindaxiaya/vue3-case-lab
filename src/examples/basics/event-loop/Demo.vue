@@ -7,9 +7,6 @@
 // ============================================================
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
-import DemoButton from '../../../components/demo/DemoButton.vue'
-import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
-import type { SegmentedOption } from '../../../components/demo/types'
 
 // ---------- 任务类型（决定徽章文案与颜色） ----------
 
@@ -115,11 +112,6 @@ const PRESETS: Preset[] = [
 
 /** 对照模式：expect 直觉预期（错） / real 真实输出（对） */
 const mode = ref<Mode>('real')
-/** 输出对照是互斥模式，交给共享分段控件统一渲染 */
-const modeOptions: readonly SegmentedOption[] = [
-  { value: 'expect', label: '直觉预期（错误）' },
-  { value: 'real', label: '真实输出（正确）' },
-]
 /** 当前勾选的任务；顺序不重要，生成预期时按 TASKS 的 order 排序 */
 const selected = ref<TaskId[]>(['timer0', 'then', 'micro'])
 /** 真实输出的执行记录（按执行先后追加） */
@@ -308,8 +300,8 @@ function run(): void {
   }, 340)
 }
 
-/** 共享分段控件发出的是 string | number，这里收窄回对照模式 */
-function onModeChange(next: string | number): void {
+/** Element Plus 单选组发出的是 string | number | boolean | undefined，这里收窄回对照模式 */
+function onModeChange(next: string | number | boolean | undefined): void {
   if (next === 'expect' || next === 'real') mode.value = next
 }
 
@@ -329,17 +321,16 @@ onUnmounted(() => {
       aria-label="预设场景"
     >
       <span class="presets-label">预设</span>
-      <DemoButton
+      <el-button
         v-for="preset in PRESETS"
         :key="preset.id"
-        variant="ghost"
-        size="sm"
-        :active="isPresetActive(preset)"
+        size="small"
+        :type="isPresetActive(preset) ? 'primary' : 'default'"
         :data-preset="preset.id"
         @click="applyPreset(preset)"
       >
         {{ preset.label }}
-      </DemoButton>
+      </el-button>
     </div>
 
     <!-- 任务开关：勾选哪些，运行时就只排哪些 -->
@@ -368,26 +359,35 @@ onUnmounted(() => {
     </div>
 
     <div class="bar">
-      <DemoSegmented
+      <el-radio-group
         class="modes"
         :model-value="mode"
-        :options="modeOptions"
-        label="输出对照"
-        @update:model-value="onModeChange"
-      />
-      <DemoButton
-        variant="primary"
+        aria-label="输出对照"
+        @change="onModeChange"
+      >
+        <el-radio-button
+          value="expect"
+          data-mode="expect"
+        >
+          直觉预期（错误）
+        </el-radio-button>
+        <el-radio-button
+          value="real"
+          data-mode="real"
+        >
+          真实输出（正确）
+        </el-radio-button>
+      </el-radio-group>
+      <el-button
+        type="primary"
         data-action="run"
         @click="run"
       >
         运行
-      </DemoButton>
-      <DemoButton
-        variant="ghost"
-        @click="clearOutput"
-      >
+      </el-button>
+      <el-button @click="clearOutput">
         清空
-      </DemoButton>
+      </el-button>
     </div>
 
     <div class="stats">
