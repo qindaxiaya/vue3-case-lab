@@ -5,7 +5,10 @@
 // 面板保留最近一次「全量 / 切片」结果，参数一致时可直接对比。
 // ============================================================
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import DemoButton from '../../../components/demo/DemoButton.vue'
+import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
+import type { SegmentedOption } from '../../../components/demo/types'
 
 type Mode = 'slice' | 'full'
 
@@ -36,6 +39,11 @@ const rendering = ref(false)
 const progress = ref(0)
 /** 当前模式 */
 const mode = ref<Mode>('slice')
+/** 渲染方式也是互斥模式，交给共享分段控件统一渲染 */
+const modeOptions = computed<readonly SegmentedOption[]>(() => [
+  { value: 'slice', label: `时间切片（${batchSize.value} / 帧）` },
+  { value: 'full', label: '一次性全量' },
+])
 /** 首批数据真正出现在屏幕上的耗时 */
 const firstPaintMs = ref<number | null>(null)
 /** 单个任务占住主线程的最长时间 */
@@ -229,16 +237,9 @@ function ping(event: MouseEvent): void {
 }
 
 /** 互斥的渲染方式用 radio 语义：方向键切换，Tab 只停当前项 */
-async function onModeKeydown(event: KeyboardEvent): Promise<void> {
-  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
-  if (!keys.includes(event.key) || rendering.value) return
-  event.preventDefault()
-
-  const group = event.currentTarget as HTMLElement
-  if (mode.value === 'slice') renderFull()
-  else renderSlice()
-  await nextTick()
-  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+function onModeChange(next: string | number): void {
+  if (next === 'slice') renderSlice()
+  else if (next === 'full') renderFull()
 }
 
 onBeforeUnmount(() => {
@@ -252,52 +253,28 @@ onBeforeUnmount(() => {
   <div class="ts-demo">
     <!-- 控制 -->
     <div class="ts-bar">
-      <div
+      <DemoSegmented
         class="seg"
-        role="radiogroup"
-        aria-label="渲染方式"
-        @keydown="onModeKeydown"
-      >
-        <button
-          class="seg-btn"
-          role="radio"
-          :aria-checked="mode === 'slice'"
-          :tabindex="mode === 'slice' ? 0 : -1"
-          :disabled="rendering"
-          data-mode="slice"
-          type="button"
-          @click="renderSlice"
-        >
-          时间切片（{{ batchSize }} / 帧）
-        </button>
-        <button
-          class="seg-btn"
-          role="radio"
-          :aria-checked="mode === 'full'"
-          :tabindex="mode === 'full' ? 0 : -1"
-          :disabled="rendering"
-          data-mode="full"
-          type="button"
-          @click="renderFull"
-        >
-          一次性全量
-        </button>
-      </div>
-      <button
-        class="btn-reset"
-        type="button"
+        :model-value="mode"
+        :options="modeOptions"
+        label="渲染方式"
+        :disabled="rendering"
+        @update:model-value="onModeChange"
+      />
+      <DemoButton
+        variant="ghost"
         :disabled="rendering"
         @click="resetAll"
       >
         清空结果
-      </button>
-      <button
+      </DemoButton>
+      <DemoButton
         class="btn-act"
-        type="button"
+        variant="primary"
         @click="ping"
       >
         测主线程响应
-      </button>
+      </DemoButton>
     </div>
 
     <!-- 参数 -->
@@ -485,66 +462,10 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 
-.seg {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.seg-btn {
-  padding: 0.24rem 0.6rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &[aria-checked='true'] {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-}
-
-.btn-reset {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
 .btn-act {
   margin-left: auto;
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
-.seg-btn:focus-visible,
-.btn-reset:focus-visible,
-.btn-act:focus-visible,
 .ts-select:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;

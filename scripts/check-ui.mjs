@@ -765,7 +765,7 @@ const SCENARIOS = [
           [...document.querySelectorAll('.el-demo .lines .line .name')].map((item) =>
             item.textContent.trim()
           )
-        const run = () => document.querySelector('.el-demo .btn.run').click()
+        const run = () => document.querySelector('.el-demo [data-action="run"]').click()
 
         // 默认勾选 timer0 + Promise.then + queueMicrotask
         document.querySelector('[data-mode="expect"]').click()
@@ -985,7 +985,7 @@ const SCENARIOS = [
         const panelsTop = () =>
           Math.round(document.querySelector('.ou-demo .panels').getBoundingClientRect().top)
 
-        const mode = [...document.querySelectorAll('.ou-demo .mode')].find((item) =>
+        const mode = [...document.querySelectorAll('.ou-demo .modes [role="radio"]')].find((item) =>
           item.textContent.includes('乐观更新')
         )
         mode.click()
@@ -1001,11 +1001,14 @@ const SCENARIOS = [
 
         await wait(350)
         const afterSuccess = panelsTop()
-        const successText = document.querySelector('.ou-toasts')?.innerText ?? ''
-        const toastStack = document.querySelector('.ou-toasts')
+        const successText = document.querySelector('.demo-toasts')?.innerText ?? ''
+        const toastStack = document.querySelector('.demo-toasts')
         const toastPosition = toastStack ? getComputedStyle(toastStack).position : ''
-        const teleported = document.querySelector('.ou-toasts')?.parentElement === document.body
-        const toastCount = document.querySelectorAll('.ou-toast').length
+        const toastRect = toastStack?.getBoundingClientRect()
+        const toastTop = toastRect ? Math.round(toastRect.top) : -1
+        const toastRight = toastRect ? Math.round(window.innerWidth - toastRect.right) : -1
+        const teleported = document.querySelector('.demo-toasts')?.parentElement === document.body
+        const toastCount = document.querySelectorAll('.demo-toast').length
 
         const failBtn = [...document.querySelectorAll('.ou-demo button')].find((item) =>
           item.textContent.includes('模拟接口失败')
@@ -1019,7 +1022,7 @@ const SCENARIOS = [
         await wait(400)
         const secondPressedAfter = second.getAttribute('aria-pressed')
         const afterFail = panelsTop()
-        const failText = document.querySelector('.ou-toasts')?.innerText ?? ''
+        const failText = document.querySelector('.demo-toasts')?.innerText ?? ''
 
         return {
           before,
@@ -1031,6 +1034,8 @@ const SCENARIOS = [
           secondPressedAfter,
           toastCount,
           toastPosition,
+          toastTop,
+          toastRight,
           teleported,
           successText,
           failText,
@@ -1054,6 +1059,12 @@ const SCENARIOS = [
       if (result.toastCount < 1) failures.push('操作后没有出现提示消息')
       if (result.toastPosition !== 'fixed') {
         failures.push(`提示没有使用固定定位（position=${result.toastPosition}）`)
+      }
+      if (result.toastTop < 40 || result.toastTop > 140) {
+        failures.push(`提示没有贴近顶部（top=${result.toastTop}px）`)
+      }
+      if (result.toastRight < 0 || result.toastRight > 48) {
+        failures.push(`提示没有贴近右侧（right=${result.toastRight}px）`)
       }
       if (!result.teleported) failures.push('提示没有 Teleport 到 body')
       if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
