@@ -124,7 +124,9 @@ function parseDemo(source) {
   const hasModeSwitch = /const mode\s*=\s*ref|type Mode/.test(source)
   const hasPressedSemantics = /aria-pressed/.test(source)
   const hasRadioSemantics = /role="radio"/.test(source) && /aria-checked/.test(source)
-  if (hasModeSwitch && !hasPressedSemantics && !hasRadioSemantics) {
+  // 共享分段组件内部已经渲染 role="radio" + aria-checked，案例里只写 <DemoSegmented> 也算有语义
+  const hasSharedSegmented = /<DemoSegmented/.test(source)
+  if (hasModeSwitch && !hasPressedSemantics && !hasRadioSemantics && !hasSharedSegmented) {
     flags.push('有模式切换但缺 aria-pressed / radio 语义')
   }
 

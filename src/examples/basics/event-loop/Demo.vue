@@ -6,7 +6,10 @@
 // - 重复运行会取消上一轮未完成的定时器 / rAF，避免日志串台
 // ============================================================
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import DemoButton from '../../../components/demo/DemoButton.vue'
+import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
+import type { SegmentedOption } from '../../../components/demo/types'
 
 // ---------- 任务类型（决定徽章文案与颜色） ----------
 
@@ -112,6 +115,11 @@ const PRESETS: Preset[] = [
 
 /** 对照模式：expect 直觉预期（错） / real 真实输出（对） */
 const mode = ref<Mode>('real')
+/** 输出对照是互斥模式，交给共享分段控件统一渲染 */
+const modeOptions: readonly SegmentedOption[] = [
+  { value: 'expect', label: '直觉预期（错误）' },
+  { value: 'real', label: '真实输出（正确）' },
+]
 /** 当前勾选的任务；顺序不重要，生成预期时按 TASKS 的 order 排序 */
 const selected = ref<TaskId[]>(['timer0', 'then', 'micro'])
 /** 真实输出的执行记录（按执行先后追加） */
@@ -300,16 +308,9 @@ function run(): void {
   }, 340)
 }
 
-/** 互斥的「直觉 / 真实」按钮用 radio 语义：方向键切换，Tab 只停当前项 */
-async function onModeKeydown(event: KeyboardEvent): Promise<void> {
-  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
-  if (!keys.includes(event.key)) return
-  event.preventDefault()
-
-  const group = event.currentTarget as HTMLElement
-  mode.value = mode.value === 'expect' ? 'real' : 'expect'
-  await nextTick()
-  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+/** 共享分段控件发出的是 string | number，这里收窄回对照模式 */
+function onModeChange(next: string | number): void {
+  if (next === 'expect' || next === 'real') mode.value = next
 }
 
 onUnmounted(() => {
@@ -328,17 +329,17 @@ onUnmounted(() => {
       aria-label="预设场景"
     >
       <span class="presets-label">预设</span>
-      <button
+      <DemoButton
         v-for="preset in PRESETS"
         :key="preset.id"
-        class="preset"
-        :class="{ active: isPresetActive(preset) }"
+        variant="ghost"
+        size="sm"
+        :active="isPresetActive(preset)"
         :data-preset="preset.id"
-        type="button"
         @click="applyPreset(preset)"
       >
         {{ preset.label }}
-      </button>
+      </DemoButton>
     </div>
 
     <!-- 任务开关：勾选哪些，运行时就只排哪些 -->
@@ -367,49 +368,26 @@ onUnmounted(() => {
     </div>
 
     <div class="bar">
-      <div
+      <DemoSegmented
         class="modes"
-        role="radiogroup"
-        aria-label="输出对照"
-        @keydown="onModeKeydown"
-      >
-        <button
-          class="mode"
-          role="radio"
-          :aria-checked="mode === 'expect'"
-          :tabindex="mode === 'expect' ? 0 : -1"
-          data-mode="expect"
-          type="button"
-          @click="mode = 'expect'"
-        >
-          直觉预期（错误）
-        </button>
-        <button
-          class="mode"
-          role="radio"
-          :aria-checked="mode === 'real'"
-          :tabindex="mode === 'real' ? 0 : -1"
-          data-mode="real"
-          type="button"
-          @click="mode = 'real'"
-        >
-          真实输出（正确）
-        </button>
-      </div>
-      <button
-        class="btn run"
-        type="button"
+        :model-value="mode"
+        :options="modeOptions"
+        label="输出对照"
+        @update:model-value="onModeChange"
+      />
+      <DemoButton
+        variant="primary"
+        data-action="run"
         @click="run"
       >
         运行
-      </button>
-      <button
-        class="btn ghost"
-        type="button"
+      </DemoButton>
+      <DemoButton
+        variant="ghost"
         @click="clearOutput"
       >
         清空
-      </button>
+      </DemoButton>
     </div>
 
     <div class="stats">
@@ -509,29 +487,6 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-.preset {
-  padding: 0.25rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: border-color var(--transition), background-color var(--transition),
-    color var(--transition);
-
-  &:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  &.active {
-    border-color: var(--primary);
-    background-color: var(--primary-soft);
-    color: var(--primary);
-  }
-}
-
 .tasks {
   display: flex;
   flex-wrap: wrap;
@@ -561,59 +516,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.modes {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle, var(--bg));
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.mode[aria-checked='true'] {
-  background-color: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-}
-
-.btn.run {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.btn.run:hover,
-.btn:hover {
-  background-color: var(--primary-soft);
-  color: var(--primary);
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-}
-
-.mode:focus-visible,
-.preset:focus-visible,
-.btn:focus-visible,
 .task-toggle:focus-within {
   outline: 2px solid var(--primary);
   outline-offset: 2px;

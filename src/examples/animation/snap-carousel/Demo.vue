@@ -8,6 +8,9 @@
 // ============================================================
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import DemoButton from '../../../components/demo/DemoButton.vue'
+import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
+import type { SegmentedOption } from '../../../components/demo/types'
 
 /** 轮播实现方式：manual = 手算 scrollLeft（旧）/ snap = 滚动吸附（新） */
 type CarouselMode = 'manual' | 'snap'
@@ -57,6 +60,11 @@ const SLIDES: Slide[] = [
 ]
 
 const mode = ref<CarouselMode>('manual')
+/** 实现方式也是互斥模式，交给共享分段控件统一渲染 */
+const modeOptions: readonly SegmentedOption[] = [
+  { value: 'manual', label: '手算 scrollLeft（旧）' },
+  { value: 'snap', label: '滚动吸附（推荐）' },
+]
 /** 当前卡片索引：由滚动位置换算得到 */
 const index = ref(0)
 /** 当前滚动位置（px） */
@@ -275,23 +283,9 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-/**
- * 互斥模式按钮的键盘操作
- * role="radio" 的约定：方向键在选项间移动并选中，Tab 只停在当前选中项。
- */
-async function onModeKeydown(event: KeyboardEvent): Promise<void> {
-  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
-  if (!keys.includes(event.key)) return
-  event.preventDefault()
-
-  // currentTarget 只在事件派发期间有效，await 前先存下来
-  const group = event.currentTarget as HTMLElement
-  // 只有两个选项：方向键直接切到另一个，左右/上下都等价
-  const next: CarouselMode = mode.value === 'manual' ? 'snap' : 'manual'
-
-  await setMode(next)
-  await nextTick()
-  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+/** 共享分段控件发出的是 string | number，这里收窄回轮播实现方式 */
+function onModeChange(next: string | number): void {
+  if (next === 'manual' || next === 'snap') void setMode(next)
 }
 
 // ---------- 模式切换与重置 ----------
@@ -374,47 +368,27 @@ onUnmounted(() => {
     :class="{ 'no-motion': mockReduce }"
   >
     <div class="bar">
-      <div
+      <DemoSegmented
         class="modes"
-        role="radiogroup"
-        aria-label="轮播实现方式"
-        @keydown="onModeKeydown"
-      >
-        <button
-          class="mode"
-          :class="{ active: mode === 'manual' }"
-          role="radio"
-          :aria-checked="mode === 'manual'"
-          :tabindex="mode === 'manual' ? 0 : -1"
-          @click="setMode('manual')"
-        >
-          手算 scrollLeft（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'snap' }"
-          role="radio"
-          :aria-checked="mode === 'snap'"
-          :tabindex="mode === 'snap' ? 0 : -1"
-          @click="setMode('snap')"
-        >
-          滚动吸附（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        :class="{ active: mockReduce }"
+        :model-value="mode"
+        :options="modeOptions"
+        label="轮播实现方式"
+        @update:model-value="onModeChange"
+      />
+      <DemoButton
+        variant="ghost"
+        :active="mockReduce"
         :aria-pressed="mockReduce"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-      </button>
-      <button
-        class="btn ghost"
+      </DemoButton>
+      <DemoButton
+        variant="ghost"
         @click="resetAll"
       >
         重置
-      </button>
+      </DemoButton>
     </div>
 
     <p
@@ -534,58 +508,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
-}
-
-.modes {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-}
-
-.btn.ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */
@@ -827,10 +749,6 @@ onUnmounted(() => {
 @media (max-width: 520px) {
   .modes {
     flex: 1 1 100%;
-  }
-
-  .mode {
-    flex: 1;
   }
 
   .stats {

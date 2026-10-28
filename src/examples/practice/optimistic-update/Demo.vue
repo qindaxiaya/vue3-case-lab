@@ -5,7 +5,11 @@
 // - 用 pending 标记阻止同一张卡片重复提交
 // ============================================================
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
+import DemoButton from '../../../components/demo/DemoButton.vue'
+import DemoSegmented from '../../../components/demo/DemoSegmented.vue'
+import DemoToastStack from '../../../components/demo/DemoToastStack.vue'
+import type { SegmentedOption } from '../../../components/demo/types'
 
 type Mode = 'pessimistic' | 'optimistic'
 type LogTone = 'info' | 'ok' | 'bad'
@@ -39,6 +43,11 @@ const initialPosts: Post[] = [
 
 const posts = ref<Post[]>(initialPosts.map((post) => ({ ...post })))
 const mode = ref<Mode>('pessimistic')
+/** 更新策略是互斥模式，交给共享分段控件统一渲染 */
+const modeOptions: readonly SegmentedOption[] = [
+  { value: 'pessimistic', label: '等响应再改' },
+  { value: 'optimistic', label: '乐观更新（推荐）' },
+]
 const failRequest = ref(false)
 const pendingIds = ref<number[]>([])
 const logs = ref<LogEntry[]>([])
@@ -170,16 +179,9 @@ function setMode(next: Mode): void {
   clearMessages()
 }
 
-/** 互斥的更新策略用 radio 语义：方向键切换，Tab 只停当前项 */
-async function onModeKeydown(event: KeyboardEvent): Promise<void> {
-  const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
-  if (!keys.includes(event.key) || pendingCount.value > 0) return
-  event.preventDefault()
-
-  const group = event.currentTarget as HTMLElement
-  setMode(mode.value === 'pessimistic' ? 'optimistic' : 'pessimistic')
-  await nextTick()
-  group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus()
+/** 共享分段控件发出的是 string | number，这里收窄回更新策略 */
+function onModeChange(next: string | number): void {
+  if (next === 'pessimistic' || next === 'optimistic') setMode(next)
 }
 
 /** 恢复初始数据与统计 */
@@ -203,50 +205,29 @@ onUnmounted(() => {
 <template>
   <div class="ou-demo">
     <div class="bar">
-      <div
+      <DemoSegmented
         class="modes"
-        role="radiogroup"
-        aria-label="更新策略"
-        @keydown="onModeKeydown"
-      >
-        <button
-          class="mode"
-          role="radio"
-          :class="{ active: mode === 'pessimistic' }"
-          :aria-checked="mode === 'pessimistic'"
-          :tabindex="mode === 'pessimistic' ? 0 : -1"
-          type="button"
-          @click="setMode('pessimistic')"
-        >
-          等响应再改
-        </button>
-        <button
-          class="mode"
-          role="radio"
-          :class="{ active: mode === 'optimistic' }"
-          :aria-checked="mode === 'optimistic'"
-          :tabindex="mode === 'optimistic' ? 0 : -1"
-          type="button"
-          @click="setMode('optimistic')"
-        >
-          乐观更新（推荐）
-        </button>
-      </div>
-      <button
-        class="btn danger"
-        :class="{ active: failRequest }"
+        :model-value="mode"
+        :options="modeOptions"
+        label="更新策略"
+        :disabled="pendingCount > 0"
+        @update:model-value="onModeChange"
+      />
+      <DemoButton
+        variant="danger"
+        :active="failRequest"
         :aria-pressed="failRequest"
         @click="failRequest = !failRequest"
       >
         {{ failRequest ? '接口失败：开' : '模拟接口失败' }}
-      </button>
-      <button
-        class="btn ghost"
+      </DemoButton>
+      <DemoButton
+        variant="ghost"
         :disabled="pendingCount > 0"
         @click="reset"
       >
         重置
-      </button>
+      </DemoButton>
     </div>
 
     <div class="stats">
@@ -342,26 +323,11 @@ onUnmounted(() => {
       等响应模式则从头到尾不变。注意提交期间按钮被禁用，防止连点造成重复写入。
     </p>
 
-    <!-- 提示用 Teleport 挂到 body + 固定定位：不参与文档流，出现/消失不会推挤列表 -->
-    <Teleport to="body">
-      <TransitionGroup
-        name="ou-toast"
-        tag="div"
-        class="ou-toasts"
-        role="status"
-        aria-live="polite"
-        aria-atomic="false"
-      >
-        <p
-          v-for="message in messages"
-          :key="message.id"
-          class="ou-toast"
-          :class="`ou-toast--${message.tone}`"
-        >
-          {{ message.text }}
-        </p>
-      </TransitionGroup>
-    </Teleport>
+    <!-- 提示统一走共享提示栈：Teleport 到 body、右上角固定定位，不推挤列表 -->
+    <DemoToastStack
+      :messages="messages"
+      label="乐观更新提示"
+    />
   </div>
 </template>
 
@@ -377,76 +343,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
-}
-
-.modes {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-}
-
-.btn.danger {
-  border-color: var(--danger);
-  color: var(--danger);
-
-  &.active {
-    background-color: var(--danger);
-    color: #fff;
-  }
 }
 
 .stats {
@@ -645,57 +541,6 @@ onUnmounted(() => {
   font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
-}
-
-/* Teleport 到 body 的提示不继承 scoped 属性，用 :global 让选择器仍然留在本组件样式里；
-   .ou- 前缀保证只命中本案例，不会影响站点其他提示 */
-:global(.ou-toasts) {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-width: min(20rem, calc(100vw - 2rem));
-  pointer-events: none;
-}
-
-:global(.ou-toast) {
-  margin: 0;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-radius: var(--demo-radius);
-  background-color: var(--surface);
-  box-shadow: var(--shadow-soft);
-  font-size: var(--demo-text-sm);
-  line-height: 1.5;
-  color: var(--text);
-  pointer-events: auto;
-}
-
-:global(.ou-toast--ok) {
-  border-left-color: var(--success);
-  background-color: var(--success-soft);
-  color: var(--success);
-}
-
-:global(.ou-toast--bad) {
-  border-left-color: var(--danger);
-  background-color: var(--danger-soft);
-  color: var(--danger);
-}
-
-:global(.ou-toast-enter-active),
-:global(.ou-toast-leave-active) {
-  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
-}
-
-:global(.ou-toast-enter-from),
-:global(.ou-toast-leave-to) {
-  opacity: 0;
-  transform: translateY(6px);
 }
 
 @media (max-width: 760px) {
