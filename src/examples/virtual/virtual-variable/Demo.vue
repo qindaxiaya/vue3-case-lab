@@ -43,6 +43,12 @@ const OVERSCAN = 3
 const scrollTop = ref(0)
 const mode = ref<'virtual' | 'full'>('virtual')
 
+/** 切换渲染模式（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'virtual' && next !== 'full') return
+  mode.value = next
+}
+
 function onScroll(e: Event): void {
   scrollTop.value = (e.target as HTMLElement).scrollTop
 }
@@ -93,36 +99,32 @@ function resetScroll(): void {
   <div class="vv-demo">
     <!-- 控制 -->
     <div class="vv-bar">
-      <div class="seg">
-        <button
-          class="seg-btn"
-          :class="{ active: mode === 'virtual' }"
-          :aria-pressed="mode === 'virtual'"
-          @click="mode = 'virtual'"
-        >
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
+        class="seg"
+        :value="mode"
+        aria-label="渲染模式"
+        @update:value="setMode"
+      >
+        <n-radio-button value="virtual">
           虚拟渲染
-        </button>
-        <button
-          class="seg-btn"
-          :class="{ active: mode === 'full' }"
-          :aria-pressed="mode === 'full'"
-          @click="mode = 'full'"
-        >
+        </n-radio-button>
+        <n-radio-button value="full">
           全量渲染 {{ TOTAL }} 行
-        </button>
-      </div>
+        </n-radio-button>
+      </n-radio-group>
       <span class="vv-stat">
         DOM 行数 <b>{{ renderedCount }}</b> / {{ TOTAL }}
       </span>
       <span class="vv-stat">
         区间 <b>{{ start }} – {{ end }}</b>
       </span>
-      <button
+      <n-button
         class="btn-reset"
         @click="resetScroll"
       >
         回到顶部
-      </button>
+      </n-button>
     </div>
 
     <!-- 滚动容器 -->
@@ -192,23 +194,6 @@ function resetScroll(): void {
 
 .seg {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.seg-btn {
-  padding: 0.22rem 0.55rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &.active {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .vv-stat {
@@ -221,15 +206,9 @@ function resetScroll(): void {
   }
 }
 
+/* 只留布局：把「回到顶部」推到右侧，观感交给 Naive 按钮 */
 .btn-reset {
   margin-left: auto;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 }
 
 /* ---------- 滚动区 ---------- */

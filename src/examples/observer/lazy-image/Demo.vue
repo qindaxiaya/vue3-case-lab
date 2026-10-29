@@ -206,13 +206,9 @@ onUnmounted(() => {
         >
         持续观察已加载图片
       </label>
-      <button
-        class="btn-ghost"
-        type="button"
-        @click="resetList"
-      >
+      <n-button @click="resetList">
         重置列表
-      </button>
+      </n-button>
       <span class="stat">
         已加载
         <b>{{ loadedCount }}</b> / {{ images.length }}
