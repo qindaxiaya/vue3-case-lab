@@ -88,112 +88,110 @@ const statusIcon: Record<StepStatus, string> = {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="vg-demo">
-      <!-- 控制 -->
-      <div class="vg-bar">
-        <button
-          class="btn-act"
-          :disabled="running"
-          @click="run"
-        >
-          {{ running ? '执行中…' : '模拟 CI 运行' }}
-        </button>
-        <button
-          class="btn-ghost"
-          :disabled="running"
-          @click="reset"
-        >
-          重置
-        </button>
-        <div class="vg-select">
-          <span class="vg-select-label">注入失败</span>
-          <!-- Naive 下拉：选项走数组；n-select 的 value 类型是 string 要求的选项值不全为 number，这里 id 全是 string -->
-          <n-select
-            v-model:value="failOn"
-            class="vg-select-control"
-            size="large"
-            :options="failOptions"
-            aria-label="注入失败步骤"
-          />
-        </div>
-        <span
-          v-if="totalMs !== null"
-          class="vg-kv"
-        >总耗时 <b>{{ totalMs }} ms</b></span>
+  <div class="vg-demo">
+    <!-- 控制 -->
+    <div class="vg-bar">
+      <button
+        class="btn-act"
+        :disabled="running"
+        @click="run"
+      >
+        {{ running ? '执行中…' : '模拟 CI 运行' }}
+      </button>
+      <button
+        class="btn-ghost"
+        :disabled="running"
+        @click="reset"
+      >
+        重置
+      </button>
+      <div class="vg-select">
+        <span class="vg-select-label">注入失败</span>
+        <!-- Naive 下拉：选项走数组；n-select 的 value 类型是 string 要求的选项值不全为 number，这里 id 全是 string -->
+        <n-select
+          v-model:value="failOn"
+          class="vg-select-control"
+          size="large"
+          :options="failOptions"
+          aria-label="注入失败步骤"
+        />
       </div>
+      <span
+        v-if="totalMs !== null"
+        class="vg-kv"
+      >总耗时 <b>{{ totalMs }} ms</b></span>
+    </div>
 
-      <!-- 结果横幅 -->
+    <!-- 结果横幅 -->
+    <div
+      v-if="verdict"
+      class="vg-verdict"
+      :class="verdict"
+    >
+      {{ verdict === 'pass' ? '✓ 门禁通过，可以合并' : '✕ 门禁失败，禁止合并' }}
+    </div>
+
+    <!-- 步骤 -->
+    <div class="vg-steps">
       <div
-        v-if="verdict"
-        class="vg-verdict"
-        :class="verdict"
+        v-for="step in steps"
+        :key="step.id"
+        class="vg-step"
+        :class="step.status"
       >
-        {{ verdict === 'pass' ? '✓ 门禁通过，可以合并' : '✕ 门禁失败，禁止合并' }}
+        <span class="vg-icon">{{ statusIcon[step.status] }}</span>
+        <span class="vg-step-main">
+          <span class="vg-step-label">{{ step.label }}</span>
+          <code class="vg-cmd">{{ step.cmd }}</code>
+        </span>
+        <span class="vg-status">
+          {{
+            step.status === 'idle'
+              ? '等待'
+              : step.status === 'running'
+                ? '执行中'
+                : step.status === 'pass'
+                  ? '通过'
+                  : '失败'
+          }}
+        </span>
       </div>
+    </div>
 
-      <!-- 步骤 -->
-      <div class="vg-steps">
-        <div
-          v-for="step in steps"
-          :key="step.id"
-          class="vg-step"
-          :class="step.status"
-        >
-          <span class="vg-icon">{{ statusIcon[step.status] }}</span>
-          <span class="vg-step-main">
-            <span class="vg-step-label">{{ step.label }}</span>
-            <code class="vg-cmd">{{ step.cmd }}</code>
-          </span>
-          <span class="vg-status">
-            {{
-              step.status === 'idle'
-                ? '等待'
-                : step.status === 'running'
-                  ? '执行中'
-                  : step.status === 'pass'
-                    ? '通过'
-                    : '失败'
-            }}
-          </span>
-        </div>
-      </div>
+    <p
+      v-if="running && current"
+      class="vg-current"
+    >
+      正在执行：<code>{{ current }}</code>
+    </p>
 
-      <p
-        v-if="running && current"
-        class="vg-current"
-      >
-        正在执行：<code>{{ current }}</code>
-      </p>
-
-      <!-- 配置示例 -->
-      <pre class="vg-code"><code>// package.json
+    <!-- 配置示例 -->
+    <pre class="vg-code"><code>// package.json
 {
-  "scripts": {
-    "type-check": "vue-tsc -b",
-    "lint": "eslint . --max-warnings 0",
-    "test": "vitest run",
-    "build": "vue-tsc -b &amp;&amp; vite build",
-    "check:bundle": "node scripts/check-bundle.mjs"
-  }
+"scripts": {
+  "type-check": "vue-tsc -b",
+  "lint": "eslint . --max-warnings 0",
+  "test": "vitest run",
+  "build": "vue-tsc -b &amp;&amp; vite build",
+  "check:bundle": "node scripts/check-bundle.mjs"
+}
 }
 
 // .github/workflows/ci.yml
 steps:
-  - run: npm ci
-  - run: npm run type-check
-  - run: npm run lint
-  - run: npm test
-  - run: npm run build
-  - run: npm run check:bundle</code></pre>
+- run: npm ci
+- run: npm run type-check
+- run: npm run lint
+- run: npm test
+- run: npm run build
+- run: npm run check:bundle</code></pre>
 
-      <p class="vg-hint">
-        门禁的意义不是「多跑几个命令」，而是<b>任何一项不过就不能合并</b>。
-        本地能过、CI 不过，通常是 Node 版本、锁文件、环境变量或大小写敏感（Linux）差异——
-        这台项目就踩过「测试用内联数据绕过真实 glob」的坑，也踩过「首屏包体悄悄变大」的坑。
-      </p>
-    </div>
-  </DemoNaive>
+    <p class="vg-hint">
+      门禁的意义不是「多跑几个命令」，而是<b>任何一项不过就不能合并</b>。
+      本地能过、CI 不过，通常是 Node 版本、锁文件、环境变量或大小写敏感（Linux）差异——
+      这台项目就踩过「测试用内联数据绕过真实 glob」的坑，也踩过「首屏包体悄悄变大」的坑。
+    </p>
+  </div>
 </template>
 
 <style scoped>

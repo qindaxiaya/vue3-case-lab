@@ -6,7 +6,10 @@
 // ============================================================
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { demoMessage } from '../../../composables/useDemoMessage'
+import { useMessage } from 'naive-ui'
+
+/** 提示统一用 Naive 的 message（CasePage 已包 NMessageProvider，Demo 是它的子组件，直接取上下文） */
+const message = useMessage()
 
 type Mode = 'pessimistic' | 'optimistic'
 type LogTone = 'info' | 'ok' | 'bad'
@@ -55,7 +58,7 @@ function addLog(text: string, tone: LogTone = 'info'): void {
 
 /** 清空当前所有提示：切换模式 / 重置时调用（Naive message 的 destroyAll） */
 function clearMessages(): void {
-  demoMessage.destroyAll()
+  message.destroyAll()
 }
 
 function isPending(id: number): boolean {
@@ -107,7 +110,7 @@ async function toggleLike(id: number): Promise<void> {
       addLog(`「${post.author}」服务端确认，保留界面结果`, 'ok')
     }
     stats.confirmed++
-    demoMessage.success('点赞成功')
+    message.success('点赞成功')
   } catch {
     if (mode.value === 'optimistic') {
       // 失败：按提交前的旧值回滚，界面恢复原样
@@ -118,10 +121,10 @@ async function toggleLike(id: number): Promise<void> {
       }
       stats.rolledBack++
       addLog(`「${post.author}」请求失败，已回滚`, 'bad')
-      demoMessage.error('网络开小差，点赞已撤回')
+      message.error('网络开小差，点赞已撤回')
     } else {
       addLog(`「${post.author}」请求失败，界面未变化`, 'bad')
-      demoMessage.error('点赞失败，请重试')
+      message.error('点赞失败，请重试')
     }
   } finally {
     pendingIds.value = pendingIds.value.filter((item) => item !== id)
@@ -158,141 +161,139 @@ function reset(): void {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="ou-demo">
-      <div class="bar">
-        <!-- 更新策略：n-radio-group 受控用法 -->
-        <n-radio-group
-          class="modes"
-          :value="mode"
-          aria-label="更新策略"
-          :disabled="pendingCount > 0"
-          @update:value="onModeChange"
+  <div class="ou-demo">
+    <div class="bar">
+      <!-- 更新策略：n-radio-group 受控用法 -->
+      <n-radio-group
+        class="modes"
+        :value="mode"
+        aria-label="更新策略"
+        :disabled="pendingCount > 0"
+        @update:value="onModeChange"
+      >
+        <n-radio-button
+          value="pessimistic"
+          data-mode="pessimistic"
         >
-          <n-radio-button
-            value="pessimistic"
-            data-mode="pessimistic"
-          >
-            等响应再改
-          </n-radio-button>
-          <n-radio-button
-            value="optimistic"
-            data-mode="optimistic"
-          >
-            乐观更新（推荐）
-          </n-radio-button>
-        </n-radio-group>
-        <!-- 注意：Naive 的红色按钮类型是 error（EP 叫 danger） -->
-        <n-button
-          :type="failRequest ? 'error' : 'default'"
-          :aria-pressed="failRequest"
-          @click="failRequest = !failRequest"
+          等响应再改
+        </n-radio-button>
+        <n-radio-button
+          value="optimistic"
+          data-mode="optimistic"
         >
-          {{ failRequest ? '接口失败：开' : '模拟接口失败' }}
-        </n-button>
-        <n-button
-          :disabled="pendingCount > 0"
-          @click="reset"
-        >
-          重置
-        </n-button>
-      </div>
+          乐观更新（推荐）
+        </n-radio-button>
+      </n-radio-group>
+      <!-- 注意：Naive 的红色按钮类型是 error（EP 叫 danger） -->
+      <n-button
+        :type="failRequest ? 'error' : 'default'"
+        :aria-pressed="failRequest"
+        @click="failRequest = !failRequest"
+      >
+        {{ failRequest ? '接口失败：开' : '模拟接口失败' }}
+      </n-button>
+      <n-button
+        :disabled="pendingCount > 0"
+        @click="reset"
+      >
+        重置
+      </n-button>
+    </div>
 
-      <div class="stats">
-        <span>请求 <b>{{ stats.requests }}</b></span>
-        <span>确认 <b>{{ stats.confirmed }}</b></span>
-        <span>回滚 <b :class="{ bad: stats.rolledBack > 0 }">{{ stats.rolledBack }}</b></span>
-        <span>进行中 <b>{{ pendingCount }}</b></span>
-        <span class="mode-tag">{{ mode === 'optimistic' ? '乐观更新' : '等响应' }}</span>
-      </div>
+    <div class="stats">
+      <span>请求 <b>{{ stats.requests }}</b></span>
+      <span>确认 <b>{{ stats.confirmed }}</b></span>
+      <span>回滚 <b :class="{ bad: stats.rolledBack > 0 }">{{ stats.rolledBack }}</b></span>
+      <span>进行中 <b>{{ pendingCount }}</b></span>
+      <span class="mode-tag">{{ mode === 'optimistic' ? '乐观更新' : '等响应' }}</span>
+    </div>
 
-      <div class="panels">
-        <ul class="posts">
-          <li
-            v-for="post in posts"
-            :key="post.id"
-            class="post"
-          >
-            <span
-              class="avatar"
-              aria-hidden="true"
-            >{{ post.author.slice(0, 1) }}</span>
-            <div class="body">
-              <div class="meta">
-                <b>{{ post.author }}</b>
-                <span
-                  v-if="isPending(post.id)"
-                  class="pending"
-                >提交中…</span>
-              </div>
-              <p class="content">
-                {{ post.content }}
-              </p>
+    <div class="panels">
+      <ul class="posts">
+        <li
+          v-for="post in posts"
+          :key="post.id"
+          class="post"
+        >
+          <span
+            class="avatar"
+            aria-hidden="true"
+          >{{ post.author.slice(0, 1) }}</span>
+          <div class="body">
+            <div class="meta">
+              <b>{{ post.author }}</b>
+              <span
+                v-if="isPending(post.id)"
+                class="pending"
+              >提交中…</span>
             </div>
-            <button
-              class="like"
-              :class="{ liked: post.liked, pending: isPending(post.id) }"
-              :disabled="isPending(post.id)"
-              :aria-pressed="post.liked"
-              :aria-label="`${post.liked ? '取消点赞' : '点赞'}，当前 ${post.likes} 个赞`"
-              @click="toggleLike(post.id)"
+            <p class="content">
+              {{ post.content }}
+            </p>
+          </div>
+          <button
+            class="like"
+            :class="{ liked: post.liked, pending: isPending(post.id) }"
+            :disabled="isPending(post.id)"
+            :aria-pressed="post.liked"
+            :aria-label="`${post.liked ? '取消点赞' : '点赞'}，当前 ${post.likes} 个赞`"
+            @click="toggleLike(post.id)"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                aria-hidden="true"
-              >
-                <path
-                  d="M12 20.3 4.7 13a4.6 4.6 0 0 1 6.5-6.5l.8.8.8-.8A4.6 4.6 0 1 1 19.3 13Z"
-                  :fill="post.liked ? 'currentColor' : 'none'"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linejoin="round"
-                />
-              </svg>
-              <span class="count">{{ post.likes }}</span>
-            </button>
+              <path
+                d="M12 20.3 4.7 13a4.6 4.6 0 0 1 6.5-6.5l.8.8.8-.8A4.6 4.6 0 1 1 19.3 13Z"
+                :fill="post.liked ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="count">{{ post.likes }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <section
+        class="panel"
+        aria-label="操作日志"
+      >
+        <header class="panel-head">
+          <span>操作日志</span>
+          <b>{{ logs.length }} 条</b>
+        </header>
+        <ul
+          v-if="logs.length"
+          class="logs"
+        >
+          <li
+            v-for="log in logs"
+            :key="log.id"
+            class="log"
+            :class="`log--${log.tone}`"
+          >
+            {{ log.text }}
           </li>
         </ul>
-
-        <section
-          class="panel"
-          aria-label="操作日志"
+        <p
+          v-else
+          class="empty"
         >
-          <header class="panel-head">
-            <span>操作日志</span>
-            <b>{{ logs.length }} 条</b>
-          </header>
-          <ul
-            v-if="logs.length"
-            class="logs"
-          >
-            <li
-              v-for="log in logs"
-              :key="log.id"
-              class="log"
-              :class="`log--${log.tone}`"
-            >
-              {{ log.text }}
-            </li>
-          </ul>
-          <p
-            v-else
-            class="empty"
-          >
-            点任意一条动态的爱心，观察提交、确认与回滚的顺序。
-          </p>
-        </section>
-      </div>
-
-      <p class="hint">
-        点亮「模拟接口失败」再点赞：乐观更新会先变色，300ms 后失败并退回原值；
-        等响应模式则从头到尾不变。注意提交期间按钮被禁用，防止连点造成重复写入。
-      </p>
-      <!-- 提示走 Naive 的 message（DemoNaive 里已包 NMessageProvider）：右上角浮层，不推挤列表 -->
+          点任意一条动态的爱心，观察提交、确认与回滚的顺序。
+        </p>
+      </section>
     </div>
-  </DemoNaive>
+
+    <p class="hint">
+      点亮「模拟接口失败」再点赞：乐观更新会先变色，300ms 后失败并退回原值；
+      等响应模式则从头到尾不变。注意提交期间按钮被禁用，防止连点造成重复写入。
+    </p>
+    <!-- 提示走 Naive 的 message（页面顶部居中浮层，由 provider Teleport 到 body，不推挤列表） -->
+  </div>
 </template>
 
 <style scoped>

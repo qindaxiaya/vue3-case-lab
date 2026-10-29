@@ -143,7 +143,9 @@ function setupShiftObserver(): void {
 
 // ---------- 模式切换与重置 ----------
 
-function setMode(next: PlaceholderMode): void {
+/** 切换占位策略（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'none' && next !== 'ratio') return
   if (mode.value === next) return
   mode.value = next
   clearPending()
@@ -178,40 +180,30 @@ onUnmounted(() => {
 <template>
   <div class="ar-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="占位策略"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'none' }"
-          :aria-pressed="mode === 'none'"
-          @click="setMode('none')"
-        >
+        <n-radio-button value="none">
           无占位（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'ratio' }"
-          :aria-pressed="mode === 'ratio'"
-          @click="setMode('ratio')"
-        >
+        </n-radio-button>
+        <n-radio-button value="ratio">
           aspect-ratio 占位（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
+        ghost
         @click="triggerLoad"
       >
         触发图片加载
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -274,52 +266,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

@@ -27,6 +27,7 @@ import {
 } from '../examples/registry'
 import BackToTop from '../components/BackToTop.vue'
 import CodeWorkbench from '../components/CodeWorkbench.vue'
+import DemoNaive from '../components/demo/DemoNaive.vue'
 import NotesPanel from '../components/NotesPanel.vue'
 import { caseKey, useCaseHistory } from '../composables/useCaseHistory'
 import { smoothScrollTo, stopSmoothScroll } from '../utils/scroll'
@@ -673,10 +674,11 @@ const explainBlocks = computed(() => {
       <!-- ① 演示区：演示组件按需加载，加载期间显示占位 -->
       <section aria-label="可交互演示">
         <div class="card demo-card">
-          <component
-            :is="demoComponent"
-            v-if="demoComponent"
-          />
+          <!-- 演示区统一包一层 Naive 主题 + message provider：
+               案例里的 n-button / n-radio-group / useMessage() 都从这里拿上下文 -->
+          <DemoNaive v-if="demoComponent">
+            <component :is="demoComponent" />
+          </DemoNaive>
           <div
             v-else-if="demoStatus === 'error'"
             class="async-placeholder"

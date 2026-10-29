@@ -244,213 +244,211 @@ onBeforeUnmount(() => {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="ts-demo">
-      <!-- 控制 -->
-      <div class="ts-bar">
-        <n-radio-group
-          class="seg"
-          :value="mode"
-          aria-label="渲染方式"
+  <div class="ts-demo">
+    <!-- 控制 -->
+    <div class="ts-bar">
+      <n-radio-group
+        class="seg"
+        :value="mode"
+        aria-label="渲染方式"
+        :disabled="rendering"
+        @update:value="onModeChange"
+      >
+        <n-radio-button
+          value="slice"
+          data-mode="slice"
+        >
+          时间切片（{{ batchSize }} / 帧）
+        </n-radio-button>
+        <n-radio-button
+          value="full"
+          data-mode="full"
+        >
+          一次性全量
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        :disabled="rendering"
+        @click="resetAll"
+      >
+        清空结果
+      </n-button>
+      <n-button
+        class="btn-act"
+        type="primary"
+        @click="ping"
+      >
+        测主线程响应
+      </n-button>
+    </div>
+
+    <!-- 参数 -->
+    <div class="ts-config">
+      <label class="ts-field">
+        数据量
+        <select
+          v-model.number="totalCount"
+          class="ts-select ts-total"
           :disabled="rendering"
-          @update:value="onModeChange"
         >
-          <n-radio-button
-            value="slice"
-            data-mode="slice"
+          <option
+            v-for="option in TOTAL_OPTIONS"
+            :key="option"
+            :value="option"
           >
-            时间切片（{{ batchSize }} / 帧）
-          </n-radio-button>
-          <n-radio-button
-            value="full"
-            data-mode="full"
-          >
-            一次性全量
-          </n-radio-button>
-        </n-radio-group>
-        <n-button
+            {{ formatCount(option) }} 条
+          </option>
+        </select>
+      </label>
+      <label class="ts-field">
+        每批
+        <select
+          v-model.number="batchSize"
+          class="ts-select ts-batch"
           :disabled="rendering"
-          @click="resetAll"
         >
-          清空结果
-        </n-button>
-        <n-button
-          class="btn-act"
-          type="primary"
-          @click="ping"
-        >
-          测主线程响应
-        </n-button>
-      </div>
-
-      <!-- 参数 -->
-      <div class="ts-config">
-        <label class="ts-field">
-          数据量
-          <select
-            v-model.number="totalCount"
-            class="ts-select ts-total"
-            :disabled="rendering"
+          <option
+            v-for="option in BATCH_OPTIONS"
+            :key="option"
+            :value="option"
           >
-            <option
-              v-for="option in TOTAL_OPTIONS"
-              :key="option"
-              :value="option"
-            >
-              {{ formatCount(option) }} 条
-            </option>
-          </select>
-        </label>
-        <label class="ts-field">
-          每批
-          <select
-            v-model.number="batchSize"
-            class="ts-select ts-batch"
-            :disabled="rendering"
-          >
-            <option
-              v-for="option in BATCH_OPTIONS"
-              :key="option"
-              :value="option"
-            >
-              {{ option }} 条
-            </option>
-          </select>
-        </label>
-        <span class="ts-config-note">改参数会清空对比结果</span>
-      </div>
+            {{ option }} 条
+          </option>
+        </select>
+      </label>
+      <span class="ts-config-note">改参数会清空对比结果</span>
+    </div>
 
-      <!-- 指标 -->
-      <div class="ts-metrics">
-        <span>已渲染 <b>{{ formatCount(progress) }}</b> / {{ formatCount(totalCount) }}</span>
-        <span>首帧 <b>{{ formatMs(firstPaintMs) }}</b></span>
-        <span>最大阻塞 <b>{{ formatMs(maxBlockMs) }}</b></span>
-        <span>总耗时 <b>{{ formatMs(totalMs) }}</b></span>
-        <span>批次数 <b>{{ frames }}</b></span>
-        <span>点击响应 <b>{{ clickLatency === null ? '—' : clickLatency + ' ms' }}</b></span>
-      </div>
+    <!-- 指标 -->
+    <div class="ts-metrics">
+      <span>已渲染 <b>{{ formatCount(progress) }}</b> / {{ formatCount(totalCount) }}</span>
+      <span>首帧 <b>{{ formatMs(firstPaintMs) }}</b></span>
+      <span>最大阻塞 <b>{{ formatMs(maxBlockMs) }}</b></span>
+      <span>总耗时 <b>{{ formatMs(totalMs) }}</b></span>
+      <span>批次数 <b>{{ frames }}</b></span>
+      <span>点击响应 <b>{{ clickLatency === null ? '—' : clickLatency + ' ms' }}</b></span>
+    </div>
 
-      <!-- 列表 -->
-      <div class="ts-list">
-        <div
-          v-for="row in rows"
-          :key="row.id"
-          class="ts-row"
-        >
-          {{ row.text }}
-        </div>
-        <p
-          v-if="!rows.length"
-          class="ts-empty"
-        >
-          选择数据量后点上方按钮开始渲染
-        </p>
+    <!-- 列表 -->
+    <div class="ts-list">
+      <div
+        v-for="row in rows"
+        :key="row.id"
+        class="ts-row"
+      >
+        {{ row.text }}
       </div>
-
-      <!-- 结果对比表 -->
-      <div class="ts-table-wrap">
-        <table class="ts-table">
-          <caption>最近一次运行对比（同一组参数）</caption>
-          <thead>
-            <tr>
-              <th scope="col">
-                指标
-              </th>
-              <th scope="col">
-                一次性全量
-              </th>
-              <th scope="col">
-                时间切片{{ results.slice ? `（${results.slice.batch} / 帧）` : '' }}
-              </th>
-              <th scope="col">
-                怎么看
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">
-                数据量
-              </th>
-              <td data-result="full-total">
-                {{ results.full ? `${formatCount(results.full.total)} 条` : '未运行' }}
-              </td>
-              <td data-result="slice-total">
-                {{ results.slice ? `${formatCount(results.slice.total)} 条` : '未运行' }}
-              </td>
-              <td>同一次对比应保持一致</td>
-            </tr>
-            <tr>
-              <th scope="row">
-                首帧
-              </th>
-              <td data-result="full-first">
-                {{ formatMs(results.full?.firstPaint ?? null) }}
-              </td>
-              <td data-result="slice-first">
-                {{ formatMs(results.slice?.firstPaint ?? null) }}
-              </td>
-              <td>第一帧出现的时间</td>
-            </tr>
-            <tr>
-              <th scope="row">
-                最大阻塞
-              </th>
-              <td data-result="full-block">
-                {{ formatMs(results.full?.block ?? null) }}
-              </td>
-              <td data-result="slice-block">
-                {{ formatMs(results.slice?.block ?? null) }}
-              </td>
-              <td>单个任务占住主线程的时长</td>
-            </tr>
-            <tr>
-              <th scope="row">
-                总耗时
-              </th>
-              <td data-result="full-duration">
-                {{ formatMs(results.full?.totalMs ?? null) }}
-              </td>
-              <td data-result="slice-duration">
-                {{ formatMs(results.slice?.totalMs ?? null) }}
-              </td>
-              <td>全部挂载完成</td>
-            </tr>
-            <tr>
-              <th scope="row">
-                批次数
-              </th>
-              <td data-result="full-frames">
-                {{ results.full ? '1 次全量' : '—' }}
-              </td>
-              <td data-result="slice-frames">
-                {{ results.slice ? results.slice.frames : '—' }}
-              </td>
-              <td>切片每批一帧</td>
-            </tr>
-            <tr>
-              <th scope="row">
-                点击响应
-              </th>
-              <td data-result="full-click">
-                {{ results.full?.click == null ? '—' : `${results.full.click} ms` }}
-              </td>
-              <td data-result="slice-click">
-                {{ results.slice?.click == null ? '—' : `${results.slice.click} ms` }}
-              </td>
-              <td>最近一次手动测量</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <p class="ts-hint">
-        切片的目标不是「更快渲染完」，而是「不阻塞交互」。首帧用 nextTick + 双 rAF 采样，
-        最大阻塞按每批 push + DOM 更新计时；全量渲染期间主线程被占，按钮点不动，
-        所以全量的点击响应通常为空，切片模式可以在渲染中点击测量。
+      <p
+        v-if="!rows.length"
+        class="ts-empty"
+      >
+        选择数据量后点上方按钮开始渲染
       </p>
     </div>
-  </DemoNaive>
+
+    <!-- 结果对比表 -->
+    <div class="ts-table-wrap">
+      <table class="ts-table">
+        <caption>最近一次运行对比（同一组参数）</caption>
+        <thead>
+          <tr>
+            <th scope="col">
+              指标
+            </th>
+            <th scope="col">
+              一次性全量
+            </th>
+            <th scope="col">
+              时间切片{{ results.slice ? `（${results.slice.batch} / 帧）` : '' }}
+            </th>
+            <th scope="col">
+              怎么看
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">
+              数据量
+            </th>
+            <td data-result="full-total">
+              {{ results.full ? `${formatCount(results.full.total)} 条` : '未运行' }}
+            </td>
+            <td data-result="slice-total">
+              {{ results.slice ? `${formatCount(results.slice.total)} 条` : '未运行' }}
+            </td>
+            <td>同一次对比应保持一致</td>
+          </tr>
+          <tr>
+            <th scope="row">
+              首帧
+            </th>
+            <td data-result="full-first">
+              {{ formatMs(results.full?.firstPaint ?? null) }}
+            </td>
+            <td data-result="slice-first">
+              {{ formatMs(results.slice?.firstPaint ?? null) }}
+            </td>
+            <td>第一帧出现的时间</td>
+          </tr>
+          <tr>
+            <th scope="row">
+              最大阻塞
+            </th>
+            <td data-result="full-block">
+              {{ formatMs(results.full?.block ?? null) }}
+            </td>
+            <td data-result="slice-block">
+              {{ formatMs(results.slice?.block ?? null) }}
+            </td>
+            <td>单个任务占住主线程的时长</td>
+          </tr>
+          <tr>
+            <th scope="row">
+              总耗时
+            </th>
+            <td data-result="full-duration">
+              {{ formatMs(results.full?.totalMs ?? null) }}
+            </td>
+            <td data-result="slice-duration">
+              {{ formatMs(results.slice?.totalMs ?? null) }}
+            </td>
+            <td>全部挂载完成</td>
+          </tr>
+          <tr>
+            <th scope="row">
+              批次数
+            </th>
+            <td data-result="full-frames">
+              {{ results.full ? '1 次全量' : '—' }}
+            </td>
+            <td data-result="slice-frames">
+              {{ results.slice ? results.slice.frames : '—' }}
+            </td>
+            <td>切片每批一帧</td>
+          </tr>
+          <tr>
+            <th scope="row">
+              点击响应
+            </th>
+            <td data-result="full-click">
+              {{ results.full?.click == null ? '—' : `${results.full.click} ms` }}
+            </td>
+            <td data-result="slice-click">
+              {{ results.slice?.click == null ? '—' : `${results.slice.click} ms` }}
+            </td>
+            <td>最近一次手动测量</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="ts-hint">
+      切片的目标不是「更快渲染完」，而是「不阻塞交互」。首帧用 nextTick + 双 rAF 采样，
+      最大阻塞按每批 push + DOM 更新计时；全量渲染期间主线程被占，按钮点不动，
+      所以全量的点击响应通常为空，切片模式可以在渲染中点击测量。
+    </p>
+  </div>
 </template>
 
 <style scoped>

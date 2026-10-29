@@ -140,88 +140,86 @@ function resetAll(): void {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="dt-demo">
-      <!-- 脉冲波形条 -->
+  <div class="dt-demo">
+    <!-- 脉冲波形条 -->
+    <div
+      ref="waveRef"
+      class="wave"
+    >
       <div
-        ref="waveRef"
-        class="wave"
+        v-for="p in pulses"
+        :key="p.id"
+        class="pulse"
+        :class="p.kind === 'raw' ? 'pulse--raw' : 'pulse--exec'"
+        :title="p.label"
+      />
+      <p
+        v-if="pulses.length === 0"
+        class="wave-empty"
       >
-        <div
-          v-for="p in pulses"
-          :key="p.id"
-          class="pulse"
-          :class="p.kind === 'raw' ? 'pulse--raw' : 'pulse--exec'"
-          :title="p.label"
-        />
-        <p
-          v-if="pulses.length === 0"
-          class="wave-empty"
-        >
-          在下方输入或滚动——灰条=原始事件，彩条=实际执行
-        </p>
-      </div>
-
-      <div class="body">
-        <!-- 防抖场景 -->
-        <section
-          class="scene"
-          aria-label="防抖演示"
-        >
-          <header class="scene-head">
-            <h3>防抖 debounce（500ms）</h3>
-            <span class="ratio">原始 {{ inputRaw }} → 执行 {{ searchExec }}</span>
-          </header>
-          <!-- Naive 输入框：v-model:value 与 @update:value 同用（v-model 只管值，事件另走测量） -->
-          <n-input
-            v-model:value="keyword"
-            class="input"
-            size="large"
-            placeholder="快速连续打字试试…"
-            aria-label="防抖搜索输入"
-            @update:value="onInput"
-          />
-          <p class="scene-note">
-            最近搜索：<b>{{ lastSearch }}</b>
-            ——连续打字只触发最后一次（搜索框/窗口 resize 的标准解法）。
-          </p>
-        </section>
-
-        <!-- 节流场景 -->
-        <section
-          class="scene"
-          aria-label="节流演示"
-        >
-          <header class="scene-head">
-            <h3>节流 throttle（100ms）</h3>
-            <span class="ratio">原始 {{ scrollRaw }} → 执行 {{ scrollExec }}</span>
-          </header>
-          <div
-            class="scroll-box"
-            @scroll.passive="onScroll"
-          >
-            <div
-              v-for="i in 60"
-              :key="i"
-              class="scroll-item"
-            >
-              滚动行 {{ i }}
-            </div>
-          </div>
-          <p class="scene-note">
-            在此区域快速滚动——原始事件每秒数百次，节流后每 100ms 最多一次（滚动埋点/拖拽的标配）。
-          </p>
-        </section>
-      </div>
-
-      <button
-        class="btn-reset"
-        @click="resetAll"
-      >
-        重置计数与波形
-      </button>
+        在下方输入或滚动——灰条=原始事件，彩条=实际执行
+      </p>
     </div>
-  </DemoNaive>
+
+    <div class="body">
+      <!-- 防抖场景 -->
+      <section
+        class="scene"
+        aria-label="防抖演示"
+      >
+        <header class="scene-head">
+          <h3>防抖 debounce（500ms）</h3>
+          <span class="ratio">原始 {{ inputRaw }} → 执行 {{ searchExec }}</span>
+        </header>
+        <!-- Naive 输入框：v-model:value 与 @update:value 同用（v-model 只管值，事件另走测量） -->
+        <n-input
+          v-model:value="keyword"
+          class="input"
+          size="large"
+          placeholder="快速连续打字试试…"
+          aria-label="防抖搜索输入"
+          @update:value="onInput"
+        />
+        <p class="scene-note">
+          最近搜索：<b>{{ lastSearch }}</b>
+          ——连续打字只触发最后一次（搜索框/窗口 resize 的标准解法）。
+        </p>
+      </section>
+
+      <!-- 节流场景 -->
+      <section
+        class="scene"
+        aria-label="节流演示"
+      >
+        <header class="scene-head">
+          <h3>节流 throttle（100ms）</h3>
+          <span class="ratio">原始 {{ scrollRaw }} → 执行 {{ scrollExec }}</span>
+        </header>
+        <div
+          class="scroll-box"
+          @scroll.passive="onScroll"
+        >
+          <div
+            v-for="i in 60"
+            :key="i"
+            class="scroll-item"
+          >
+            滚动行 {{ i }}
+          </div>
+        </div>
+        <p class="scene-note">
+          在此区域快速滚动——原始事件每秒数百次，节流后每 100ms 最多一次（滚动埋点/拖拽的标配）。
+        </p>
+      </section>
+    </div>
+
+    <button
+      class="btn-reset"
+      @click="resetAll"
+    >
+      重置计数与波形
+    </button>
+  </div>
 </template>
 
 <style scoped>

@@ -166,6 +166,13 @@ function resetAll(): void {
   progress.value = '已重置，点「重测三种方法」重新测量'
 }
 
+/** 切换数据规模（n-radio-group 发出的是原始值，收窄成预设档位） */
+function onSizeChange(next: string | number | boolean | undefined): void {
+  if (typeof next === 'number' && (SIZES as readonly number[]).includes(next)) {
+    size.value = next as Size
+  }
+}
+
 // ---------- 支持类型判定（小样本逐项测试） ----------
 
 /** 五种引用类型的支持结果 */
@@ -286,37 +293,35 @@ onMounted(() => {
 <template>
   <div class="sc-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="size"
         aria-label="数据规模"
+        :disabled="measuring"
+        @update:value="onSizeChange"
       >
-        <button
+        <n-radio-button
           v-for="s in SIZES"
           :key="s"
-          class="mode"
-          :class="{ active: size === s }"
-          :aria-pressed="size === s"
-          :disabled="measuring"
-          @click="size = s"
+          :value="s"
         >
           {{ s.toLocaleString() }} 条
-        </button>
-      </div>
-      <button
-        class="btn run"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="measuring"
         @click="measureAll"
       >
         {{ measuring ? '测量中…' : '重测三种方法' }}
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="measuring"
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -384,52 +389,6 @@ onMounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.mode.active {
-  background-color: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-}
-
-.btn.run {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.btn.run:hover:not(:disabled),
-.btn.ghost:hover:not(:disabled) {
-  background-color: var(--primary-soft);
-  color: var(--primary);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .stats {
