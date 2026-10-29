@@ -144,15 +144,18 @@ function onPointerLeave(): void {
 // ---------- 模式切换与重置 ----------
 
 /** 切换模式：换模式时先把位移与回弹状态复位，避免上一种模式的残留 */
-function setMode(next: FollowMode): void {
+/** 切换跟随开关（n-radio-group 发出的是原始值，收窄后再用）：先归零，避免残留位移 */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'off' && next !== 'on') return
   if (mode.value === next) return
   mode.value = next
   returning.value = false
   offset.value = { x: 0, y: 0 }
 }
 
-/** 切换强度：同样先归零，避免从「强」切到「弱」时位移还停在上限 */
-function setStrength(next: StrengthKey): void {
+/** 切换强度（n-radio-group 发出的是原始值，收窄后再用）：同样先归零，避免从「强」切到「弱」时位移还停在上限 */
+function setStrength(next: string | number | boolean | undefined): void {
+  if (next !== 'weak' && next !== 'medium' && next !== 'strong') return
   strength.value = next
   offset.value = { x: 0, y: 0 }
   returning.value = false
@@ -205,61 +208,49 @@ onUnmounted(() => {
 <template>
   <div class="mag-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="跟随开关"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'off' }"
-          :aria-pressed="mode === 'off'"
-          @click="setMode('off')"
-        >
+        <n-radio-button value="off">
           只换背景（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'on' }"
-          :aria-pressed="mode === 'on'"
-          @click="setMode('on')"
-        >
+        </n-radio-button>
+        <n-radio-button value="on">
           指针跟随（推荐）
-        </button>
-      </div>
+        </n-radio-button>
+      </n-radio-group>
 
-      <div
+      <n-radio-group
         class="strengths"
-        role="group"
+        size="small"
+        :value="strength"
         aria-label="跟随强度"
+        @update:value="setStrength"
       >
-        <button
+        <n-radio-button
           v-for="item in STRENGTHS"
           :key="item.key"
-          class="strength"
-          :class="{ active: strength === item.key }"
-          :aria-pressed="strength === item.key"
-          @click="setStrength(item.key)"
+          :value="item.key"
         >
           {{ item.label }}
-        </button>
-      </div>
+        </n-radio-button>
+      </n-radio-group>
 
-      <button
-        class="btn ghost"
+      <n-button
+        :type="mockReduce ? 'warning' : 'default'"
+        :ghost="mockReduce"
         :aria-pressed="mockReduce"
-        :class="{ active: mockReduce }"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-      </button>
+      </n-button>
 
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -340,73 +331,11 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
 }
 
 .strengths {
   display: inline-flex;
-  gap: 0.3rem;
   padding-left: 0.2rem;
-}
-
-.strength {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-tag);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-xs);
-  cursor: pointer;
-  transition: background-color var(--transition), border-color var(--transition),
-    color var(--transition);
-
-  &.active {
-    border-color: var(--primary);
-    background-color: var(--primary-soft);
-    color: var(--primary-soft-text);
-  }
-}
-
-.btn.ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */

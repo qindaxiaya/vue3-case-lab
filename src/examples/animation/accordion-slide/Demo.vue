@@ -113,7 +113,9 @@ function toggle(id: string): void {
 }
 
 /** 切换方案：先全部收起，清掉旧方案留下的行内高度与计数 */
-function setMode(next: PanelMode): void {
+/** 切换展开方式（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'js' && next !== 'grid') return
   if (mode.value === next) return
   mode.value = next
   openId.value = null
@@ -163,42 +165,31 @@ onUnmounted(() => {
 <template>
   <div class="ac-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="展开方式"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'js' }"
-          :aria-pressed="mode === 'js'"
-          @click="setMode('js')"
-        >
+        <n-radio-button value="js">
           脚本量高（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'grid' }"
-          :aria-pressed="mode === 'grid'"
-          @click="setMode('grid')"
-        >
+        </n-radio-button>
+        <n-radio-button value="grid">
           grid 过渡（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        :class="{ active: mockReduce }"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        :type="mockReduce ? 'warning' : 'default'"
+        :ghost="mockReduce"
         :aria-pressed="mockReduce"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置（全部收起）
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -304,49 +295,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn.ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */

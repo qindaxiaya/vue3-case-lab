@@ -128,7 +128,9 @@ function onSliderInput(event: Event): void {
 }
 
 /** 切换驱动方式：停掉定时器，把目标对齐当前进度，计数清零便于对比 */
-function setMode(next: RingMode): void {
+/** 切换驱动方式（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'timer' && next !== 'transition') return
   if (mode.value === next) return
   stopTimer()
   mode.value = next
@@ -171,48 +173,38 @@ onUnmounted(() => {
 <template>
   <div class="pr-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="进度驱动方式"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'timer' }"
-          :aria-pressed="mode === 'timer'"
-          @click="setMode('timer')"
-        >
+        <n-radio-button value="timer">
           定时器逐帧（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'transition' }"
-          :aria-pressed="mode === 'transition'"
-          @click="setMode('transition')"
-        >
+        </n-radio-button>
+        <n-radio-button value="transition">
           样式过渡（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
+        ghost
         @click="startRing"
       >
         开始
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
+        :type="mockReduce ? 'warning' : 'default'"
+        :ghost="mockReduce"
         :aria-pressed="mockReduce"
-        :class="{ active: mockReduce }"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetRing"
-      >
+      </n-button>
+      <n-button @click="resetRing">
         重置
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -280,14 +272,14 @@ onUnmounted(() => {
           role="group"
           aria-label="快捷进度"
         >
-          <button
+          <n-button
             v-for="value in [25, 60, 100]"
             :key="value"
-            class="chip"
+            size="small"
             @click="setProgressTarget(value)"
           >
             {{ value }}%
-          </button>
+          </n-button>
         </div>
       </div>
     </div>
@@ -316,59 +308,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */
@@ -503,23 +442,6 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-}
-
-.chip {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: border-color var(--transition), color var(--transition);
-
-  &:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
 }
 
 .hint {
