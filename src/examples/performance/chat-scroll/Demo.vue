@@ -187,12 +187,12 @@ function resetAll(): void {
         >
         自动来消息
       </label>
-      <button
+      <n-button
         class="btn-reset"
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 聊天窗 -->
@@ -239,18 +239,15 @@ function resetAll(): void {
         placeholder="输入消息，Enter 发送"
         @keydown.enter="send"
       >
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="send"
       >
         发送
-      </button>
-      <button
-        class="btn-act"
-        @click="incoming"
-      >
+      </n-button>
+      <n-button @click="incoming">
         模拟对方来消息
-      </button>
+      </n-button>
     </div>
 
     <p class="chat-hint">
@@ -304,15 +301,9 @@ function resetAll(): void {
   cursor: pointer;
 }
 
+/* 只留布局：把「重置」推到右侧，观感交给 Naive 按钮 */
 .btn-reset {
   margin-left: auto;
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
 }
 
 /* ---------- 聊天窗 ---------- */
@@ -406,21 +397,6 @@ function resetAll(): void {
   &:focus {
     outline: none;
     border-color: var(--primary);
-  }
-}
-
-.btn-act {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
   }
 }
 

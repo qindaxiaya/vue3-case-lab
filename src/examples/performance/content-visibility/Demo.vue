@@ -84,7 +84,9 @@ async function measureBoth(): Promise<void> {
 }
 
 /** 手动切换：只改当前模式，不清空已有测量结果 */
-function setMode(next: boolean): void {
+/** 切换渲染模式（n-radio-group 发出的是原始值，收窄成布尔） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (typeof next !== 'boolean') return
   if (measuring.value || enabled.value === next) return
   enabled.value = next
   listKey.value++
@@ -106,42 +108,34 @@ function reset(): void {
 <template>
   <div class="cv-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="enabled"
         aria-label="渲染模式"
+        :disabled="measuring"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: !enabled }"
-          :aria-pressed="!enabled"
-          @click="setMode(false)"
-        >
+        <n-radio-button :value="false">
           默认渲染
-        </button>
-        <button
-          class="mode"
-          :class="{ active: enabled }"
-          :aria-pressed="enabled"
-          @click="setMode(true)"
-        >
+        </n-radio-button>
+        <n-radio-button :value="true">
           跳过屏外渲染（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="measuring"
         @click="measureBoth"
       >
         {{ measuring ? '测量中…' : '重测两种模式' }}
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="measuring"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -194,57 +188,6 @@ function reset(): void {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

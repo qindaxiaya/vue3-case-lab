@@ -145,30 +145,25 @@ onUnmounted(() => {
   <div class="idle-demo">
     <!-- 控制行：两个执行模式 + 取消 -->
     <div class="controls">
-      <button
-        class="btn-ghost"
-        type="button"
+      <n-button
         :disabled="running"
         @click="runSync"
       >
         立即执行
-      </button>
-      <button
-        class="btn-primary"
-        type="button"
+      </n-button>
+      <n-button
+        type="primary"
         :disabled="running"
         @click="runIdle"
       >
         空闲执行
-      </button>
-      <button
-        class="btn-ghost"
-        type="button"
+      </n-button>
+      <n-button
         :disabled="!running"
         @click="cancel"
       >
         取消
-      </button>
+      </n-button>
     </div>
 
     <!-- 进度 + 卡顿指示 -->

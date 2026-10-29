@@ -109,7 +109,9 @@ function restart(): void {
   startProducing()
 }
 
-function switchMode(next: Mode): void {
+/** 切换渲染方式（n-radio-group 发出的是原始值，收窄后再用） */
+function switchMode(next: string | number | boolean | undefined): void {
+  if (next !== 'jump' && next !== 'smooth') return
   if (next === mode.value) return
   // 切换模式时补齐，避免两套状态互相打架
   if (next === 'jump') shownLen.value = receivedLen
@@ -135,44 +137,36 @@ onBeforeUnmount(() => {
   <div class="tw-demo">
     <!-- 控制 -->
     <div class="tw-bar">
-      <div class="seg">
-        <button
-          class="seg-btn"
-          :class="{ active: mode === 'jump' }"
-          :aria-pressed="mode === 'jump'"
-          @click="switchMode('jump')"
-        >
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
+        class="seg"
+        :value="mode"
+        aria-label="渲染方式"
+        @update:value="switchMode"
+      >
+        <n-radio-button value="jump">
           直接拼接
-        </button>
-        <button
-          class="seg-btn"
-          :class="{ active: mode === 'smooth' }"
-          :aria-pressed="mode === 'smooth'"
-          @click="switchMode('smooth')"
-        >
+        </n-radio-button>
+        <n-radio-button value="smooth">
           rAF 平滑
-        </button>
-      </div>
-      <button
-        class="btn-act"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="running"
         @click="restart"
       >
         {{ running ? '输出中…' : '重新开始' }}
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="!received || shownLen >= received.length"
         @click="flush"
       >
         瞬间补完
-      </button>
-      <button
-        class="btn-ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         清空
-      </button>
+      </n-button>
     </div>
 
     <!-- 指标 -->
@@ -225,54 +219,6 @@ onBeforeUnmount(() => {
 
 .seg {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.seg-btn {
-  padding: 0.22rem 0.55rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &.active {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn-act,
-.btn-ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  font-size: 0.875rem;
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-}
-
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 /* ---------- 指标 ---------- */
