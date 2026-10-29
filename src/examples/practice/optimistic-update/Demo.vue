@@ -5,8 +5,8 @@
 // - 用 pending 标记阻止同一张卡片重复提交
 // ============================================================
 <script setup lang="ts">
-import { computed, onUnmounted, reactive, ref } from 'vue'
-import DemoToastStack from '../../../components/demo/DemoToastStack.vue'
+import { computed, reactive, ref } from 'vue'
+import { demoMessage } from '../../../composables/useDemoMessage'
 
 type Mode = 'pessimistic' | 'optimistic'
 type LogTone = 'info' | 'ok' | 'bad'
@@ -25,13 +25,6 @@ interface LogEntry {
   tone: LogTone
 }
 
-/** 固定定位的提示消息：不插在文档流里，出现/消失都不会推挤下面的列表 */
-interface Notice {
-  id: number
-  text: string
-  tone: LogTone
-}
-
 const initialPosts: Post[] = [
   { id: 1, author: '林小满', content: '今天把长列表的滚动卡顿修掉了，开心。', likes: 12, liked: false },
   { id: 2, author: '周一帆', content: '周末去爬山，山顶的风比想象中大。', likes: 8, liked: true },
@@ -44,10 +37,6 @@ const mode = ref<Mode>('pessimistic')
 const failRequest = ref(false)
 const pendingIds = ref<number[]>([])
 const logs = ref<LogEntry[]>([])
-/** 提示消息栈：最多同时显示 3 条，2.4s 后自动消失 */
-const messages = ref<Notice[]>([])
-const noticeTimers = new Map<number, ReturnType<typeof setTimeout>>()
-let noticeSeq = 0
 
 const stats = reactive({
   requests: 0,
@@ -64,32 +53,9 @@ function addLog(text: string, tone: LogTone = 'info'): void {
   if (logs.value.length > 8) logs.value.pop()
 }
 
-/** 追加一条固定定位提示：最多 3 条，超出的先移除并清掉它的定时器 */
-function pushMessage(text: string, tone: LogTone): void {
-  const id = ++noticeSeq
-  messages.value.push({ id, text, tone })
-
-  if (messages.value.length > 3) {
-    const removed = messages.value.shift()
-    if (removed) {
-      const timer = noticeTimers.get(removed.id)
-      if (timer) clearTimeout(timer)
-      noticeTimers.delete(removed.id)
-    }
-  }
-
-  const timer = window.setTimeout(() => {
-    messages.value = messages.value.filter((item) => item.id !== id)
-    noticeTimers.delete(id)
-  }, 2400)
-  noticeTimers.set(id, timer)
-}
-
-/** 清空提示（切模式 / 重置时调用），同时取消所有自动消失定时器 */
+/** 清空当前所有提示：切换模式 / 重置时调用（Naive message 的 destroyAll） */
 function clearMessages(): void {
-  noticeTimers.forEach((timer) => clearTimeout(timer))
-  noticeTimers.clear()
-  messages.value = []
+  demoMessage.destroyAll()
 }
 
 function isPending(id: number): boolean {
@@ -141,7 +107,7 @@ async function toggleLike(id: number): Promise<void> {
       addLog(`「${post.author}」服务端确认，保留界面结果`, 'ok')
     }
     stats.confirmed++
-    pushMessage('点赞成功', 'ok')
+    demoMessage.success('点赞成功')
   } catch {
     if (mode.value === 'optimistic') {
       // 失败：按提交前的旧值回滚，界面恢复原样
@@ -152,10 +118,10 @@ async function toggleLike(id: number): Promise<void> {
       }
       stats.rolledBack++
       addLog(`「${post.author}」请求失败，已回滚`, 'bad')
-      pushMessage('网络开小差，点赞已撤回', 'bad')
+      demoMessage.error('网络开小差，点赞已撤回')
     } else {
       addLog(`「${post.author}」请求失败，界面未变化`, 'bad')
-      pushMessage('点赞失败，请重试', 'bad')
+      demoMessage.error('点赞失败，请重试')
     }
   } finally {
     pendingIds.value = pendingIds.value.filter((item) => item !== id)
@@ -188,11 +154,6 @@ function reset(): void {
   clearMessages()
   failRequest.value = false
 }
-
-onUnmounted(() => {
-  // 卸载时取消提示的自动消失定时器，避免回调去改已经销毁的组件状态
-  clearMessages()
-})
 </script>
 
 <template>
@@ -329,12 +290,7 @@ onUnmounted(() => {
         点亮「模拟接口失败」再点赞：乐观更新会先变色，300ms 后失败并退回原值；
         等响应模式则从头到尾不变。注意提交期间按钮被禁用，防止连点造成重复写入。
       </p>
-
-      <!-- 提示统一走共享提示栈：Teleport 到 body、右上角固定定位，不推挤列表 -->
-      <DemoToastStack
-        :messages="messages"
-        label="乐观更新提示"
-      />
+      <!-- 提示走 Naive 的 message（DemoNaive 里已包 NMessageProvider）：右上角浮层，不推挤列表 -->
     </div>
   </DemoNaive>
 </template>

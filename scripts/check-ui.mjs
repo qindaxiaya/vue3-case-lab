@@ -1000,6 +1000,11 @@ const SCENARIOS = [
         const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
         const panelsTop = () =>
           Math.round(document.querySelector('.ou-demo .panels').getBoundingClientRect().top)
+        // Naive message 的正文节点（容器由 provider Teleport 到 body）
+        const msgTexts = () =>
+          [...document.querySelectorAll('.n-message__content')].map((item) =>
+            (item.textContent ?? '').trim()
+          )
 
         const mode = [...document.querySelectorAll('.ou-demo .modes .n-radio-button')].find((item) =>
           item.textContent.includes('乐观更新')
@@ -1015,16 +1020,17 @@ const SCENARIOS = [
         const pressedAt60 = first.getAttribute('aria-pressed')
         const during = panelsTop()
 
-        await wait(350)
+        await wait(400)
         const afterSuccess = panelsTop()
-        const successText = document.querySelector('.demo-toasts')?.innerText ?? ''
-        const toastStack = document.querySelector('.demo-toasts')
-        const toastPosition = toastStack ? getComputedStyle(toastStack).position : ''
-        const toastRect = toastStack?.getBoundingClientRect()
-        const toastTop = toastRect ? Math.round(toastRect.top) : -1
-        const toastRight = toastRect ? Math.round(window.innerWidth - toastRect.right) : -1
-        const teleported = document.querySelector('.demo-toasts')?.parentElement === document.body
-        const toastCount = document.querySelectorAll('.demo-toast').length
+        const successTexts = msgTexts()
+        const successTyped = Boolean(document.querySelector('.n-message.n-message--success-type'))
+
+        const container = document.querySelector('.n-message-container')
+        const containerRect = container?.getBoundingClientRect()
+        const containerTop = containerRect ? Math.round(containerRect.top) : -1
+        const containerRight = containerRect ? Math.round(window.innerWidth - containerRect.right) : -1
+        const placedRight = container ? (container.className ?? '').includes('top-right') : false
+        const containerInBody = container ? container.closest('.ou-demo') === null : false
 
         const failBtn = [...document.querySelectorAll('.ou-demo button')].find((item) =>
           item.textContent.includes('模拟接口失败')
@@ -1035,10 +1041,11 @@ const SCENARIOS = [
         second.click()
         await wait(60)
         const secondPressedAt60 = second.getAttribute('aria-pressed')
-        await wait(400)
+        await wait(450)
         const secondPressedAfter = second.getAttribute('aria-pressed')
         const afterFail = panelsTop()
-        const failText = document.querySelector('.demo-toasts')?.innerText ?? ''
+        const failTexts = msgTexts()
+        const errorTyped = Boolean(document.querySelector('.n-message.n-message--error-type'))
 
         return {
           before,
@@ -1048,13 +1055,15 @@ const SCENARIOS = [
           pressedAt60,
           secondPressedAt60,
           secondPressedAfter,
-          toastCount,
-          toastPosition,
-          toastTop,
-          toastRight,
-          teleported,
-          successText,
-          failText,
+          messageCount: successTexts.length,
+          successTyped,
+          errorTyped,
+          placedRight,
+          containerInBody,
+          containerTop,
+          containerRight,
+          successText: successTexts.join(' / '),
+          failText: failTexts.join(' / '),
           modeCount: modes.length,
           modeChecked: modes.filter((item) => item.classList.contains('n-radio-button--checked')).length,
           modeInputChecked: document.querySelectorAll('.ou-demo .modes input[type="radio"]:checked').length,
@@ -1072,17 +1081,17 @@ const SCENARIOS = [
       if (result.secondPressedAfter !== 'true') {
         failures.push(`失败后第二张卡片没有回滚（${result.secondPressedAfter}）`)
       }
-      if (result.toastCount < 1) failures.push('操作后没有出现提示消息')
-      if (result.toastPosition !== 'fixed') {
-        failures.push(`提示没有使用固定定位（position=${result.toastPosition}）`)
+      if (result.messageCount < 1) failures.push('操作后没有出现 Naive message 提示')
+      if (!result.successTyped) failures.push('成功提示不是 message.success（缺 n-message--success-type）')
+      if (!result.errorTyped) failures.push('回滚提示不是 message.error（缺 n-message--error-type）')
+      if (!result.placedRight) failures.push('message 容器不是右上角（缺 top-right 位置类）')
+      if (!result.containerInBody) failures.push('message 容器没有 Teleport 到 body（仍在演示区内部）')
+      if (result.containerTop < 0 || result.containerTop > 120) {
+        failures.push(`message 容器没有贴近顶部（top=${result.containerTop}px）`)
       }
-      if (result.toastTop < 40 || result.toastTop > 140) {
-        failures.push(`提示没有贴近顶部（top=${result.toastTop}px）`)
+      if (result.containerRight < 0 || result.containerRight > 48) {
+        failures.push(`message 容器没有贴近右侧（right=${result.containerRight}px）`)
       }
-      if (result.toastRight < 0 || result.toastRight > 48) {
-        failures.push(`提示没有贴近右侧（right=${result.toastRight}px）`)
-      }
-      if (!result.teleported) failures.push('提示没有 Teleport 到 body')
       if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
       if (!result.failText.includes('已撤回')) failures.push('失败回滚提示文案缺失')
       if (result.modeCount !== 2) failures.push(`更新策略不是 2 个单选按钮（${result.modeCount} 个）`)
