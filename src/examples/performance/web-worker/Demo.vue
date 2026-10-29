@@ -166,13 +166,14 @@ onUnmounted(() => {
         <p class="path-desc">
           同步执行 4000 万次运算。期间<b>页面完全无响应</b>——点按钮、滚动、动画全部冻结。
         </p>
-        <button
-          class="btn btn--danger"
+        <n-button
+          type="error"
+          class="path-btn"
           :disabled="mainRunning || workerRunning"
           @click="runOnMain"
         >
           {{ mainRunning ? '计算中（界面已冻结）' : '在主线程计算' }}
-        </button>
+        </n-button>
         <ul
           v-if="mainCost !== null"
           class="result-list"
@@ -198,13 +199,14 @@ onUnmounted(() => {
         <p class="path-desc">
           同一份计算放 Worker 线程。<b>主线程继续跑</b>——心跳照跳、界面照点，完成后回传结果。
         </p>
-        <button
-          class="btn btn--primary"
+        <n-button
+          type="primary"
+          class="path-btn"
           :disabled="workerRunning || mainRunning"
           @click="runOnWorker"
         >
           {{ workerRunning ? 'Worker 计算中（界面照常）' : '丢给 Worker 计算' }}
-        </button>
+        </n-button>
         <ul
           v-if="workerCost !== null"
           class="result-list"
@@ -324,39 +326,9 @@ onUnmounted(() => {
   }
 }
 
-.btn {
+/* 只留布局：按钮靠左对齐，观感交给 Naive 按钮 */
+.path-btn {
   align-self: flex-start;
-  padding: 0.4rem 0.85rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  font-size: 0.9375rem;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-}
-
-.btn--danger {
-  border-color: var(--danger);
-  color: var(--danger);
-
-  &:not(:disabled):hover {
-    background-color: var(--danger);
-    color: #fff;
-  }
-}
-
-.btn--primary {
-  border-color: var(--primary);
-  color: var(--primary);
-
-  &:not(:disabled):hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .result-list {

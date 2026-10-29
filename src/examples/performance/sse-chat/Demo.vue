@@ -144,33 +144,28 @@ const statusText: Record<Status, string> = {
         {{ statusText[status] }}
       </span>
       <span class="sse-stat">id <b>{{ lastId }}</b> / {{ TOKENS.length }}</span>
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         :disabled="status === 'streaming' || status === 'reconnecting'"
         @click="startStream"
       >
         开始生成
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="status !== 'streaming'"
         @click="simulateBreak"
       >
         模拟断线
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="status !== 'streaming' && status !== 'reconnecting'"
         @click="stop"
       >
         停止
-      </button>
-      <button
-        class="btn-ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         清空
-      </button>
+      </n-button>
     </div>
 
     <div class="sse-body">
@@ -283,37 +278,6 @@ const statusText: Record<Status, string> = {
   b {
     font-family: var(--font-mono);
     color: var(--primary);
-  }
-}
-
-.btn-act,
-.btn-ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  font-size: 0.875rem;
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
   }
 }
 

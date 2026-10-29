@@ -1273,6 +1273,8 @@ async function runScenario(port, scenario) {
 
   try {
     await sleep(3200) // 等动态 import 与首屏渲染稳定
+    // 首屏稳定后仍可能卡在「演示加载中…」（dev 首次编译案例 chunk 较慢），再兜一层
+    await waitForDemo(page)
     const result = { ...(await scenario.facts(page)) }
     if (scenario.after) Object.assign(result, await scenario.after(page))
     const failures = scenario.assert(result)
@@ -1332,13 +1334,15 @@ const ANIMATION_CASES = [
 async function waitForDemo(page, timeoutMs = 10000) {
   const started = Date.now()
   while (Date.now() - started < timeoutMs) {
-    const ready = await page.evaluate(`(() => {
+    const state = await page.evaluate(`(() => {
       const card = document.querySelector('.demo-card')
-      if (!card) return false
+      if (!card) return 'missing'
       // 占位符还在 = 演示组件还没到（或加载失败）
-      return !card.querySelector('.async-placeholder')
+      return card.querySelector('.async-placeholder') ? 'loading' : 'ready'
     })()`)
-    if (ready) return true
+    if (state === 'ready') return true
+    // 列表 / 404 这类页面本来就没有演示区：给 2.5s 等 CasePage 挂载，之后放行
+    if (state === 'missing' && Date.now() - started > 2500) return true
     await sleep(250)
   }
   return false
@@ -1483,7 +1487,10 @@ async function checkAnimationCases(port) {
         deviceScaleFactor: 1,
         mobile: true,
       })
-      await sleep(1500)
+      // 演示组件是懒加载的：先等占位符消失，再留一点时间让入口动画落位。
+      // 早期这里写死 sleep(1500)，dev 下案例 chunk 稍慢就会采到「演示加载中…」
+      await waitForDemo(page)
+      await sleep(300)
 
       const result = await page.evaluate(`({
         scrollWidth: document.documentElement.scrollWidth,

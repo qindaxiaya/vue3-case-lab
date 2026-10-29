@@ -118,13 +118,12 @@ onUnmounted(() => {
 
     <!-- 控制行：启动/暂停 + 实时指标 -->
     <div class="controls">
-      <button
-        class="btn-primary"
-        type="button"
+      <n-button
+        type="primary"
         @click="toggle"
       >
         {{ running ? '暂停' : '启动' }}
-      </button>
+      </n-button>
 
       <div class="stat">
         <span class="stat-name">帧率</span>

@@ -414,27 +414,18 @@ function fpsLevel(fps: number): string {
           <span class="block-ms">{{ blockMs }}ms</span>
         </label>
 
-        <button
-          class="btn-ghost"
-          type="button"
-          @click="makeLongTask"
-        >
+        <n-button @click="makeLongTask">
           制造长任务
-        </button>
-        <button
-          class="btn-primary"
-          type="button"
+        </n-button>
+        <n-button
+          type="primary"
           @click="makeLayoutShift"
         >
           制造布局偏移
-        </button>
-        <button
-          class="btn-ghost"
-          type="button"
-          @click="resetExperiment"
-        >
+        </n-button>
+        <n-button @click="resetExperiment">
           重置实验
-        </button>
+        </n-button>
         <span
           class="shift-count"
           aria-live="polite"

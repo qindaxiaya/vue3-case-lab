@@ -122,12 +122,12 @@ function reset(): void {
       >
         {{ refreshing ? '刷新中…' : loadingMore ? '加载中…' : finished ? '没有更多了' : '就绪' }}
       </span>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 列表 -->
@@ -211,15 +211,9 @@ function reset(): void {
   }
 }
 
+/* 只留布局：把「重置」推到右侧，观感交给 Naive 按钮 */
 .btn-reset {
   margin-left: auto;
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
 }
 
 /* ---------- 列表 ---------- */
