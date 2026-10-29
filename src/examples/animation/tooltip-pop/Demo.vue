@@ -166,8 +166,9 @@ function onFocusOut(): void {
 
 // ---------- 模式切换与重置 ----------
 
-/** 切换实现方式：先把上一种模式的计时器与显示状态清干净 */
-function setMode(next: TipMode): void {
+/** 切换实现方式（n-radio-group 发出的是原始值，收窄后再用）：先把上一种模式的计时器与显示状态清干净 */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'native' && next !== 'custom') return
   if (mode.value === next) return
   clearShowTimer()
   shown.value = false
@@ -227,42 +228,31 @@ onUnmounted(() => {
 <template>
   <div class="tip-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="提示实现方式"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'native' }"
-          :aria-pressed="mode === 'native'"
-          @click="setMode('native')"
-        >
+        <n-radio-button value="native">
           原生 title（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'custom' }"
-          :aria-pressed="mode === 'custom'"
-          @click="setMode('custom')"
-        >
+        </n-radio-button>
+        <n-radio-button value="custom">
           自建气泡（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        :class="{ active: mockReduce }"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        :type="mockReduce ? 'warning' : 'default'"
+        :ghost="mockReduce"
         :aria-pressed="mockReduce"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -348,49 +338,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn.ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */

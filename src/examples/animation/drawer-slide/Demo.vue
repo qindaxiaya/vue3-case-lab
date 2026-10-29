@@ -49,9 +49,15 @@ const frames = ref(0)
 /** 面板 transform 过渡结束事件累计次数（打开、关闭都算） */
 const transitionEnds = ref(0)
 
-const triggerRef = ref<HTMLButtonElement | null>(null)
+/** 「打开抽屉」按钮实例：Naive 组件的真实 DOM 在 $el 上，焦点回归要用它 */
+const triggerRef = ref<{ $el?: HTMLElement } | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
 const closeBtnRef = ref<HTMLButtonElement | null>(null)
+
+/** 焦点回到触发按钮（Naive 按钮把原生 button 放在 $el 上） */
+function focusTrigger(): void {
+  triggerRef.value?.$el?.focus()
+}
 
 /** 打开前的 body overflow 原值：关闭时按原值还原 */
 let prevOverflow = ''
@@ -203,7 +209,7 @@ function finalizeClose(): void {
 
   document.removeEventListener('keydown', onKeydown)
   unlockScroll()
-  triggerRef.value?.focus()
+  focusTrigger()
 }
 
 /** 面板的过渡结束：只认面板自身的 transform，子元素冒泡上来的不算 */
@@ -225,7 +231,9 @@ function onKeydown(event: KeyboardEvent): void {
 // ---------- 模式切换与重置 ----------
 
 /** 切换关闭方式：如果抽屉开着，先立即收起，避免状态残留 */
-function setMode(next: DrawerMode): void {
+/** 切换关闭方式（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'unmount' && next !== 'transition') return
   if (mode.value === next) return
   if (visible.value) finalizeClose()
   mode.value = next
@@ -257,7 +265,7 @@ function resetAll(): void {
   frames.value = 0
   transitionEnds.value = 0
 
-  if (wasOpen) triggerRef.value?.focus()
+  if (wasOpen) focusTrigger()
 }
 
 // ---------- 生命周期 ----------
@@ -282,49 +290,39 @@ onUnmounted(() => {
 <template>
   <div class="dw-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="关闭方式"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'unmount' }"
-          :aria-pressed="mode === 'unmount'"
-          @click="setMode('unmount')"
-        >
+        <n-radio-button value="unmount">
           直接卸载（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'transition' }"
-          :aria-pressed="mode === 'transition'"
-          @click="setMode('transition')"
-        >
+        </n-radio-button>
+        <n-radio-button value="transition">
           等动画结束（推荐）
-        </button>
-      </div>
-      <button
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
         ref="triggerRef"
-        class="btn"
+        type="primary"
+        ghost
         @click="openDrawer"
       >
         打开抽屉
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
+        :type="mockReduce ? 'warning' : 'default'"
+        :ghost="mockReduce"
         :aria-pressed="mockReduce"
-        :class="{ active: mockReduce }"
         @click="toggleMockReduce"
       >
         {{ mockReduce ? '模拟中：跳过动画' : '模拟减少动态效果' }}
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -407,12 +405,9 @@ onUnmounted(() => {
           </div>
 
           <footer class="dw-foot">
-            <button
-              class="btn ghost"
-              @click="requestClose"
-            >
+            <n-button @click="requestClose">
               关闭
-            </button>
+            </n-button>
           </footer>
         </aside>
       </div>
@@ -442,59 +437,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  /* 模拟开关打开时给个明确的选中态 */
-  &.active {
-    border-color: var(--warning);
-    color: var(--warning);
-  }
 }
 
 /* 系统设置提示：只有检测到「减少动态效果」时才出现 */

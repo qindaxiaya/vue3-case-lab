@@ -95,7 +95,8 @@ function onFocusOut(event: FocusEvent): void {
 // ---------- 模式切换与重置 ----------
 
 /** 切换焦点样式：如果当前有焦点，重新量一次（切换本身不计入出现次数） */
-async function setMode(next: RingMode): Promise<void> {
+async function setMode(next: string | number | boolean | undefined): Promise<void> {
+  if (next !== 'none' && next !== 'ring') return
   if (mode.value === next) return
   mode.value = next
 
@@ -130,34 +131,23 @@ onUnmounted(() => {
 <template>
   <div class="fv-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="焦点样式"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'none' }"
-          :aria-pressed="mode === 'none'"
-          @click="setMode('none')"
-        >
+        <n-radio-button value="none">
           无焦点样式（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'ring' }"
-          :aria-pressed="mode === 'ring'"
-          @click="setMode('ring')"
-        >
+        </n-radio-button>
+        <n-radio-button value="ring">
           自建焦点环（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+        </n-radio-button>
+      </n-radio-group>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div
@@ -244,43 +234,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn.ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

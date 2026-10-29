@@ -488,8 +488,11 @@ const SCENARIOS = [
       /** 全部在页面内按真实时间轴跑：开 → 关 → 采样，避免宿主侧 sleep 与页面计时不同步 */
       const result = await evaluate(`(async () => {
         const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        // 演示区控件可能有两种 DOM：普通按钮，或 Naive 单选组里的 label 标签
         const button = (text, root = document) =>
-          [...root.querySelectorAll('button')].find((item) => item.textContent.includes(text))
+          [...root.querySelectorAll('button, .n-radio-button')].find((item) =>
+            item.textContent.includes(text),
+          )
 
         // 先切到「等动画结束」，再打开抽屉
         button('等动画结束')?.click()
