@@ -7,7 +7,7 @@
 // ============================================================
 <script setup lang="ts">
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 // ============================================================
 // 可视化数据：脉冲条
@@ -24,10 +24,56 @@ interface Pulse {
 let pulseId = 0
 const pulses = ref<Pulse[]>([])
 
+// ---------- 波形容量：跟着容器宽度走 ----------
+
+/** 波形容器（用来按实际宽度算能放几根柱子） */
+const waveRef = ref<HTMLElement | null>(null)
+/** 当前最多能放几根柱子；容器变宽/变窄时重算 */
+const maxPulses = ref(36)
+
+/** 单根柱子宽度 + 柱间距（与 scoped 样式里的 .pulse / .wave 保持一致） */
+const PULSE_STRIDE = 6 + 3
+/** 容器左右内边距 0.6rem×2 + 边框 1px×2 的近似值（像素） */
+const WAVE_INSET = 22
+/** 兜底最少柱子数：375px 也不至于只剩两三根 */
+const MIN_PULSES = 8
+
+/**
+ * 按容器宽度重算容量
+ * 不这么算的话，柱子数写死成 36 根时，宽屏下只占三分之一宽度，
+ * 旧柱子就开始被丢掉——看起来像「没铺满就横向移动」。
+ */
+function measureWave(): void {
+  const el = waveRef.value
+  if (!el) return
+  const usable = el.clientWidth - WAVE_INSET
+  maxPulses.value = Math.max(MIN_PULSES, Math.floor(usable / PULSE_STRIDE))
+  // 容器变窄时立刻把多出来的柱子丢掉，避免溢出到不可见区域
+  if (pulses.value.length > maxPulses.value) {
+    pulses.value = pulses.value.slice(-maxPulses.value)
+  }
+}
+
+// 容器宽度会随窗口/布局变化（两栏 → 单栏），用 ResizeObserver 跟随
+let waveObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  measureWave()
+  const el = waveRef.value
+  if (!el) return
+  waveObserver = new ResizeObserver(measureWave)
+  waveObserver.observe(el)
+})
+
+onUnmounted(() => {
+  waveObserver?.disconnect()
+  waveObserver = null
+})
+
 function pushPulse(kind: Pulse['kind'], label: string): void {
-  // 只留最近 36 条，形成滚动波形
+  // 满了才丢最旧的一条：波形先铺满容器，之后才开始横向滚动
   pulses.value.push({ id: pulseId++, kind, label })
-  if (pulses.value.length > 36) pulses.value.shift()
+  if (pulses.value.length > maxPulses.value) pulses.value.shift()
 }
 
 // ============================================================
@@ -97,7 +143,10 @@ function resetAll(): void {
   <DemoNaive>
     <div class="dt-demo">
       <!-- 脉冲波形条 -->
-      <div class="wave">
+      <div
+        ref="waveRef"
+        class="wave"
+      >
         <div
           v-for="p in pulses"
           :key="p.id"
