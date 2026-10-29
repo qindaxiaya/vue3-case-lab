@@ -1146,6 +1146,62 @@ const SCENARIOS = [
     },
   },
   {
+    name: '防抖波形先铺满再滚动',
+    route: '/cases/practice/debounce-throttle',
+    facts: async ({ evaluate }) => {
+      // 等演示挂载（dev 首次编译要时间）
+      for (let i = 0; i < 20; i++) {
+        if (await evaluate(`Boolean(document.querySelector('.dt-demo .wave'))`)) break
+        await sleep(300)
+      }
+
+      /** 连续输入「容器容量 + 3」次：柱子数应停在容量上，且最右一根贴着右内边距 */
+      return evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const wave = document.querySelector('.dt-demo .wave')
+        const input = document.querySelector('.dt-demo .n-input__input-el')
+        if (!wave || !input) return { error: 'no-demo' }
+
+        // 与 Demo 里 measureWave 的口径一致：可用宽度 / (柱宽 6 + 间距 3)
+        const capacity = Math.max(8, Math.floor((wave.clientWidth - 22) / 9))
+        const times = capacity + 3
+        for (let i = 0; i < times; i++) {
+          input.value = 'x'.repeat(i + 1)
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+          await wait(8)
+        }
+        // 等 Vue 渲染完最后一根，但别等到 500ms（否则防抖会再追加一条执行柱）
+        await wait(120)
+
+        const bars = [...wave.querySelectorAll('.pulse')]
+        const waveRect = wave.getBoundingClientRect()
+        const last = bars.length ? bars[bars.length - 1].getBoundingClientRect() : null
+        return {
+          typed: times,
+          capacity,
+          count: bars.length,
+          rightGap: last ? Math.round(waveRect.right - last.right) : -1,
+          overflow: wave.scrollWidth - wave.clientWidth,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      if (result.error) failures.push(`演示没挂载（${result.error}）`)
+      if (result.count === 0) failures.push('输入后没有画出脉冲柱子')
+      // 输入次数超过容量，柱子数应正好等于容量（写死 36 根这类回归会在这里露头）
+      if (result.count !== result.capacity) {
+        failures.push(`柱子数 ${result.count} ≠ 容器容量 ${result.capacity}（波形应先铺满再丢旧柱子）`)
+      }
+      // 右内边距约 11px + 单格不足一整格的余量（<18px），超过就是有明显空白
+      if (result.rightGap > 30) {
+        failures.push(`最右一根离容器右边 ${result.rightGap}px，波形没铺满`)
+      }
+      if (result.overflow > 1) failures.push(`波形横向溢出 ${result.overflow}px`)
+      return failures
+    },
+  },
+  {
     name: '列表难度筛选',
     route: '/cases',
     facts: async ({ evaluate }) => {
