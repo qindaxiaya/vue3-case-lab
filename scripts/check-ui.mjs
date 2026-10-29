@@ -1028,8 +1028,14 @@ const SCENARIOS = [
         const container = document.querySelector('.n-message-container')
         const containerRect = container?.getBoundingClientRect()
         const containerTop = containerRect ? Math.round(containerRect.top) : -1
-        const containerRight = containerRect ? Math.round(window.innerWidth - containerRect.right) : -1
-        const placedRight = container ? (container.className ?? '').includes('top-right') : false
+        // 顶部居中：容器铺满整行（left 0 / right 0），靠 align-items 居中，所以量第一条消息本身
+        const firstMessageRect = document.querySelector('.n-message')?.getBoundingClientRect()
+        const messageCenterDelta = firstMessageRect
+          ? Math.round(Math.abs((firstMessageRect.left + firstMessageRect.right) / 2 - window.innerWidth / 2))
+          : -1
+        const placedTop = container
+          ? (container.className ?? '').split(' ').includes('n-message-container--top')
+          : false
         const containerInBody = container ? container.closest('.ou-demo') === null : false
 
         const failBtn = [...document.querySelectorAll('.ou-demo button')].find((item) =>
@@ -1058,10 +1064,10 @@ const SCENARIOS = [
           messageCount: successTexts.length,
           successTyped,
           errorTyped,
-          placedRight,
+          placedTop,
           containerInBody,
           containerTop,
-          containerRight,
+          messageCenterDelta,
           successText: successTexts.join(' / '),
           failText: failTexts.join(' / '),
           modeCount: modes.length,
@@ -1084,13 +1090,13 @@ const SCENARIOS = [
       if (result.messageCount < 1) failures.push('操作后没有出现 Naive message 提示')
       if (!result.successTyped) failures.push('成功提示不是 message.success（缺 n-message--success-type）')
       if (!result.errorTyped) failures.push('回滚提示不是 message.error（缺 n-message--error-type）')
-      if (!result.placedRight) failures.push('message 容器不是右上角（缺 top-right 位置类）')
+      if (!result.placedTop) failures.push('message 容器不是顶部居中（缺 n-message-container--top 位置类）')
       if (!result.containerInBody) failures.push('message 容器没有 Teleport 到 body（仍在演示区内部）')
       if (result.containerTop < 0 || result.containerTop > 120) {
         failures.push(`message 容器没有贴近顶部（top=${result.containerTop}px）`)
       }
-      if (result.containerRight < 0 || result.containerRight > 48) {
-        failures.push(`message 容器没有贴近右侧（right=${result.containerRight}px）`)
+      if (result.messageCenterDelta < 0 || result.messageCenterDelta > 2) {
+        failures.push(`message 没有水平居中（中心偏移 ${result.messageCenterDelta}px）`)
       }
       if (!result.successText.includes('点赞成功')) failures.push('成功提示文案缺失')
       if (!result.failText.includes('已撤回')) failures.push('失败回滚提示文案缺失')
