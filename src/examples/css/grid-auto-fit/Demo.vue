@@ -157,8 +157,9 @@ function onHandleMove(event: PointerEvent): void {
 
 // ---------- 方案切换与重置 ----------
 
-/** 切换方案：清空统计与流水，让两种方案在同等起点重新计数 */
-function setMode(next: LayoutMode): void {
+/** 切换方案（n-radio-group 发出的是原始值，收窄后再用）：清空统计与流水，让两种方案在同等起点重新计数 */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'media' && next !== 'autofit') return
   if (mode.value === next) return
   mode.value = next
   resetStats()
@@ -201,34 +202,23 @@ onUnmounted(() => {
     :class="`mode-${mode}`"
   >
     <div class="bar">
-      <div
+      <!-- 互斥模式组：直接用 Naive 的单选按钮组，自带键盘与选中语义 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="布局方案"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'media' }"
-          :aria-pressed="mode === 'media'"
-          @click="setMode('media')"
-        >
+        <n-radio-button value="media">
           flex + 手写断点（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'autofit' }"
-          :aria-pressed="mode === 'autofit'"
-          @click="setMode('autofit')"
-        >
+        </n-radio-button>
+        <n-radio-button value="autofit">
           auto-fit（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+        </n-radio-button>
+      </n-radio-group>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -317,52 +307,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

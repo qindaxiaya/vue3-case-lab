@@ -157,6 +157,11 @@ function simulateRefresh(): void {
 }
 
 /** 切模式：进内存模式先清地址残留，进 URL 模式立即同步一次（保持两条路径一致） */
+/** 切换保存方式（n-radio-group 发出的是原始值，收窄后再用） */
+function onModeChange(next: string | number | boolean | undefined): void {
+  if (next === 'memory' || next === 'url') switchMode(next)
+}
+
 function switchMode(next: 'memory' | 'url'): void {
   if (mode.value === next) return
   mode.value = next
@@ -195,40 +200,30 @@ watch(page, syncUrl)
 <template>
   <div class="us-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="状态保存方式"
+        @update:value="onModeChange"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'memory' }"
-          :aria-pressed="mode === 'memory'"
-          @click="switchMode('memory')"
-        >
+        <n-radio-button value="memory">
           状态只在内存（刷新即丢）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'url' }"
-          :aria-pressed="mode === 'url'"
-          @click="switchMode('url')"
-        >
+        </n-radio-button>
+        <n-radio-button value="url">
           URL 同步（刷新/后退/分享都还原）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
+        ghost
         @click="simulateRefresh"
       >
         模拟刷新
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="filters">
@@ -237,18 +232,18 @@ watch(page, syncUrl)
         role="group"
         aria-label="分类多选"
       >
-        <button
+        <n-button
           v-for="cat in CAT_OPTIONS"
           :key="cat"
-          class="chip"
-          :class="{ on: selectedCats.includes(cat) }"
+          size="small"
+          :type="selectedCats.includes(cat) ? 'primary' : 'default'"
           :aria-pressed="selectedCats.includes(cat)"
           @click="selectedCats.includes(cat)
             ? selectedCats = selectedCats.filter((c) => c !== cat)
             : selectedCats.push(cat)"
         >
           {{ cat }}
-        </button>
+        </n-button>
       </div>
       <input
         v-model="keyword"
@@ -258,23 +253,23 @@ watch(page, syncUrl)
         aria-label="关键词"
       >
       <div class="pager">
-        <button
-          class="pager-btn"
+        <n-button
+          size="small"
           :disabled="page <= 1"
           aria-label="上一页"
           @click="turnPage(-1)"
         >
           上一页
-        </button>
+        </n-button>
         <span>第 {{ page }} / {{ MAX_PAGE }} 页</span>
-        <button
-          class="pager-btn"
+        <n-button
+          size="small"
           :disabled="page >= MAX_PAGE"
           aria-label="下一页"
           @click="turnPage(1)"
         >
           下一页
-        </button>
+        </n-button>
       </div>
     </div>
 
@@ -295,19 +290,20 @@ watch(page, syncUrl)
         :value="shareUrl"
         aria-label="当前地址"
       >
-      <button
-        class="btn"
+      <n-button
+        type="primary"
+        ghost
         @click="openSharedLink"
       >
         假装分享链接（压入历史栈，可后退）
-      </button>
-      <button
+      </n-button>
+      <n-button
         v-if="openedLink"
-        class="btn run"
+        type="primary"
         @click="goBack"
       >
         浏览器后退（触发 popstate）
-      </button>
+      </n-button>
     </label>
 
     <!-- 编码对照：同一个关键词进查询串前后的样子 -->
@@ -369,46 +365,6 @@ watch(page, syncUrl)
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.mode.active {
-  background-color: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-}
-
-.btn:hover {
-  background-color: var(--primary-soft);
-  color: var(--primary);
-}
-
-.btn.run {
-  border-color: var(--primary);
-  color: var(--primary);
 }
 
 .stats {
@@ -441,22 +397,6 @@ watch(page, syncUrl)
   flex-wrap: wrap;
 }
 
-.chip {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-tag);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.chip.on {
-  border-color: var(--primary);
-  background-color: var(--primary-soft);
-  color: var(--primary);
-}
-
 .kw {
   flex: 1 1 200px;
   min-width: 0;
@@ -474,21 +414,6 @@ watch(page, syncUrl)
   gap: 0.5rem;
   font-size: var(--demo-text-sm);
   color: var(--text-secondary);
-}
-
-.pager-btn {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.pager-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .url-row {

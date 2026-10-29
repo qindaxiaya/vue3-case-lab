@@ -22,6 +22,11 @@ const envMode = ref<'modern' | 'simulated'>('modern')
 /** strict 无降级（失败即报错） / fallback 分级降级 */
 const strategy = ref<'strict' | 'fallback'>('fallback')
 
+/** 切换降级策略（n-radio-group 发出的是原始值，收窄后再用） */
+function onStrategyChange(next: string | number | boolean | undefined): void {
+  if (next === 'strict' || next === 'fallback') strategy.value = next
+}
+
 // ---------- 运行记录 ----------
 
 /** 一条尝试记录：ok 成功 / fail 失败 / info 说明 */
@@ -204,56 +209,43 @@ function resetAll(): void {
 <template>
   <div class="cl-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="strategy"
         aria-label="降级策略"
+        @update:value="onStrategyChange"
       >
-        <button
-          class="mode"
-          :class="{ active: strategy === 'strict' }"
-          :aria-pressed="strategy === 'strict'"
-          @click="strategy = 'strict'"
-        >
+        <n-radio-button value="strict">
           无降级（失败即报错）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: strategy === 'fallback' }"
-          :aria-pressed="strategy === 'fallback'"
-          @click="strategy = 'fallback'"
-        >
+        </n-radio-button>
+        <n-radio-button value="fallback">
           分级降级（照样复制成功）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        :type="envMode === 'simulated' ? 'primary' : 'default'"
+        :ghost="envMode === 'simulated'"
         :aria-pressed="envMode === 'simulated'"
         @click="envMode = envMode === 'simulated' ? 'modern' : 'simulated'"
       >
         {{ envMode === 'simulated' ? '模拟老旧环境：开（无 clipboard 接口）' : '模拟老旧环境：关（真实当前环境）' }}
-      </button>
+      </n-button>
     </div>
 
     <div class="actions">
-      <button
-        class="btn run"
+      <n-button
+        type="primary"
         @click="copyOnce"
       >
         复制一次
-      </button>
-      <button
-        class="btn"
-        @click="runSuccessRateTest"
-      >
+      </n-button>
+      <n-button @click="runSuccessRateTest">
         连测 10 次（统计成功率）
-      </button>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+      </n-button>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -300,12 +292,9 @@ function resetAll(): void {
 
     <!-- 读取区：手动明确尝试 + 手动粘贴框 -->
     <div class="read">
-      <button
-        class="btn"
-        @click="tryReadClipboard"
-      >
+      <n-button @click="tryReadClipboard">
         试试读取接口（read，可能被拒）
-      </button>
+      </n-button>
       <textarea
         v-model="pasteTarget"
         class="paste"
@@ -347,46 +336,6 @@ function resetAll(): void {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.mode.active {
-  background-color: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-}
-
-.btn:hover {
-  background-color: var(--primary-soft);
-  color: var(--primary);
-}
-
-.btn.run {
-  border-color: var(--primary);
-  color: var(--primary);
 }
 
 .stats {

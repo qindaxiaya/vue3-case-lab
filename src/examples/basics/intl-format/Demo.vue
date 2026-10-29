@@ -127,33 +127,34 @@ const intlRowKeys = ROW_NAMES.length
 function resetAll(): void {
   locale.value = 'zh-CN'
 }
+
+/** 切换输出语言（n-radio-group 发出的是原始值，收窄成预设语言） */
+function onLocaleChange(next: string | number | boolean | undefined): void {
+  if (next === 'zh-CN' || next === 'en-US' || next === 'ja-JP') locale.value = next
+}
 </script>
 
 <template>
   <div class="if-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="locale"
         aria-label="输出语言"
+        @update:value="onLocaleChange"
       >
-        <button
+        <n-radio-button
           v-for="loc in LOCALES"
           :key="loc"
-          class="mode"
-          :class="{ active: locale === loc }"
-          :aria-pressed="locale === loc"
-          @click="locale = loc"
+          :value="loc"
         >
           {{ LOCALE_LABELS[loc] }}
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+        </n-radio-button>
+      </n-radio-group>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -215,41 +216,6 @@ function resetAll(): void {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-}
-
-.mode.active {
-  background-color: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-}
-
-.btn.ghost:hover {
-  background-color: var(--primary-soft);
-  color: var(--primary);
 }
 
 .stats {

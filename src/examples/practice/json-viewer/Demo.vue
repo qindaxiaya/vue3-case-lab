@@ -199,135 +199,133 @@ function preview(row: Row): string {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="jv-demo">
-      <div class="body">
-        <!-- 输入区 -->
-        <section
-          class="input-pane"
-          aria-label="JSON 输入"
+  <div class="jv-demo">
+    <div class="body">
+      <!-- 输入区 -->
+      <section
+        class="input-pane"
+        aria-label="JSON 输入"
+      >
+        <div class="pane-head">
+          <span class="pane-title">输入 JSON</span>
+          <button
+            class="btn-mini"
+            @click="source = SAMPLE"
+          >
+            载入示例
+          </button>
+        </div>
+        <!-- Naive 多行输入：v-model:value；等宽字体与底色走下面的 :deep -->
+        <n-input
+          v-model:value="source"
+          class="json-input"
+          type="textarea"
+          :rows="16"
+          aria-label="JSON 源码"
+        />
+        <!-- 解析错误 -->
+        <p
+          v-if="!parsed.ok"
+          class="parse-error"
+          role="alert"
         >
-          <div class="pane-head">
-            <span class="pane-title">输入 JSON</span>
+          ✕ {{ parsed.error }}
+        </p>
+        <p
+          v-else
+          class="parse-ok"
+        >
+          ✓ 解析成功 · 共 {{ totalNodes }} 个节点
+        </p>
+      </section>
+
+      <!-- 树视图 -->
+      <section
+        class="tree-pane"
+        aria-label="JSON 树"
+      >
+        <div class="pane-head">
+          <span class="pane-title">树视图（点击行复制路径）</span>
+          <span class="tree-actions">
             <button
               class="btn-mini"
-              @click="source = SAMPLE"
+              @click="expandAll"
             >
-              载入示例
+              全展开
             </button>
-          </div>
-          <!-- Naive 多行输入：v-model:value；等宽字体与底色走下面的 :deep -->
-          <n-input
-            v-model:value="source"
-            class="json-input"
-            type="textarea"
-            :rows="16"
-            aria-label="JSON 源码"
-          />
-          <!-- 解析错误 -->
-          <p
-            v-if="!parsed.ok"
-            class="parse-error"
-            role="alert"
-          >
-            ✕ {{ parsed.error }}
-          </p>
-          <p
-            v-else
-            class="parse-ok"
-          >
-            ✓ 解析成功 · 共 {{ totalNodes }} 个节点
-          </p>
-        </section>
+            <button
+              class="btn-mini"
+              @click="collapseAll"
+            >
+              全折叠
+            </button>
+          </span>
+        </div>
 
-        <!-- 树视图 -->
-        <section
-          class="tree-pane"
-          aria-label="JSON 树"
+        <!-- 复制反馈 -->
+        <p
+          v-if="copiedPath"
+          class="copied"
+          aria-live="polite"
         >
-          <div class="pane-head">
-            <span class="pane-title">树视图（点击行复制路径）</span>
-            <span class="tree-actions">
-              <button
-                class="btn-mini"
-                @click="expandAll"
-              >
-                全展开
-              </button>
-              <button
-                class="btn-mini"
-                @click="collapseAll"
-              >
-                全折叠
-              </button>
-            </span>
-          </div>
+          已复制路径：<code>{{ copiedPath }}</code>
+        </p>
 
-          <!-- 复制反馈 -->
-          <p
-            v-if="copiedPath"
-            class="copied"
-            aria-live="polite"
+        <!-- 扁平行列表 -->
+        <div class="tree-scroll">
+          <div
+            v-for="row in rows"
+            :key="row.path"
+            class="tree-row"
+            @click="copyPath(row)"
           >
-            已复制路径：<code>{{ copiedPath }}</code>
-          </p>
-
-          <!-- 扁平行列表 -->
-          <div class="tree-scroll">
-            <div
-              v-for="row in rows"
-              :key="row.path"
-              class="tree-row"
-              @click="copyPath(row)"
+            <!-- 缩进 -->
+            <span
+              class="indent"
+              :style="{ paddingLeft: `${row.depth * 1.1}rem` }"
+            />
+            <!-- 折叠箭头 -->
+            <button
+              v-if="row.hasChildren"
+              class="caret"
+              :class="{ 'caret--collapsed': collapsed.has(row.path) }"
+              :aria-label="collapsed.has(row.path) ? '展开' : '折叠'"
+              @click.stop="toggle(row)"
             >
-              <!-- 缩进 -->
-              <span
-                class="indent"
-                :style="{ paddingLeft: `${row.depth * 1.1}rem` }"
-              />
-              <!-- 折叠箭头 -->
-              <button
-                v-if="row.hasChildren"
-                class="caret"
-                :class="{ 'caret--collapsed': collapsed.has(row.path) }"
-                :aria-label="collapsed.has(row.path) ? '展开' : '折叠'"
-                @click.stop="toggle(row)"
-              >
-                ▾
-              </button>
-              <span
-                v-else
-                class="caret caret--empty"
-              />
-              <!-- 键名 -->
-              <span
-                class="key"
-                :class="{ 'key--root': row.path === '$' }"
-              >{{ row.key }}</span>
-              <span class="colon">:</span>
-              <!-- 值（按类型着色） -->
-              <span
-                class="val"
-                :class="`val--${row.type}`"
-              >{{ preview(row) }}</span>
-              <!-- 折叠时的子项数提示 -->
-              <span
-                v-if="row.hasChildren && collapsed.has(row.path)"
-                class="folded-hint"
-              >… {{ row.childCount }} 项</span>
-            </div>
-
-            <p
-              v-if="rows.length === 0"
-              class="tree-empty"
-            >
-              左侧输入合法 JSON 后在此渲染
-            </p>
+              ▾
+            </button>
+            <span
+              v-else
+              class="caret caret--empty"
+            />
+            <!-- 键名 -->
+            <span
+              class="key"
+              :class="{ 'key--root': row.path === '$' }"
+            >{{ row.key }}</span>
+            <span class="colon">:</span>
+            <!-- 值（按类型着色） -->
+            <span
+              class="val"
+              :class="`val--${row.type}`"
+            >{{ preview(row) }}</span>
+            <!-- 折叠时的子项数提示 -->
+            <span
+              v-if="row.hasChildren && collapsed.has(row.path)"
+              class="folded-hint"
+            >… {{ row.childCount }} 项</span>
           </div>
-        </section>
-      </div>
+
+          <p
+            v-if="rows.length === 0"
+            class="tree-empty"
+          >
+            左侧输入合法 JSON 后在此渲染
+          </p>
+        </div>
+      </section>
     </div>
-  </DemoNaive>
+  </div>
 </template>
 
 <style scoped>

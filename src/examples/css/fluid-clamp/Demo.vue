@@ -109,7 +109,9 @@ function onHandleMove(event: PointerEvent): void {
 
 // ---------- 策略切换与重置 ----------
 
-function setMode(next: FontMode): void {
+/** 切换策略（n-radio-group 发出的是原始值，收窄后再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'breakpoint' && next !== 'clamp') return
   if (mode.value === next) return
   mode.value = next
   // 切换不改变容器宽度，RO 不回调：主动等两帧后重读渲染字号
@@ -147,34 +149,23 @@ onUnmounted(() => {
     :class="`mode-${mode}`"
   >
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="字号策略"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'breakpoint' }"
-          :aria-pressed="mode === 'breakpoint'"
-          @click="setMode('breakpoint')"
-        >
+        <n-radio-button value="breakpoint">
           断点式（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'clamp' }"
-          :aria-pressed="mode === 'clamp'"
-          @click="setMode('clamp')"
-        >
+        </n-radio-button>
+        <n-radio-button value="clamp">
           clamp（推荐）
-        </button>
-      </div>
-      <button
-        class="btn ghost"
-        @click="resetAll"
-      >
+        </n-radio-button>
+      </n-radio-group>
+      <n-button @click="resetAll">
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -240,42 +231,6 @@ onUnmounted(() => {
 
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

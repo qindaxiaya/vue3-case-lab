@@ -314,160 +314,158 @@ onUnmounted(() => {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div class="el-demo">
-      <!-- 预设：一键勾选一组常见任务 -->
-      <div
-        class="presets"
-        role="group"
-        aria-label="预设场景"
+  <div class="el-demo">
+    <!-- 预设：一键勾选一组常见任务 -->
+    <div
+      class="presets"
+      role="group"
+      aria-label="预设场景"
+    >
+      <span class="presets-label">预设</span>
+      <!-- Naive 单选预设按钮：size/type 语义与原 EP 等价 -->
+      <n-button
+        v-for="preset in PRESETS"
+        :key="preset.id"
+        size="small"
+        :type="isPresetActive(preset) ? 'primary' : 'default'"
+        :data-preset="preset.id"
+        @click="applyPreset(preset)"
       >
-        <span class="presets-label">预设</span>
-        <!-- Naive 单选预设按钮：size/type 语义与原 EP 等价 -->
-        <n-button
-          v-for="preset in PRESETS"
-          :key="preset.id"
-          size="small"
-          :type="isPresetActive(preset) ? 'primary' : 'default'"
-          :data-preset="preset.id"
-          @click="applyPreset(preset)"
-        >
-          {{ preset.label }}
-        </n-button>
-      </div>
+        {{ preset.label }}
+      </n-button>
+    </div>
 
-      <!-- 任务开关：勾选哪些，运行时就只排哪些 -->
-      <div
-        class="tasks"
-        role="group"
-        aria-label="选择要排入的任务"
+    <!-- 任务开关：勾选哪些，运行时就只排哪些 -->
+    <div
+      class="tasks"
+      role="group"
+      aria-label="选择要排入的任务"
+    >
+      <label
+        v-for="task in TASKS"
+        :key="task.id"
+        class="task-toggle"
+        :data-task="task.id"
       >
-        <label
-          v-for="task in TASKS"
-          :key="task.id"
-          class="task-toggle"
-          :data-task="task.id"
+        <input
+          type="checkbox"
+          :checked="isOn(task.id)"
+          @change="toggleTask(task.id)"
         >
-          <input
-            type="checkbox"
-            :checked="isOn(task.id)"
-            @change="toggleTask(task.id)"
-          >
-          <span>{{ task.label }}</span>
+        <span>{{ task.label }}</span>
+        <span
+          class="tag"
+          :class="KIND_META[task.kind].cls"
+        >{{ KIND_META[task.kind].badge }}</span>
+      </label>
+    </div>
+
+    <div class="bar">
+      <!-- 输出对照：n-radio-group 受控用法（:value + @update:value） -->
+      <n-radio-group
+        class="modes"
+        :value="mode"
+        aria-label="输出对照"
+        @update:value="onModeChange"
+      >
+        <n-radio-button
+          value="expect"
+          data-mode="expect"
+        >
+          直觉预期（错误）
+        </n-radio-button>
+        <n-radio-button
+          value="real"
+          data-mode="real"
+        >
+          真实输出（正确）
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
+        data-action="run"
+        @click="run"
+      >
+        运行
+      </n-button>
+      <n-button @click="clearOutput">
+        清空
+      </n-button>
+    </div>
+
+    <div class="stats">
+      <span>已打印 <b>{{ logLines.length }}</b> 行</span>
+      <span>已选任务 <b>{{ selectedCount }}</b> 个</span>
+      <span>慢任务 <b>{{ slowOn ? '开' : '关' }}</b></span>
+      <span v-if="summary">结论 <b>{{ summary }}</b></span>
+    </div>
+
+    <!-- 直觉预期视图：随勾选动态生成 -->
+    <div
+      v-if="mode === 'expect'"
+      class="log"
+    >
+      <p class="log-note">
+        下面是按「书写顺序」脑补的直觉排序（错误），只包含当前勾选的任务。
+        点「运行」看真实输出差在哪：
+      </p>
+      <ol
+        class="lines"
+        aria-label="直觉预期顺序"
+      >
+        <li
+          v-for="(line, i) in expectLines"
+          :key="`${line.kind}-${i}`"
+          class="line"
+          :data-kind="line.kind"
+        >
+          <span class="idx">{{ i + 1 }}.</span>
           <span
             class="tag"
-            :class="KIND_META[task.kind].cls"
-          >{{ KIND_META[task.kind].badge }}</span>
-        </label>
-      </div>
-
-      <div class="bar">
-        <!-- 输出对照：n-radio-group 受控用法（:value + @update:value） -->
-        <n-radio-group
-          class="modes"
-          :value="mode"
-          aria-label="输出对照"
-          @update:value="onModeChange"
-        >
-          <n-radio-button
-            value="expect"
-            data-mode="expect"
-          >
-            直觉预期（错误）
-          </n-radio-button>
-          <n-radio-button
-            value="real"
-            data-mode="real"
-          >
-            真实输出（正确）
-          </n-radio-button>
-        </n-radio-group>
-        <n-button
-          type="primary"
-          data-action="run"
-          @click="run"
-        >
-          运行
-        </n-button>
-        <n-button @click="clearOutput">
-          清空
-        </n-button>
-      </div>
-
-      <div class="stats">
-        <span>已打印 <b>{{ logLines.length }}</b> 行</span>
-        <span>已选任务 <b>{{ selectedCount }}</b> 个</span>
-        <span>慢任务 <b>{{ slowOn ? '开' : '关' }}</b></span>
-        <span v-if="summary">结论 <b>{{ summary }}</b></span>
-      </div>
-
-      <!-- 直觉预期视图：随勾选动态生成 -->
-      <div
-        v-if="mode === 'expect'"
-        class="log"
-      >
-        <p class="log-note">
-          下面是按「书写顺序」脑补的直觉排序（错误），只包含当前勾选的任务。
-          点「运行」看真实输出差在哪：
-        </p>
-        <ol
-          class="lines"
-          aria-label="直觉预期顺序"
-        >
-          <li
-            v-for="(line, i) in expectLines"
-            :key="`${line.kind}-${i}`"
-            class="line"
-            :data-kind="line.kind"
-          >
-            <span class="idx">{{ i + 1 }}.</span>
-            <span
-              class="tag"
-              :class="KIND_META[line.kind].cls"
-            >{{ KIND_META[line.kind].badge }}</span>
-            <span class="name">{{ line.name }}</span>
-          </li>
-        </ol>
-      </div>
-
-      <!-- 真实输出视图：运行结果按时间戳排列，文本可以直接选中复制 -->
-      <div
-        v-else
-        class="log"
-      >
-        <p
-          v-if="logLines.length === 0"
-          class="log-note"
-        >
-          点「运行」后这里会按真实执行顺序逐行打印。文本可直接选中复制。
-        </p>
-        <ol
-          v-else
-          class="lines"
-          aria-label="真实执行顺序"
-        >
-          <li
-            v-for="(line, i) in logLines"
-            :key="i"
-            class="line"
-            :data-kind="line.kind"
-          >
-            <span class="ts">{{ line.ts.toFixed(1) }} ms</span>
-            <span
-              class="tag"
-              :class="KIND_META[line.kind].cls"
-            >{{ KIND_META[line.kind].badge }}</span>
-            <span class="name">{{ line.name }}</span>
-          </li>
-        </ol>
-      </div>
-
-      <p class="hint">
-        勾选不同任务再运行，直觉顺序会跟着变；真实顺序以浏览器为准。
-        微任务永远在「下一个宏任务」之前执行；慢任务只拖住当前宏任务，清微任务的时机不变。
-      </p>
+            :class="KIND_META[line.kind].cls"
+          >{{ KIND_META[line.kind].badge }}</span>
+          <span class="name">{{ line.name }}</span>
+        </li>
+      </ol>
     </div>
-  </DemoNaive>
+
+    <!-- 真实输出视图：运行结果按时间戳排列，文本可以直接选中复制 -->
+    <div
+      v-else
+      class="log"
+    >
+      <p
+        v-if="logLines.length === 0"
+        class="log-note"
+      >
+        点「运行」后这里会按真实执行顺序逐行打印。文本可直接选中复制。
+      </p>
+      <ol
+        v-else
+        class="lines"
+        aria-label="真实执行顺序"
+      >
+        <li
+          v-for="(line, i) in logLines"
+          :key="i"
+          class="line"
+          :data-kind="line.kind"
+        >
+          <span class="ts">{{ line.ts.toFixed(1) }} ms</span>
+          <span
+            class="tag"
+            :class="KIND_META[line.kind].cls"
+          >{{ KIND_META[line.kind].badge }}</span>
+          <span class="name">{{ line.name }}</span>
+        </li>
+      </ol>
+    </div>
+
+    <p class="hint">
+      勾选不同任务再运行，直觉顺序会跟着变；真实顺序以浏览器为准。
+      微任务永远在「下一个宏任务」之前执行；慢任务只拖住当前宏任务，清微任务的时机不变。
+    </p>
+  </div>
 </template>
 
 <style scoped>

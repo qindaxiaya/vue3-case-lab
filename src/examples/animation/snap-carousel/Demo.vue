@@ -357,144 +357,142 @@ onUnmounted(() => {
 
 <template>
   <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
-  <DemoNaive>
-    <div
-      class="snap-demo"
-      :class="{ 'no-motion': mockReduce }"
+  <div
+    class="snap-demo"
+    :class="{ 'no-motion': mockReduce }"
+  >
+    <div class="bar">
+      <n-radio-group
+        class="modes"
+        :value="mode"
+        aria-label="轮播实现方式"
+        @update:value="onModeChange"
+      >
+        <n-radio-button
+          value="manual"
+          data-mode="manual"
+        >
+          手算 scrollLeft（旧）
+        </n-radio-button>
+        <n-radio-button
+          value="snap"
+          data-mode="snap"
+        >
+          滚动吸附（推荐）
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        :type="mockReduce ? 'primary' : 'default'"
+        :aria-pressed="mockReduce"
+        @click="toggleMockReduce"
+      >
+        {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
+      </n-button>
+      <n-button @click="resetAll">
+        重置
+      </n-button>
+    </div>
+
+    <p
+      v-if="systemReduce"
+      class="system-note"
+      role="status"
     >
-      <div class="bar">
-        <n-radio-group
-          class="modes"
-          :value="mode"
-          aria-label="轮播实现方式"
-          @update:value="onModeChange"
-        >
-          <n-radio-button
-            value="manual"
-            data-mode="manual"
-          >
-            手算 scrollLeft（旧）
-          </n-radio-button>
-          <n-radio-button
-            value="snap"
-            data-mode="snap"
-          >
-            滚动吸附（推荐）
-          </n-radio-button>
-        </n-radio-group>
-        <n-button
-          :type="mockReduce ? 'primary' : 'default'"
-          :aria-pressed="mockReduce"
-          @click="toggleMockReduce"
-        >
-          {{ mockReduce ? '模拟中：已降级' : '模拟减少动态效果' }}
-        </n-button>
-        <n-button @click="resetAll">
-          重置
-        </n-button>
-      </div>
+      系统当前开启了「减少动态效果」。真实项目应当据此降级；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
+    </p>
 
-      <p
-        v-if="systemReduce"
-        class="system-note"
-        role="status"
+    <div
+      class="stats"
+      aria-live="polite"
+    >
+      <span>当前索引 <b>{{ index + 1 }} / {{ SLIDES.length }}</b></span>
+      <span>scrollLeft <b>{{ scrollLeft }}px</b></span>
+      <span>本次手算距离 <b>{{ handCalc }} 处</b></span>
+      <span>手算结果 <b>{{ handTarget }}</b></span>
+      <span>居中误差 <b>{{ centerError }}px</b></span>
+      <span>滚动行为 <b>{{ mockReduce ? '直接到位' : '逐帧补间（演示）' }}</b></span>
+      <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
+    </div>
+
+    <div
+      class="carousel"
+      :class="mode === 'snap' ? 'is-snap' : 'is-manual'"
+    >
+      <button
+        class="arrow"
+        type="button"
+        aria-label="上一张"
+        :disabled="index === 0"
+        @click="goStep(-1)"
       >
-        系统当前开启了「减少动态效果」。真实项目应当据此降级；本案例为了让动效看得见，仍然播放，点开关可查看降级行为。
-      </p>
+        <span aria-hidden="true">‹</span>
+      </button>
 
+      <!--
+      轮播容器本身可横向滚动，页面不会因此横向溢出。
+      旧模式没有吸附；新模式由 scroll-snap-type 接管对齐。
+    -->
       <div
-        class="stats"
-        aria-live="polite"
-      >
-        <span>当前索引 <b>{{ index + 1 }} / {{ SLIDES.length }}</b></span>
-        <span>scrollLeft <b>{{ scrollLeft }}px</b></span>
-        <span>本次手算距离 <b>{{ handCalc }} 处</b></span>
-        <span>手算结果 <b>{{ handTarget }}</b></span>
-        <span>居中误差 <b>{{ centerError }}px</b></span>
-        <span>滚动行为 <b>{{ mockReduce ? '直接到位' : '逐帧补间（演示）' }}</b></span>
-        <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
-      </div>
-
-      <div
-        class="carousel"
-        :class="mode === 'snap' ? 'is-snap' : 'is-manual'"
-      >
-        <button
-          class="arrow"
-          type="button"
-          aria-label="上一张"
-          :disabled="index === 0"
-          @click="goStep(-1)"
-        >
-          <span aria-hidden="true">‹</span>
-        </button>
-
-        <!--
-        轮播容器本身可横向滚动，页面不会因此横向溢出。
-        旧模式没有吸附；新模式由 scroll-snap-type 接管对齐。
-      -->
-        <div
-          ref="trackRef"
-          class="track"
-          role="group"
-          aria-label="卡片轮播，可用左右方向键切换"
-          tabindex="0"
-          @scroll.passive="onScroll"
-          @keydown="onKeydown"
-        >
-          <article
-            v-for="(slide, slideIndex) in SLIDES"
-            :key="slide.id"
-            class="slide"
-            :class="[`tone-${slide.tone}`, { active: index === slideIndex }]"
-          >
-            <span class="slide-no">{{ slideIndex + 1 }}</span>
-            <h3 class="slide-title">
-              {{ slide.title }}
-            </h3>
-            <p class="slide-desc">
-              {{ slide.desc }}
-            </p>
-          </article>
-        </div>
-
-        <button
-          class="arrow"
-          type="button"
-          aria-label="下一张"
-          :disabled="index === SLIDES.length - 1"
-          @click="goStep(1)"
-        >
-          <span aria-hidden="true">›</span>
-        </button>
-      </div>
-
-      <div
-        class="dots"
+        ref="trackRef"
+        class="track"
         role="group"
-        aria-label="跳到指定卡片"
+        aria-label="卡片轮播，可用左右方向键切换"
+        tabindex="0"
+        @scroll.passive="onScroll"
+        @keydown="onKeydown"
       >
-        <button
+        <article
           v-for="(slide, slideIndex) in SLIDES"
           :key="slide.id"
-          class="dot"
-          :class="{ active: index === slideIndex }"
-          type="button"
-          :aria-label="`跳到第 ${slideIndex + 1} 张：${slide.title}`"
-          :aria-current="index === slideIndex ? 'true' : undefined"
-          @click="goTo(slideIndex)"
-        />
+          class="slide"
+          :class="[`tone-${slide.tone}`, { active: index === slideIndex }]"
+        >
+          <span class="slide-no">{{ slideIndex + 1 }}</span>
+          <h3 class="slide-title">
+            {{ slide.title }}
+          </h3>
+          <p class="slide-desc">
+            {{ slide.desc }}
+          </p>
+        </article>
       </div>
 
-      <p class="hint">
-        旧做法用 scrollLeft 手算：圆点跳转要先算「索引 × 单卡距离」，再夹到最大可滚动范围，两处都算错就会停在半路。
-        新做法开滚动吸附，圆点只调 scrollIntoView，索引用滚动位置反推。
-        演示用逐帧补间（requestAnimationFrame）保证「减少动态效果」环境下也能看见滑动；真实项目优先用 behavior: 'smooth' 并跟随系统设置降级。
-        用手随便向右滑一段再松手：旧做法常停在两张中间（居中误差大于 0），新做法会自动吸到整张卡片。
-        点「模拟减少动态效果」可查看降级行为：跳转直接到位，吸附本身仍然生效。
-      </p>
+      <button
+        class="arrow"
+        type="button"
+        aria-label="下一张"
+        :disabled="index === SLIDES.length - 1"
+        @click="goStep(1)"
+      >
+        <span aria-hidden="true">›</span>
+      </button>
     </div>
-  </DemoNaive>
+
+    <div
+      class="dots"
+      role="group"
+      aria-label="跳到指定卡片"
+    >
+      <button
+        v-for="(slide, slideIndex) in SLIDES"
+        :key="slide.id"
+        class="dot"
+        :class="{ active: index === slideIndex }"
+        type="button"
+        :aria-label="`跳到第 ${slideIndex + 1} 张：${slide.title}`"
+        :aria-current="index === slideIndex ? 'true' : undefined"
+        @click="goTo(slideIndex)"
+      />
+    </div>
+
+    <p class="hint">
+      旧做法用 scrollLeft 手算：圆点跳转要先算「索引 × 单卡距离」，再夹到最大可滚动范围，两处都算错就会停在半路。
+      新做法开滚动吸附，圆点只调 scrollIntoView，索引用滚动位置反推。
+      演示用逐帧补间（requestAnimationFrame）保证「减少动态效果」环境下也能看见滑动；真实项目优先用 behavior: 'smooth' 并跟随系统设置降级。
+      用手随便向右滑一段再松手：旧做法常停在两张中间（居中误差大于 0），新做法会自动吸到整张卡片。
+      点「模拟减少动态效果」可查看降级行为：跳转直接到位，吸附本身仍然生效。
+    </p>
+  </div>
 </template>
 
 <style scoped>

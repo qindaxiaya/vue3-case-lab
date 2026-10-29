@@ -1,12 +1,14 @@
 <!-- ============================================================
-     演示区共享的 Naive UI 主题上下文（站点壳不用它）
+     演示区主题上下文：在 CasePage 里包住「演示组件」这一块
      - abstract 模式：不渲染 wrapper div，直接透传默认插槽
      - theme / themeOverrides 复用 useTheme 的 isDark 单例，
        顶栏主题按钮切换 .dark 时演示区控件自动跟随
-     - 内层 NMessageProvider 给演示区提供统一的提示（message），
-       案例里通过 composables/useDemoMessage.ts 的 demoMessage 调用
-     - 放在共享组件而不是每个 Demo 内部直接写 provider，是为了把
-       themeOverrides 的镜像维护点收敛到 composables/useNaiveTheme.ts 一处
+     - 内层 NMessageProvider 给演示区提供统一提示，
+       案例里直接 `const message = useMessage()`（Demo 是 provider 的子组件，
+       inject 能拿到上下文），不用再自建 toast
+     - provider 放 CasePage 而不是 App.vue：App 是首屏入口，
+       barrel import 会把整个 naive-ui 打进首屏包；CasePage 是按需路由
+     - themeOverrides 的维护点收敛在 composables/useNaiveTheme.ts 一处
      ============================================================ -->
 <script setup lang="ts">
 import { useNaiveTheme } from '../../composables/useNaiveTheme'
@@ -27,8 +29,6 @@ const { theme, themeOverrides } = useNaiveTheme()
       :max="3"
       :duration="2400"
     >
-      <!-- 把 message api 注册到模块级，案例 Demo 才能调用 -->
-      <DemoMessageBridge />
       <slot />
     </NMessageProvider>
   </NConfigProvider>
