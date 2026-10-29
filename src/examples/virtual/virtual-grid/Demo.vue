@@ -76,8 +76,9 @@ function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 }
 
-/** 切换模式并测一次重建耗时 */
-async function setMode(next: boolean): Promise<void> {
+/** 切换模式并测一次重建耗时（n-radio-group 发出原始值，先收窄成布尔） */
+async function setMode(next: string | number | boolean | undefined): Promise<void> {
+  if (typeof next !== 'boolean') return
   if (measuring.value || enabled.value === next) return
   measuring.value = true
   const startedAt = performance.now()
@@ -113,41 +114,30 @@ function jumpToMiddle(): void {
 <template>
   <div class="vg-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="enabled"
         aria-label="渲染模式"
+        :disabled="measuring"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: enabled }"
-          :aria-pressed="enabled"
-          @click="setMode(true)"
-        >
+        <n-radio-button :value="true">
           虚拟网格（推荐）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: !enabled }"
-          :aria-pressed="!enabled"
-          @click="setMode(false)"
-        >
+        </n-radio-button>
+        <n-radio-button :value="false">
           全量渲染 5000 张
-        </button>
-      </div>
-      <button
-        class="btn ghost"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
         :disabled="measuring"
         @click="jumpToMiddle"
       >
         跳到中间
-      </button>
-      <button
-        class="btn ghost"
-        @click="backToTop"
-      >
+      </n-button>
+      <n-button @click="backToTop">
         回到顶部
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -229,49 +219,9 @@ function jumpToMiddle(): void {
   flex-wrap: wrap;
 }
 
+/* 模式组只留排列方式，其余观感交给 Naive 单选按钮 */
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 }
 
 .stats {

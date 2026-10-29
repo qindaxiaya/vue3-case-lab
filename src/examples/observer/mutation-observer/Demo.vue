@@ -185,36 +185,24 @@ onUnmounted(() => {
       <div class="left">
         <!-- 操作按钮 -->
         <div class="actions">
-          <button
-            class="btn-act"
+          <n-button
+            type="primary"
             @click="addNode"
           >
             + 增节点
-          </button>
-          <button
-            class="btn-act"
-            @click="removeNode"
-          >
+          </n-button>
+          <n-button @click="removeNode">
             − 删节点
-          </button>
-          <button
-            class="btn-act"
-            @click="toggleAttr"
-          >
+          </n-button>
+          <n-button @click="toggleAttr">
             改 data-active
-          </button>
-          <button
-            class="btn-act"
-            @click="editText"
-          >
+          </n-button>
+          <n-button @click="editText">
             改文本
-          </button>
-          <button
-            class="btn-reset"
-            @click="resetAll"
-          >
+          </n-button>
+          <n-button @click="resetAll">
             清空重建
-          </button>
+          </n-button>
         </div>
 
         <!-- 被观察面板 -->
@@ -325,36 +313,6 @@ onUnmounted(() => {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.btn-act {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn-reset {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
 }
 
 /* ---------- 被观察面板 ---------- */

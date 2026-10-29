@@ -92,7 +92,9 @@ function setupObserver(): void {
 }
 
 /** 切换方式：观察器需要重新挂载，滚动方案只需清空计数 */
-async function setMode(next: Mode): Promise<void> {
+/** 切换判断方式（n-radio-group 发出的是原始值，收窄后再用） */
+async function setMode(next: string | number | boolean | undefined): Promise<void> {
+  if (next !== 'scroll' && next !== 'observer') return
   if (mode.value === next || autoRunning.value) return
   mode.value = next
   observer?.disconnect()
@@ -188,42 +190,34 @@ onUnmounted(() => {
 <template>
   <div class="io-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="可见性判断方式"
+        :disabled="autoRunning"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'scroll' }"
-          :aria-pressed="mode === 'scroll'"
-          @click="setMode('scroll')"
-        >
+        <n-radio-button value="scroll">
           滚动 + 位置计算（旧）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'observer' }"
-          :aria-pressed="mode === 'observer'"
-          @click="setMode('observer')"
-        >
+        </n-radio-button>
+        <n-radio-button value="observer">
           交叉观察器（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="autoRunning"
         @click="autoScroll"
       >
         {{ autoRunning ? '滚动中…' : '自动滚动一轮' }}
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="autoRunning"
         @click="resetStats"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -281,59 +275,9 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+/* 模式组只留排列方式，其余观感交给 Naive 单选按钮 */
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {
