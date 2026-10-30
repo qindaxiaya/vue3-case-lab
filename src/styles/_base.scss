@@ -114,22 +114,10 @@ code {
   border: 0;
 }
 
-// 尊重「减少动态效果」：站点外壳关闭过渡与动画
-// 演示区（.demo-card 内的元素）例外：这些案例本身就在讲过渡 / 动画，
-// 压到 0.01ms 会让「过渡组列表动画」这类案例看起来完全没动（浏览器上报
-// reduce 的机器上尤其明显）。示例动效是教学内容，必须能看到，所以这里用
-// :not(.demo-card *) 把演示区排除；各案例要用「模拟减少动态效果」开关
-// 自己演示降级分支，站点外壳（顶栏、卡片、路由切换等）仍然降级。
-@media (prefers-reduced-motion: reduce) {
-  *:not(.demo-card *),
-  *:not(.demo-card *)::before,
-  *:not(.demo-card *)::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+// 动效策略：本站是教学演示站，不跟随系统「减少动态效果」降级——
+// 演示里的过渡 / 动画本身就是教学内容，全站动效始终播放。
+// 真实项目需要照顾晕动症时，应把动画与过渡时长降到接近 0；
+// animation 分类的案例用「模拟减少动态效果」开关单独演示这种降级分支。
 
 // ---------- 路由切换动效 ----------
 // 只淡入淡出，不加位移：位移会创建新的包含块，影响详情页的吸顶 tab 与固定按钮

@@ -62,12 +62,8 @@
   transition: background-color var(--transition), box-shadow var(--transition);
 }
 
-/* ---------- 4. 演示优先：把被全局规则压短的回弹过渡还原 ---------- */
+/* ---------- 4. 减少动态效果：真实项目应直接走上面的不跟随分支 ---------- */
 
-/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示缓动回弹，
-    所以这里还原时长。真实业务不要照抄，应当直接走上面的不跟随分支 */
-@media (prefers-reduced-motion: reduce) {
-  .mag-btn.is-returning {
-    transition-duration: 0.3s !important;
-  }
-}
+/*! 本站是教学演示站，不跟随系统 prefers-reduced-motion 降级，否则缓动回弹看不到；
+    真实业务应当像上面的 .is-static 一样，系统开启减少动态效果时干脆不跟随，
+    而不是用 CSS 去还原一段本该被关掉的时长 */

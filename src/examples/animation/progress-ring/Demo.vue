@@ -450,36 +450,4 @@ onUnmounted(() => {
   line-height: 1.7;
   color: var(--text-secondary);
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
-    而本案例正是要展示样式过渡补中间帧，所以这里把时长还原。真实项目不要照抄这一段，
-    应当像「模拟减少动态效果」打开时那样，直接跳到目标值。 */
-@media (prefers-reduced-motion: reduce) {
-  .value.tween {
-    transition-duration: 0.8s !important;
-  }
-
-  /* 降级状态优先级更高：即使系统开着减少动态效果，也不补中间帧 */
-  .value.tween.is-static {
-    transition: none !important;
-  }
-}
-
-@media (max-width: 520px) {
-  .stage {
-    grid-template-columns: 1fr;
-  }
-
-  .ring-wrap {
-    width: 170px;
-  }
-
-  .modes {
-    flex: 1 1 100%;
-  }
-
-  .mode {
-    flex: 1;
-  }
-}
 </style>

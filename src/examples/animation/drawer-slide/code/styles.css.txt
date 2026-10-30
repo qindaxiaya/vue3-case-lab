@@ -57,12 +57,14 @@
   padding: 0.8rem;
 }
 
-/* ---------- 4. 减少动态效果 ---------- */
-
-@media (prefers-reduced-motion: reduce) {
-  .dw-mask,
-  .dw-panel {
-    //! 不做侧滑与淡出，关闭直接切换；脚本也会跳过等待过渡的步骤
-    transition: none;
-  }
+/* ---------- 4. 减少动态效果：真实项目应降级，本演示用开关模拟 ---------- */
+/* 真实项目：系统开启「减少动态效果」（prefers-reduced-motion: reduce）时
+   不做侧滑与淡出，关闭直接切换；本站是教学演示站，不跟随系统降级，
+   降级分支由「模拟减少动态效果」开关触发（打开后给元素加 .instant，
+   脚本也会跳过等待过渡的步骤，见 logic.ts）。
+   旧做法（直接卸载）同样走 .instant，两种关闭方式的差别才看得出来 */
+.instant.dw-mask,
+.instant.dw-panel {
+  //! 不做侧滑与淡出，关闭直接切换
+  transition: none;
 }

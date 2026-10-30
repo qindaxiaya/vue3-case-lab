@@ -501,18 +501,4 @@ onUnmounted(() => {
     font-size: var(--demo-text-xs);
   }
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
-    而本案例正是要展示气泡的淡入与位移，所以这里把时长还原。
-    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样直接出现。 */
-@media (prefers-reduced-motion: reduce) {
-  .tip-bubble {
-    transition-duration: var(--transition) !important;
-  }
-
-  /* 降级状态的优先级更高：开关打开时不做淡入位移 */
-  .tip-bubble.no-motion {
-    transition: none !important;
-  }
-}
 </style>

@@ -634,27 +634,4 @@ onUnmounted(() => {
   padding: 0.7rem 0.85rem;
   border-top: 1px solid var(--border);
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
-    而本案例正是要展示退场过渡，所以这里把时长还原。真实项目不要照抄这一段，
-    应当像「模拟减少动态效果」打开时那样，直接跳过动画。 */
-@media (prefers-reduced-motion: reduce) {
-  .dw-mask {
-    transition-duration: 0.22s !important;
-  }
-
-  .dw-panel {
-    transition-duration: 0.24s !important;
-  }
-}
-
-@media (max-width: 520px) {
-  .modes {
-    flex: 1 1 100%;
-  }
-
-  .mode {
-    flex: 1;
-  }
-}
 </style>

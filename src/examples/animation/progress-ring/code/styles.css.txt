@@ -51,17 +51,7 @@
   transition: none;
 }
 
-/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
+/* ---------- 5. 减少动态效果：真实项目应走上面的跳变分支 ---------- */
 
-/*! 站点全局在「减少动态效果」下把过渡压到 0.01ms；本案例要展示样式过渡补中间帧，
-    所以这里还原时长。真实业务不要照抄，应当直接走上面的跳变分支 */
-@media (prefers-reduced-motion: reduce) {
-  .value.tween {
-    transition-duration: 0.8s !important;
-  }
-
-  /* 降级状态优先级更高：即使系统开着减少动态效果，也不补中间帧 */
-  .value.tween.is-static {
-    transition: none !important;
-  }
-}
+/*! 本站是教学演示站，不跟随系统 prefers-reduced-motion 降级，否则补中间帧的过程看不到；
+    真实业务应当像上面的 .is-static 一样直接跳变，而不是用 CSS 去还原一段本该被关掉的时长 */

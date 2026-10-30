@@ -464,28 +464,4 @@ onUnmounted(() => {
     padding-left: 0.9rem;
   }
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
-    而本案例正是要靠中间帧对比两种方案，所以这里把时长还原。
-    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样直接到位。 */
-@media (prefers-reduced-motion: reduce) {
-  .js-panel {
-    transition-duration: 0.32s !important;
-  }
-
-  .grid-panel {
-    transition-duration: 0.32s !important;
-  }
-
-  /* + 号旋转也是演示的一部分，一并还原 */
-  .faq-icon {
-    transition-duration: var(--transition) !important;
-  }
-
-  /* 降级状态的优先级更高：开关打开时两种方案都不做过渡 */
-  .no-motion .faq-panel,
-  .no-motion .faq-icon {
-    transition: none !important;
-  }
-}
 </style>

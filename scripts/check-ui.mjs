@@ -310,8 +310,13 @@ const SCENARIOS = [
       await evaluate(
         `window.scrollTo(0, document.documentElement.scrollHeight)`,
       )
-      await sleep(400)
-      const shown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+      // 按钮依赖 scroll 事件 + rAF 更新，dev 首次编译时 400ms 可能不够，最多等 2.4s
+      let shown = false
+      for (let i = 0; i < 12; i++) {
+        shown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+        if (shown) break
+        await sleep(200)
+      }
       const startY = await evaluate(`Math.round(window.scrollY)`)
       /** 系统是否开着「减少动态效果」：开着时最容易退化成瞬间跳转，这里一并记录 */
       const reduceMotion = await evaluate(
@@ -368,8 +373,12 @@ const SCENARIOS = [
 
       // 详情页也滚到底，确认抽成组件后回到顶部仍然可用
       await evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`)
-      await sleep(400)
-      const backTopShown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+      let backTopShown = false
+      for (let i = 0; i < 12; i++) {
+        backTopShown = await evaluate(`Boolean(document.querySelector('.back-top'))`)
+        if (backTopShown) break
+        await sleep(200)
+      }
       await evaluate(`document.querySelector('.back-top')?.click()`)
       await sleep(900)
 
@@ -478,8 +487,8 @@ const SCENARIOS = [
     name: '抽屉退场动画',
     route: '/cases/animation/drawer-slide',
     facts: async ({ evaluate, send }) => {
-      //! 强制模拟「减少动态效果」：这正是用户机器上的情况（系统关了动画），
-      // 案例为了让对比可见会在演示区还原过渡时长，必须在这个条件下也能测出退场
+      //! 强制模拟「减少动态效果」：这正是用户机器上的情况（系统关了动画）。
+      // 站点不跟随这个设置降级，所以必须在这个条件下也能测出退场过渡
       await send('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
@@ -561,7 +570,7 @@ const SCENARIOS = [
     name: '减少动态效果下演示区仍播放动画',
     route: '/cases/vue3/transition-group',
     facts: async ({ evaluate, send }) => {
-      //! 复现用户机器：浏览器上报 reduce。站点外壳要降级，演示区必须仍在动
+      //! 站点的取舍：系统上报 reduce 时也照常播放动效（教学站），这里锁住这个行为
       await send('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
@@ -601,9 +610,9 @@ const SCENARIOS = [
       else if (Number(settle[1]) < 100) {
         failures.push(`reduce 下完成耗时只有 ${settle[1]}ms，补位动画没有真的播放`)
       }
-      if (result.shellDuration === null) failures.push('找不到站点外壳按钮，无法确认外壳仍降级')
-      else if (!(result.shellDuration < 0.001)) {
-        failures.push(`站点外壳的过渡时长是 ${result.shellDuration}s，没有跟随「减少动态效果」降级`)
+      if (result.shellDuration === null) failures.push('找不到站点外壳按钮，无法确认外壳动效')
+      else if (!(result.shellDuration > 0.05)) {
+        failures.push(`站点外壳的过渡时长是 ${result.shellDuration}s，系统上报 reduce 时被压掉了`)
       }
       return failures
     },
@@ -612,7 +621,7 @@ const SCENARIOS = [
     name: '减少动态效果下页面切换仍播放过渡',
     route: '/cases/practice/route-transition',
     facts: async ({ evaluate, send }) => {
-      //! 同上：外壳降级，但演示区的路由转场本身是教学内容，必须能看到
+      //! 同上：系统上报 reduce 时，站点的路由转场也要照常播放
       await send('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
