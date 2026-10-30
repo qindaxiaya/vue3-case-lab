@@ -99,12 +99,12 @@ function resetAll(): void {
           改 <code>list[0].nested.v</code>：代理逐层收集 → <b>精确触发</b>。1000 项全量代理，内存/初始化开销最大。
         </p>
         <div class="cell-row">
-          <button
-            class="btn-act"
+          <n-button
+            type="primary"
             @click="deepBump"
           >
             改嵌套 .v
-          </button>
+          </n-button>
           <span class="metric">v = {{ deepState.list[0].nested.v }}</span>
         </div>
       </section>
@@ -122,24 +122,24 @@ function resetAll(): void {
           改嵌套 <b>不触发</b>；替换整个 <code>.value</code> 或 <code>triggerRef</code> 才触发。大数据首选。
         </p>
         <div class="cell-row">
-          <button
-            class="btn-act btn-act--muted"
+          <n-button
+            quaternary
             @click="shallowBump"
           >
             改嵌套（无反应）
-          </button>
-          <button
-            class="btn-act"
+          </n-button>
+          <n-button
+            type="primary"
             @click="shallowReplace"
           >
             替换 .value
-          </button>
-          <button
-            class="btn-act"
+          </n-button>
+          <n-button
+            type="primary"
             @click="shallowTrigger"
           >
             triggerRef
-          </button>
+          </n-button>
         </div>
       </section>
 
@@ -156,24 +156,23 @@ function resetAll(): void {
           对象永不进响应式系统（即使嵌在 ref 里）。适合放 <b>class 实例</b>、第三方库对象（ECharts 实例等）。
         </p>
         <div class="cell-row">
-          <button
-            class="btn-act btn-act--muted"
+          <n-button
+            quaternary
             @click="rawBump"
           >
             改嵌套（无反应）
-          </button>
-          <button
-            class="btn-act"
+          </n-button>
+          <n-button
+            type="primary"
             @click="rawReplace"
           >
             替换 .value
-          </button>
-          <button
-            class="btn-reset"
+          </n-button>
+          <n-button
             @click="resetAll"
           >
             重置
-          </button>
+          </n-button>
         </div>
       </section>
     </div>
@@ -270,46 +269,12 @@ function resetAll(): void {
 
 /* ---------- 按钮 ---------- */
 
-.btn-act {
-  padding: 0.28rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
 /* 「无反应」按钮：视觉弱化，暗示点了也没事 */
-.btn-act--muted {
-  border-color: var(--border);
-  color: var(--text-secondary);
 
-  &:hover {
-    background-color: var(--bg-subtle);
-    color: var(--text);
-  }
-}
 
-.btn-reset {
-  padding: 0.28rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
-}
 
 .footnote {
   margin: 0;

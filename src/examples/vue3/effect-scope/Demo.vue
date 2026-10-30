@@ -143,12 +143,13 @@ function resetAll(): void {
         <p class="scope-desc">
           每轮创建 10 个 <code>watch</code> + 10 个 <code>setInterval</code>，卸载不 stop → 只涨不降。
         </p>
-        <button
+        <n-button
           class="btn-act"
+          type="primary"
           @click="mountWrong"
         >
           挂载并卸载 1 轮
-        </button>
+        </n-button>
       </section>
 
       <section
@@ -162,12 +163,13 @@ function resetAll(): void {
         <p class="scope-desc">
           每轮建一个 scope，<code>scope.stop()</code> 一键收口；<code>onScopeDispose</code> 清定时器。
         </p>
-        <button
+        <n-button
           class="btn-act"
+          type="primary"
           @click="mountRight"
         >
           挂载并卸载 1 轮
-        </button>
+        </n-button>
         <p class="scope-meta">
           stop 前 effects：<b>{{ scopedBeforeStop }}</b> → stop 后：<b>{{ scopedAlive }}</b>
         </p>
@@ -176,21 +178,20 @@ function resetAll(): void {
 
     <!-- 触发源 -->
     <div class="scope-row">
-      <button
-        class="btn-ghost-line"
+      <n-button
+        dashed
         @click="bumpSource"
       >
         source++（触发所有存活 watcher）
-      </button>
+      </n-button>
       <span class="scope-meta">
         source = <b>{{ source }}</b> · 外部 watcher 触发 <b>{{ sourceHits }}</b> 次
       </span>
-      <button
-        class="btn-reset"
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 日志 -->
@@ -300,48 +301,12 @@ function resetAll(): void {
 
 .btn-act {
   align-self: flex-start;
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
-.btn-ghost-line {
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
-}
 
-.btn-reset {
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
+
 
 /* ---------- 日志 ---------- */
 

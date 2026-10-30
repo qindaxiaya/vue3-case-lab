@@ -20,6 +20,12 @@ type Mode = 'wrong' | 'right'
 const s1 = reactive({ count: 0 })
 const mode1 = ref<Mode>('wrong')
 
+/** 现场 1 的模式组回调（只切展示来源，不动数据） */
+function setMode1(next: string | number | boolean | undefined): void {
+  const m = toMode(next)
+  if (m) mode1.value = m
+}
+
 //! 错误：解构拿到的是“当时的数字”，之后与响应式系统彻底无关
 const snapshot1 = s1.count
 
@@ -76,8 +82,15 @@ function bump2(): void {
   }
 }
 
+/** 把 n-radio-group 发出的原始值收窄成 Mode（四个现场共用） */
+function toMode(next: string | number | boolean | undefined): Mode | null {
+  return next === 'wrong' || next === 'right' ? next : null
+}
+
 /** 切回正确模式时恢复成响应式对象（等价于“改回 let 声明 + 初始化”） */
-function switchMode2(m: Mode): void {
+function switchMode2(next: string | number | boolean | undefined): void {
+  const m = toMode(next)
+  if (!m) return
   mode2.value = m
   if (m === 'right') s2 = reactive({ count: truth2.value })
 }
@@ -99,6 +112,12 @@ const s3 = reactive({ count: 0 })
 let legacy3: { count: number } = { ...s3 }
 
 const mode3 = ref<Mode>('wrong')
+
+/** 现场 3 的模式组回调 */
+function setMode3(next: string | number | boolean | undefined): void {
+  const m = toMode(next)
+  if (m) mode3.value = m
+}
 
 function bump3(): void {
   s3.count++
@@ -133,6 +152,12 @@ const PropsChild = defineComponent({
 const parentMsg = ref('第 1 条消息')
 const msgSeq = ref(1)
 const mode4 = ref<Mode>('wrong')
+
+/** 现场 4 的模式组回调 */
+function setMode4(next: string | number | boolean | undefined): void {
+  const m = toMode(next)
+  if (m) mode4.value = m
+}
 
 function pushMsg4(): void {
   msgSeq.value++
@@ -177,35 +202,32 @@ function reset5(): void {
     >
       <header class="loss-head">
         <h3><span class="num">1</span> 解构 reactive</h3>
-        <div class="seg">
-          <button
-            class="seg-btn"
-            :class="{ active: mode1 === 'wrong' }"
-            :aria-pressed="mode1 === 'wrong'"
-            @click="mode1 = 'wrong'"
-          >
+        <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+        <n-radio-group
+          class="seg"
+          size="small"
+          :value="mode1"
+          aria-label="解构 reactive 写法"
+          @update:value="setMode1"
+        >
+          <n-radio-button value="wrong">
             丢失写法
-          </button>
-          <button
-            class="seg-btn"
-            :class="{ active: mode1 === 'right' }"
-            :aria-pressed="mode1 === 'right'"
-            @click="mode1 = 'right'"
-          >
+          </n-radio-button>
+          <n-radio-button value="right">
             toRef 修法
-          </button>
-        </div>
+          </n-radio-button>
+        </n-radio-group>
       </header>
       <pre class="snippet">{{ mode1 === 'wrong'
         ? 'const { count } = state   // 快照'
         : 'const count = toRef(state, \'count\')' }}</pre>
       <div class="loss-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="bump1"
         >
           源数据 +1
-        </button>
+        </n-button>
         <span class="loss-metric">
           界面 <b :class="{ stale: mode1 === 'wrong' }">{{ shown1 }}</b>
           · 真实 <b>{{ s1.count }}</b>
@@ -217,12 +239,12 @@ function reset5(): void {
       >
         {{ mode1 === 'wrong' ? '❌ 界面数字停在初始值' : '✅ 与源数据同步' }}
       </p>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset1"
       >
         重置
-      </button>
+      </n-button>
     </section>
 
     <!-- 2. 整体重新赋值 -->
@@ -232,35 +254,31 @@ function reset5(): void {
     >
       <header class="loss-head">
         <h3><span class="num">2</span> 整体重新赋值</h3>
-        <div class="seg">
-          <button
-            class="seg-btn"
-            :class="{ active: mode2 === 'wrong' }"
-            :aria-pressed="mode2 === 'wrong'"
-            @click="switchMode2('wrong')"
-          >
+        <n-radio-group
+          class="seg"
+          size="small"
+          :value="mode2"
+          aria-label="整体重新赋值写法"
+          @update:value="switchMode2"
+        >
+          <n-radio-button value="wrong">
             丢失写法
-          </button>
-          <button
-            class="seg-btn"
-            :class="{ active: mode2 === 'right' }"
-            :aria-pressed="mode2 === 'right'"
-            @click="switchMode2('right')"
-          >
+          </n-radio-button>
+          <n-radio-button value="right">
             Object.assign
-          </button>
-        </div>
+          </n-radio-button>
+        </n-radio-group>
       </header>
       <pre class="snippet">{{ mode2 === 'wrong'
         ? 'state = { count: 1 }    // 换成了裸对象'
         : 'Object.assign(state, { count: 1 })' }}</pre>
       <div class="loss-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="bump2"
         >
           真实数据 +1
-        </button>
+        </n-button>
         <span class="loss-metric">
           界面 <b :class="{ stale: mode2 === 'wrong' }">{{ shown2 }}</b>
           · 真实 <b>{{ truth2 }}</b>
@@ -272,12 +290,12 @@ function reset5(): void {
       >
         {{ mode2 === 'wrong' ? '❌ 渲染用的依赖还指向旧 Proxy' : '✅ 同一对象原地更新' }}
       </p>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset2"
       >
         重置
-      </button>
+      </n-button>
     </section>
 
     <!-- 3. 展开浅拷贝 -->
@@ -287,35 +305,31 @@ function reset5(): void {
     >
       <header class="loss-head">
         <h3><span class="num">3</span> 展开浅拷贝</h3>
-        <div class="seg">
-          <button
-            class="seg-btn"
-            :class="{ active: mode3 === 'wrong' }"
-            :aria-pressed="mode3 === 'wrong'"
-            @click="mode3 = 'wrong'"
-          >
+        <n-radio-group
+          class="seg"
+          size="small"
+          :value="mode3"
+          aria-label="浅拷贝写法"
+          @update:value="setMode3"
+        >
+          <n-radio-button value="wrong">
             丢失写法
-          </button>
-          <button
-            class="seg-btn"
-            :class="{ active: mode3 === 'right' }"
-            :aria-pressed="mode3 === 'right'"
-            @click="mode3 = 'right'"
-          >
+          </n-radio-button>
+          <n-radio-button value="right">
             直接读源对象
-          </button>
-        </div>
+          </n-radio-button>
+        </n-radio-group>
       </header>
       <pre class="snippet">{{ mode3 === 'wrong'
         ? 'const copy = { ...state } // 普通对象'
         : 'state.count                // 读 Proxy 属性' }}</pre>
       <div class="loss-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="bump3"
         >
           源数据 +1
-        </button>
+        </n-button>
         <span class="loss-metric">
           界面 <b :class="{ stale: mode3 === 'wrong' }">{{
             mode3 === 'wrong' ? legacy3.count : s3.count
@@ -329,12 +343,12 @@ function reset5(): void {
       >
         {{ mode3 === 'wrong' ? '❌ 拷贝是值快照，与源无连接' : '✅ 直接读源属性' }}
       </p>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset3"
       >
         重置
-      </button>
+      </n-button>
     </section>
 
     <!-- 4. 解构 props -->
@@ -344,35 +358,31 @@ function reset5(): void {
     >
       <header class="loss-head">
         <h3><span class="num">4</span> 解构 props</h3>
-        <div class="seg">
-          <button
-            class="seg-btn"
-            :class="{ active: mode4 === 'wrong' }"
-            :aria-pressed="mode4 === 'wrong'"
-            @click="mode4 = 'wrong'"
-          >
+        <n-radio-group
+          class="seg"
+          size="small"
+          :value="mode4"
+          aria-label="解构 props 写法"
+          @update:value="setMode4"
+        >
+          <n-radio-button value="wrong">
             丢失写法
-          </button>
-          <button
-            class="seg-btn"
-            :class="{ active: mode4 === 'right' }"
-            :aria-pressed="mode4 === 'right'"
-            @click="mode4 = 'right'"
-          >
+          </n-radio-button>
+          <n-radio-button value="right">
             toRef(props)
-          </button>
-        </div>
+          </n-radio-button>
+        </n-radio-group>
       </header>
       <pre class="snippet">{{ mode4 === 'wrong'
         ? 'const { msg } = props   // setup 快照'
         : 'const msg = toRef(props, \'msg\')' }}</pre>
       <div class="loss-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="pushMsg4"
         >
           父组件发新消息
-        </button>
+        </n-button>
         <span class="loss-metric">
           子组件显示 <b :class="{ stale: mode4 === 'wrong' }"><PropsChild
             :msg="parentMsg"
@@ -387,12 +397,12 @@ function reset5(): void {
       >
         {{ mode4 === 'wrong' ? '❌ 子组件永远停在第一条消息' : '✅ 跟随 props 更新' }}
       </p>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset4"
       >
         重置
-      </button>
+      </n-button>
     </section>
 
     <!-- 5. Vue 3 已修复的老坑 -->
@@ -407,18 +417,18 @@ function reset5(): void {
       <pre class="snippet">arr[0] = x      // Vue 2 要 Vue.set
 obj.newKey = x  // Vue 2 要 Vue.set</pre>
       <div class="loss-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="changeIndex5"
         >
           改 arr[0]
-        </button>
-        <button
-          class="btn-act"
+        </n-button>
+        <n-button
+          type="primary"
           @click="addKey5"
         >
           新增 obj.late
-        </button>
+        </n-button>
       </div>
       <p class="loss-metric">
         arr[0] = <b>{{ arr5[0] }}</b>
@@ -427,12 +437,12 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
       <p class="loss-status good">
         ✅ 下标赋值 / 新增属性都被 Proxy 拦截，直接生效
       </p>
-      <button
+      <n-button
         class="btn-reset"
         @click="reset5"
       >
         重置
-      </button>
+      </n-button>
     </section>
 
     <!-- 小结 -->
@@ -502,25 +512,9 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
 /* ---------- 模式切换 ---------- */
 
+/* 模式组只留排列方式，其余观感交给 Naive 单选按钮（卡片窄，用 size="small"） */
 .seg {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.seg-btn {
-  padding: 0.18rem 0.5rem;
-  font-size: 0.8125rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-
-  &.active {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 /* ---------- 代码片段 ---------- */
@@ -548,34 +542,9 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   flex-wrap: wrap;
 }
 
-.btn-act {
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
+/* 观感交给 Naive，只留「靠左不拉伸」的布局声明 */
 .btn-reset {
   align-self: flex-start;
-  padding: 0.16rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-  }
 }
 
 /* ---------- 指标 ---------- */

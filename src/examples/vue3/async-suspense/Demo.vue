@@ -109,12 +109,12 @@ function retry(): void {
         >
         模拟加载失败
       </label>
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="retry"
       >
         重试（重建组件）
-      </button>
+      </n-button>
       <span class="attempt">第 {{ attempt + 1 }} 次加载</span>
     </div>
 
@@ -229,20 +229,7 @@ function retry(): void {
   }
 }
 
-.btn-act {
-  padding: 0.32rem 0.8rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
 .attempt {
   font-size: 0.875rem;

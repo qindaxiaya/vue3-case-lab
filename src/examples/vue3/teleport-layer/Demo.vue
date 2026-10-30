@@ -48,18 +48,18 @@ function openPopover(): void {
   <div class="tl-demo">
     <!-- 控制行 -->
     <div class="controls">
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="openModal"
       >
         打开模态框
-      </button>
-      <button
-        class="btn-act"
+      </n-button>
+      <n-button
+        type="primary"
         @click="openPopover"
       >
         打开气泡卡
-      </button>
+      </n-button>
       <label class="switch">
         <input
           v-model="teleportToBody"
@@ -80,12 +80,12 @@ function openPopover(): void {
 
       <!-- 气泡卡：锚定在舞台内按钮旁 -->
       <div class="anchor">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="openPopover"
         >
           锚点按钮（气泡挂这里）
-        </button>
+        </n-button>
 
         <!-- 气泡卡本体 -->
         <Teleport
@@ -105,12 +105,11 @@ function openPopover(): void {
             <p class="popover-body">
               teleportToBody=true：挂 body，不受任何父级 overflow/transform 限制。
             </p>
-            <button
-              class="btn-reset"
+            <n-button
               @click="showPopover = false"
             >
               关闭
-            </button>
+            </n-button>
           </div>
         </Teleport>
       </div>
@@ -137,12 +136,11 @@ function openPopover(): void {
           <p class="modal-body">
             遮罩覆盖全视口。多个弹层从同一计数器领取 z-index——后开的层级更高，永不互相压错。
           </p>
-          <button
-            class="btn-reset"
+          <n-button
             @click="showModal = false"
           >
             关闭
-          </button>
+          </n-button>
         </div>
       </div>
     </Teleport>
@@ -176,35 +174,9 @@ function openPopover(): void {
   }
 }
 
-.btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
-}
 
 /* ---------- 舞台 ---------- */
 

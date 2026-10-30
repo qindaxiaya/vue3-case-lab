@@ -1114,6 +1114,78 @@ const SCENARIOS = [
     },
   },
   {
+    name: '响应式丢失模式切换',
+    route: '/cases/vue3/reactive-loss',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const card = document.querySelector('.loss-card')
+        const metric = () =>
+          [...card.querySelectorAll('.loss-metric b')].map((item) => item.textContent.trim())
+        const button = (text) =>
+          [...card.querySelectorAll('button')].find((item) => item.textContent.includes(text))
+
+        // 默认「丢失写法」：连点两次源数据，界面应停在 0，真实值到 2
+        button('源数据 +1').click()
+        button('源数据 +1').click()
+        await wait(80)
+        const [wrongShown, wrongTruth] = metric()
+
+        // 切到「toRef 修法」：界面要立刻补上真实值，再点一次两边一起涨
+        const radios = [...card.querySelectorAll('.n-radio-button')]
+        radios.find((item) => item.textContent.includes('toRef 修法')).click()
+        await wait(80)
+        const [afterSwitchShown, afterSwitchTruth] = metric()
+        button('源数据 +1').click()
+        await wait(80)
+        const [rightShown, rightTruth] = metric()
+
+        // 重置：回到 0/0，模式回落到「丢失写法」
+        button('重置').click()
+        await wait(80)
+        const [resetShown, resetTruth] = metric()
+        const checkedLabel = radios
+          .filter((item) => item.classList.contains('n-radio-button--checked'))
+          .map((item) => item.textContent.trim())
+          .join(' / ')
+
+        return {
+          wrongShown,
+          wrongTruth,
+          afterSwitchShown,
+          afterSwitchTruth,
+          rightShown,
+          rightTruth,
+          resetShown,
+          resetTruth,
+          radioCount: radios.length,
+          checkedCount: radios.filter((item) => item.classList.contains('n-radio-button--checked')).length,
+          checkedLabel,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.radioCount !== 2) failures.push(`模式组不是 2 个单选按钮（${result.radioCount} 个）`)
+      if (result.checkedCount !== 1) failures.push(`单选组选中数量不是 1（${result.checkedCount} 个）`)
+      if (result.wrongShown !== '0' || result.wrongTruth !== '2') {
+        failures.push(`丢失写法没有「界面停住、真实值上涨」（${result.wrongShown} / ${result.wrongTruth}）`)
+      }
+      if (result.afterSwitchShown !== '2' || result.afterSwitchTruth !== '2') {
+        failures.push(`切到 toRef 后界面没有补上真实值（${result.afterSwitchShown} / ${result.afterSwitchTruth}）`)
+      }
+      if (result.rightShown !== '3' || result.rightTruth !== '3') {
+        failures.push(`toRef 写法下界面没有跟着涨（${result.rightShown} / ${result.rightTruth}）`)
+      }
+      if (result.resetShown !== '0' || result.resetTruth !== '0') {
+        failures.push(`重置后数值没有归零（${result.resetShown} / ${result.resetTruth}）`)
+      }
+      if (!result.checkedLabel.includes('丢失写法')) {
+        failures.push(`重置后模式没有回落到「丢失写法」（当前：${result.checkedLabel}）`)
+      }
+      return failures
+    },
+  },
+  {
     name: 'Intl 行数',
     route: '/cases/basics/intl-format',
     facts: async ({ evaluate }) => ({

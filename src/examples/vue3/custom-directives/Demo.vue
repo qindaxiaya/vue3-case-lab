@@ -125,6 +125,11 @@ function closeDropdown(): void {
 
 const roles: Role[] = ['admin', 'editor', 'guest']
 
+/** 切换角色（n-radio-group 发出的是原始值，收窄成 Role 再用） */
+function setRole(next: string | number | boolean | undefined): void {
+  if (next === 'admin' || next === 'editor' || next === 'guest') role.value = next
+}
+
 const roleLabel = computed(() => {
   const map: Record<Role, string> = { admin: '管理员', editor: '编辑', guest: '游客' }
   return map[role.value]
@@ -156,33 +161,38 @@ onBeforeUnmount(() => {
       </header>
 
       <div class="dir-row">
-        <button
-          v-for="r in roles"
-          :key="r"
-          class="seg-btn"
-          :class="{ active: role === r }"
-          @click="role = r"
+        <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+        <n-radio-group
+          :value="role"
+          aria-label="角色"
+          @update:value="setRole"
         >
-          {{ r }}
-        </button>
+          <n-radio-button
+            v-for="r in roles"
+            :key="r"
+            :value="r"
+          >
+            {{ r }}
+          </n-radio-button>
+        </n-radio-group>
       </div>
 
       <div class="dir-row">
-        <button
+        <n-button
           v-permission="['admin']"
-          class="btn-act"
+          type="primary"
         >
           删除（仅 admin）
-        </button>
-        <button
+        </n-button>
+        <n-button
           v-permission="['admin', 'editor']"
-          class="btn-act"
+          type="primary"
         >
           编辑（admin/editor）
-        </button>
-        <button class="btn-act">
+        </n-button>
+        <n-button type="primary">
           查看（所有人）
-        </button>
+        </n-button>
       </div>
       <p class="dir-note">
         切角色看按钮消失/出现：指令在 mounted/updated 时直接改 <code>display</code>。
@@ -226,12 +236,12 @@ onBeforeUnmount(() => {
       </header>
 
       <div class="dropdown-wrap">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="dropdownOpen = !dropdownOpen"
         >
           打开下拉
-        </button>
+        </n-button>
 
         <!-- //! v-click-outside 绑定关闭回调 -->
         <div
@@ -254,12 +264,12 @@ onBeforeUnmount(() => {
       </p>
     </section>
 
-    <button
+    <n-button
       class="btn-reset"
       @click="resetAll"
     >
       重置全部
-    </button>
+    </n-button>
   </div>
 </template>
 
@@ -268,6 +278,12 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
+}
+
+/* 观感交给 Naive，只留「占满一整行并靠左」的布局声明 */
+.btn-reset {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
 
 /* 第三个卡片横跨两列 */
@@ -334,52 +350,7 @@ onBeforeUnmount(() => {
 
 /* ---------- 分段按钮 ---------- */
 
-.seg-btn {
-  padding: 0.2rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &.active {
-    border-color: var(--primary);
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn-act {
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn-reset {
-  grid-column: 1 / -1;
-  justify-self: start;
-  padding: 0.22rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-  }
-}
+/* 观感交给 Naive，只留「占满一整行并靠左」的布局声明 */
 
 /* ---------- 懒加载 ---------- */
 
