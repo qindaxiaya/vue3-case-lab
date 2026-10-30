@@ -226,6 +226,8 @@ function reset(): void {
     <p class="hint">
       连续点「打乱顺序」对比：普通替换时整列瞬间跳位；过渡组会给每个移动的元素补
       350ms 位移动画，其他项自动让位。完成耗时是运行时真正等到的过渡结束时间。
+      演示区为了看清补位过程始终播放动画；真实项目在系统开启「减少动态效果」时应
+      把时长降到接近 0，可以切到「普通替换」看降级后的观感。
     </p>
   </div>
 </template>
@@ -341,7 +343,8 @@ function reset(): void {
   color: var(--text-secondary);
 }
 
-/* 位移过渡：Vue 只负责在正确时机加/删类，补间交给 CSS */
+/* 演示区保留动画：真实项目在「减少动态效果」下应把时长降到接近 0，
+   这里为了看清补位过程始终播放，用「普通替换」对照降级后的观感 */
 .list-move,
 .list-enter-active,
 .list-leave-active {
@@ -373,24 +376,12 @@ function reset(): void {
     gap: 0.45rem;
   }
 
-  .mode {
-    padding: 0.35rem 0.5rem;
-  }
-
   .tip {
     display: none;
   }
 
   .mode-tag {
     margin-left: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .list-move,
-  .list-enter-active,
-  .list-leave-active {
-    transition-duration: 0.01ms;
   }
 }
 </style>

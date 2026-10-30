@@ -558,6 +558,100 @@ const SCENARIOS = [
     },
   },
   {
+    name: '减少动态效果下演示区仍播放动画',
+    route: '/cases/vue3/transition-group',
+    facts: async ({ evaluate, send }) => {
+      //! 复现用户机器：浏览器上报 reduce。站点外壳要降级，演示区必须仍在动
+      await send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      })
+      await sleep(200)
+
+      return await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const btn = [...document.querySelectorAll('.demo-card .bar button')]
+          .find((item) => item.textContent.trim() === '打乱顺序')
+        btn?.click()
+        await wait(120)
+        // 过渡进行中：Vue 给移动项加了 *-move 类并写 transform，计算值是插值矩阵
+        const moving = [...document.querySelectorAll('.demo-card .list li')]
+          .map((item) => getComputedStyle(item).transform)
+          .filter((value) => value !== 'none' && value !== 'matrix(1, 0, 0, 1, 0, 0)').length
+        const moveClass = document.querySelectorAll('.demo-card .list .list-move').length
+        await wait(800)
+        const shell = document.querySelector('.back-btn')
+        return {
+          reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          moving,
+          moveClass,
+          stats: document.querySelector('.demo-card .stats')?.innerText ?? '',
+          shellDuration: shell ? parseFloat(getComputedStyle(shell).transitionDuration) : null,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      if (!result.reduceMotion) failures.push('没有模拟出 reduce，场景前置条件不成立')
+      if (!(result.moveClass > 0)) failures.push('打乱后没有元素拿到 list-move 类，过渡组没生效')
+      if (!(result.moving > 0)) {
+        failures.push('reduce 下打乱后 120ms 没有任何一项在移动（演示区动画被压掉了）')
+      }
+      const settle = result.stats.match(/完成耗时\s*(\d+)\s*ms/)
+      if (!settle) failures.push('没读到完成耗时')
+      else if (Number(settle[1]) < 100) {
+        failures.push(`reduce 下完成耗时只有 ${settle[1]}ms，补位动画没有真的播放`)
+      }
+      if (result.shellDuration === null) failures.push('找不到站点外壳按钮，无法确认外壳仍降级')
+      else if (!(result.shellDuration < 0.001)) {
+        failures.push(`站点外壳的过渡时长是 ${result.shellDuration}s，没有跟随「减少动态效果」降级`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '减少动态效果下页面切换仍播放过渡',
+    route: '/cases/practice/route-transition',
+    facts: async ({ evaluate, send }) => {
+      //! 同上：外壳降级，但演示区的路由转场本身是教学内容，必须能看到
+      await send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      })
+      await sleep(200)
+
+      return await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const tab = [...document.querySelectorAll('.rt-tabs .rt-tab')]
+          .find((item) => item.textContent.trim() === '商品列表')
+        tab?.click()
+        await wait(120)
+        const midPages = [...document.querySelectorAll('.rt-stage .rt-page')]
+        return {
+          reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          clicked: Boolean(tab),
+          midCount: midPages.length,
+          midTransition: midPages.map((item) => getComputedStyle(item).transform).join(' | '),
+          finalTitle: await (async () => {
+            await wait(900)
+            return document.querySelector('.rt-stage .rt-page h3')?.textContent?.trim() ?? ''
+          })(),
+          stackDepth: document.querySelectorAll('.rt-stack .rt-chip').length,
+        }
+      })()`)
+    },
+    assert: (result) => {
+      const failures = []
+      if (!result.reduceMotion) failures.push('没有模拟出 reduce，场景前置条件不成立')
+      if (!result.clicked) failures.push('没找到「商品列表」标签')
+      if (result.midCount !== 1) failures.push(`out-in 过渡中应只有 1 页在动（现在 ${result.midCount} 页）`)
+      if (/^none$|^none \| none$/.test(result.midTransition)) {
+        failures.push(`reduce 下切页 120ms 后没有位移（${result.midTransition}），转场被压掉了`)
+      }
+      if (result.finalTitle !== '商品列表') failures.push(`过渡结束后页面是「${result.finalTitle}」`)
+      if (result.stackDepth !== 2) failures.push(`历史栈应该是 2 项（现在 ${result.stackDepth}）`)
+      return failures
+    },
+  },
+  {
     name: '折叠面板量高',
     route: '/cases/animation/accordion-slide',
     facts: async ({ evaluate }) => {

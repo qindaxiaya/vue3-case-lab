@@ -114,11 +114,16 @@ code {
   border: 0;
 }
 
-// 尊重「减少动态效果」：全局关闭过渡与动画
+// 尊重「减少动态效果」：站点外壳关闭过渡与动画
+// 演示区（.demo-card 内的元素）例外：这些案例本身就在讲过渡 / 动画，
+// 压到 0.01ms 会让「过渡组列表动画」这类案例看起来完全没动（浏览器上报
+// reduce 的机器上尤其明显）。示例动效是教学内容，必须能看到，所以这里用
+// :not(.demo-card *) 把演示区排除；各案例要用「模拟减少动态效果」开关
+// 自己演示降级分支，站点外壳（顶栏、卡片、路由切换等）仍然降级。
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *:not(.demo-card *),
+  *:not(.demo-card *)::before,
+  *:not(.demo-card *)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
