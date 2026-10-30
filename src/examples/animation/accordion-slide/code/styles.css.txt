@@ -52,9 +52,10 @@
   }
 }
 
-/* ---------- 4. 减少动态效果：真实项目应降级，演示优先仍播放 ---------- */
-/* 真实项目：系统开启「减少动态效果」时应当跳过过渡，直接到位；
-   本案例为了让中间帧可见，演示默认仍然播放，点开关才走降级分支 */
+/* ---------- 4. 减少动态效果：真实项目应降级，本演示用开关模拟 ---------- */
+/* 真实项目：系统开启「减少动态效果」（prefers-reduced-motion: reduce）时
+   应当跳过过渡，直接到位；本站是教学演示站，不跟随系统降级（否则中间帧
+   看不到），所以用一个开关手动走降级分支 */
 
 /* 开关打开：两种方案都不做过渡，和系统关掉动画时的行为一致 */
 /* 模板把 .no-motion 挂在 .faq-item 上，触发器与面板都能覆盖到 */
@@ -62,22 +63,4 @@
 .no-motion .faq-icon {
   //! 用类覆盖掉下面的过渡，展开 / 收起直接到位
   transition: none;
-}
-
-/*! 演示优先：站点全局规则在「减少动态效果」下把过渡压到 0.01ms，
-    这里还原时长。真实项目不要照抄，应当改用上面的 .no-motion 分支 */
-@media (prefers-reduced-motion: reduce) {
-  .js-panel {
-    transition-duration: 0.32s !important;
-  }
-
-  .grid-panel {
-    transition-duration: 0.32s !important;
-  }
-
-  //! 降级状态的优先级更高：开关打开时确实没有过渡
-  .no-motion .faq-panel,
-  .no-motion .faq-icon {
-    transition: none !important;
-  }
 }

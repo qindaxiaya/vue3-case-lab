@@ -760,23 +760,4 @@ onUnmounted(() => {
     font-size: var(--demo-text-xs);
   }
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把过渡压到 0.01ms，
-    而本案例要展示卡片描边与圆点的过渡，所以这里把时长还原。
-    真实项目不要照抄这一段，应当像「模拟减少动态效果」打开时那样关掉装饰动画；
-    滚动吸附属于功能，不受动态效果偏好影响，保持开启。 */
-@media (prefers-reduced-motion: reduce) {
-  .slide,
-  .arrow,
-  .dot::after {
-    transition-duration: var(--transition) !important;
-  }
-
-  /* 降级状态的优先级更高：开关打开时不做装饰过渡 */
-  .no-motion .slide,
-  .no-motion .arrow,
-  .no-motion .dot::after {
-    transition: none !important;
-  }
-}
 </style>

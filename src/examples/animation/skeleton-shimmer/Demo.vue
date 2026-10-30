@@ -637,23 +637,4 @@ onUnmounted(() => {
     flex: 1;
   }
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把动画压到 0.01ms，
-    而本案例正是要展示高光横扫与淡出，所以这里把时长还原。真实项目不要照抄这一段，
-    应当像「模拟减少动态效果」打开时那样，直接去掉动画。 */
-@media (prefers-reduced-motion: reduce) {
-  .sk {
-    animation-duration: 1.15s !important;
-    animation-iteration-count: infinite !important;
-  }
-
-  .spinner {
-    animation-duration: 0.8s !important;
-    animation-iteration-count: infinite !important;
-  }
-
-  .skeleton.is-overlay {
-    transition-duration: 0.22s !important;
-  }
-}
 </style>

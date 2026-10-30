@@ -470,13 +470,4 @@ onUnmounted(() => {
     font-size: var(--demo-text-xs);
   }
 }
-
-/*! 演示优先：系统开启「减少动态效果」时，站点全局规则会把回弹过渡压到 0.01ms，
-    而本案例正是要展示缓动回弹，所以这里把时长还原。真实项目不要照抄这一段，
-    应当像「模拟减少动态效果」打开时那样，直接不跟随。 */
-@media (prefers-reduced-motion: reduce) {
-  .mag-btn.is-returning {
-    transition-duration: 0.3s !important;
-  }
-}
 </style>

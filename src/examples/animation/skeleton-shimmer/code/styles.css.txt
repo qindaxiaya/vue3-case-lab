@@ -106,13 +106,5 @@
   transition: none;
 }
 
-/* ---------- 5. 演示优先：把被全局规则压短的时长还原 ---------- */
-
-/*! 站点全局在「减少动态效果」下把动画压到 0.01ms；本案例要展示高光横扫，
-    所以这里把时长还原。只有「动画就是教学内容」的演示页才需要这样做，真实业务不要照抄 */
-@media (prefers-reduced-motion: reduce) {
-  .sk {
-    animation-duration: 1.15s !important;
-    animation-iteration-count: infinite !important;
-  }
-}
+/*! 本站是教学演示站，不跟随系统 prefers-reduced-motion 降级（否则高光横扫看不到）；
+    真实业务应当像上面的 .is-static 一样直接关掉动画，状态文字仍然保留，加载状态才读得懂 */

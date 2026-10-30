@@ -1148,17 +1148,6 @@ const explainBlocks = computed(() => {
   opacity: 1;
 }
 
-/*
- * 指示器是短距离位置提示：系统开启「减少动态效果」时也保留滑动，
- * 否则会被全局规则压成 0.01ms，看起来就是直接瞬移；
- * 其余页面动效仍按 _base.scss 的 reduced-motion 规则关闭。
- */
-@media (prefers-reduced-motion: reduce) {
-  .content-tab-indicator {
-    transition-duration: 0.18s, 0.2s, 0.15s !important;
-  }
-}
-
 .content-tab {
   position: relative;
   z-index: 1;
