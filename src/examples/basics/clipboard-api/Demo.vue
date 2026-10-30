@@ -295,10 +295,12 @@ function resetAll(): void {
       <n-button @click="tryReadClipboard">
         试试读取接口（read，可能被拒）
       </n-button>
-      <textarea
-        v-model="pasteTarget"
+      <!-- Naive 多行输入：v-model:value；等宽字体走下面的 :deep -->
+      <n-input
+        v-model:value="pasteTarget"
         class="paste"
-        rows="3"
+        type="textarea"
+        :rows="3"
         placeholder="把剪贴板内容手动 Ctrl+V 到这里验证（不需要任何权限）"
         aria-label="手动粘贴验证框"
       />
@@ -447,17 +449,16 @@ function resetAll(): void {
   gap: 0.4rem;
 }
 
+/* 手动粘贴框：只用等宽字体（更像剪贴板原文），边框/底色/圆角交给 Naive 主题 */
 .paste {
-  width: 100%;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--surface);
-  color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--demo-text-sm);
-  resize: vertical;
-  min-width: 0;
+
+  /* 内层 textarea 的字体、可纵向拉伸由 Naive 的 DOM 承载，用 :deep 精准落到内层 */
+  :deep(.n-input__textarea-el) {
+    font-family: var(--font-mono);
+    resize: vertical;
+  }
 }
 
 .read-state {
