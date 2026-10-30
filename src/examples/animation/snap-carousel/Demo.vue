@@ -356,7 +356,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div
     class="snap-demo"
     :class="{ 'no-motion': mockReduce }"

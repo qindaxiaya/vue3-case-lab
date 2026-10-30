@@ -1186,6 +1186,122 @@ const SCENARIOS = [
     },
   },
   {
+    name: '请求模式切换与竞态',
+    route: '/cases/practice/request-race',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.rr-demo')
+        const radios = () => [...root.querySelectorAll('.n-radio-button')]
+        // 注意：「不取消旧请求」也包含「取消旧请求」子串，必须按完整文案匹配
+        const radio = (text) => radios().find((item) => item.textContent.trim() === text)
+        const action = (text) => [...root.querySelectorAll('.n-button')].find((item) => item.textContent.trim().includes(text))
+        const statsText = () => root.querySelector('.stats')?.innerText.replace(/\\s+/g, ' ').trim() ?? ''
+        const staleCount = () => Number(statsText().match(/旧响应覆盖\\s*(\\d+)/)?.[1] ?? -1)
+        const finalText = () => root.querySelector('.final')?.innerText.trim() ?? ''
+        // 等这一轮「模拟快速输入」跑完（按钮文字恢复 + 请求数到位）
+        const settle = async () => {
+          for (let i = 0; i < 60; i++) {
+            const btn = action('模拟快速输入')
+            if (btn && staleCount() >= 0 && /请求\\s*3/.test(statsText())) return true
+            await wait(120)
+          }
+          return false
+        }
+
+        // 先测「取消旧请求」：旧响应不该覆盖新结果
+        radio('取消旧请求（推荐）').click()
+        await wait(120)
+        action('模拟快速输入').click()
+        const abortSettled = await settle()
+        const abortStale = staleCount()
+        const abortFinal = finalText()
+        const abortChecked = radios().filter((item) => item.classList.contains('n-radio-button--checked')).map((item) => item.textContent.trim()).join(' / ')
+
+        // 再测「不取消旧请求」：最后回来的旧请求会把结果冲掉
+        radio('不取消旧请求').click()
+        await wait(120)
+        action('模拟快速输入').click()
+        const naiveSettled = await settle()
+        const naiveStale = staleCount()
+        const naiveFinal = finalText()
+
+        return {
+          radioCount: radios().length,
+          abortChecked,
+          abortSettled,
+          abortStale,
+          abortFinal,
+          naiveSettled,
+          naiveStale,
+          naiveFinal,
+        }      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.radioCount !== 2) failures.push(`模式组不是 2 个单选按钮（${result.radioCount} 个）`)
+      if (!result.abortChecked.includes('取消旧请求（推荐）')) {
+        failures.push(`取消模式下选中项不对（${result.abortChecked}）`)
+      }
+      if (!result.abortChecked.includes('取消旧请求（推荐）') || result.abortChecked.includes('不取消')) {
+        failures.push(`单选组选中项重复或错误（${result.abortChecked}）`)
+      }
+      if (!result.abortSettled) failures.push('「取消旧请求」模式下这一轮没有跑完')
+      if (result.abortStale !== 0) failures.push(`取消模式下仍有旧响应覆盖（${result.abortStale} 次）`)
+      if (result.abortFinal !== '最终结果 正确') failures.push(`取消模式下最终结果不是「正确」（${result.abortFinal}）`)
+      if (!result.naiveSettled) failures.push('「不取消旧请求」模式下这一轮没有跑完')
+      if (result.naiveStale < 1) failures.push(`不取消模式下没有出现旧响应覆盖（${result.naiveStale} 次）`)
+      if (result.naiveFinal !== '最终结果 串台') failures.push(`不取消模式下最终结果不是「串台」（${result.naiveFinal}）`)
+      return failures
+    },
+  },
+  {
+    name: '分包模式切换',
+    route: '/cases/practice/dynamic-chunk',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.dc-demo')
+        const radios = () => [...root.querySelectorAll('.n-radio-button')]
+        const radio = (text) => radios().find((item) => item.textContent.includes(text))
+        const hint = () => root.querySelector('.mode-hint')?.innerText.replace(/\\s+/g, ' ').trim() ?? ''
+        const checked = () =>
+          radios().filter((item) => item.classList.contains('n-radio-button--checked')).map((item) => item.textContent.trim())
+
+        const lazyHint = hint()
+        radio('全量预载').click()
+        await wait(120)
+        const fullHint = hint()
+        const fullChecked = checked()
+        radio('按需加载').click()
+        await wait(120)
+        const backHint = hint()
+        const backChecked = checked()
+
+        return {
+          radioCount: radios().length,
+          lazyHint,
+          fullHint,
+          fullChecked: fullChecked.join(' / '),
+          backHint,
+          backChecked: backChecked.join(' / '),
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.radioCount !== 2) failures.push(`模式组不是 2 个单选按钮（${result.radioCount} 个）`)
+      if (!result.lazyHint.includes('点哪个模块才下载哪个')) {
+        failures.push(`默认提示不是按需加载（${result.lazyHint}）`)
+      }
+      if (!result.fullHint.includes('一起下载')) failures.push(`切到全量后提示没有跟着变（${result.fullHint}）`)
+      if (!result.fullChecked.includes('全量预载')) failures.push(`切到全量后选中项不对（${result.fullChecked}）`)
+      if (!result.backHint.includes('点哪个模块才下载哪个')) {
+        failures.push(`切回按需后提示没有还原（${result.backHint}）`)
+      }
+      if (!result.backChecked.includes('按需加载')) failures.push(`切回按需后选中项不对（${result.backChecked}）`)
+      return failures
+    },
+  },
+  {
     name: 'Intl 行数',
     route: '/cases/basics/intl-format',
     facts: async ({ evaluate }) => ({

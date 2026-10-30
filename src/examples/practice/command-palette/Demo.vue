@@ -220,7 +220,7 @@ onUnmounted(() => {
   >
     <!-- 触发入口 -->
     <div class="trigger-row">
-      <button
+      <n-button
         class="open-btn"
         @click="openPanel"
       >
@@ -228,7 +228,7 @@ onUnmounted(() => {
         <span class="kbd-group">
           <kbd>Ctrl</kbd><kbd>K</kbd>
         </span>
-      </button>
+      </n-button>
       <span class="trigger-hint">或随时按 Ctrl/Cmd + K</span>
     </div>
 
@@ -336,22 +336,9 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.open-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 2.6rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: var(--radius-btn);
-  border: 1px solid var(--border);
-  background-color: var(--bg);
-  color: var(--text-secondary);
-  font-size: 0.9375rem;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-
-  &:hover {
-    border-color: var(--primary);
-  }
+/* 观感交给 Naive，只留「标签与快捷键之间拉开的距离」 */
+.open-btn .kbd-group {
+  margin-left: 2.6rem;
 }
 
 .kbd-group {

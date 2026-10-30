@@ -157,32 +157,24 @@ const prLabel = computed(() => {
         role="group"
         aria-label="模拟条件"
       >
-        <button
-          class="bp-chip"
-          :class="{ 'bp-chip--on': rulesOn }"
-          type="button"
-          :aria-pressed="rulesOn"
+        <n-button
+          :type="rulesOn ? 'primary' : 'default'"
           @click="rulesOn = !rulesOn"
         >
           规则集：{{ rulesOn ? '开启' : '关闭' }}
-        </button>
-        <button
-          class="bp-chip"
-          :class="{ 'bp-chip--on': checkWillPass }"
-          type="button"
-          :aria-pressed="checkWillPass"
+        </n-button>
+        <n-button
+          :type="checkWillPass ? 'primary' : 'default'"
           @click="checkWillPass = !checkWillPass"
         >
           检查结果：{{ checkWillPass ? '通过' : '失败' }}
-        </button>
+        </n-button>
       </div>
-      <button
-        class="bp-reset"
-        type="button"
+      <n-button
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="bp-branch">
@@ -202,30 +194,26 @@ const prLabel = computed(() => {
     </div>
 
     <div class="bp-actions">
-      <button
-        class="bp-action bp-action--danger"
-        type="button"
+      <n-button
+        type="error"
         :disabled="busy"
         @click="directPush"
       >
         直接 push main
-      </button>
-      <button
-        class="bp-action"
-        type="button"
+      </n-button>
+      <n-button
         :disabled="busy || prState === 'merged'"
         @click="createPr"
       >
         创建 PR 并跑检查
-      </button>
-      <button
-        class="bp-action bp-action--primary"
-        type="button"
+      </n-button>
+      <n-button
+        type="primary"
         :disabled="busy || prState !== 'open'"
         @click="mergePr"
       >
         合并 PR
-      </button>
+      </n-button>
     </div>
 
     <div class="bp-flow">
@@ -306,46 +294,6 @@ const prLabel = computed(() => {
   flex-wrap: wrap;
 }
 
-.bp-chip,
-.bp-reset,
-.bp-action {
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
-}
-
-.bp-chip {
-  padding: 0.45rem 0.75rem;
-
-  &::before {
-    content: '○ ';
-    color: var(--text-secondary);
-  }
-
-  &.bp-chip--on {
-    border-color: var(--primary);
-    background-color: var(--primary-soft);
-    color: var(--primary);
-
-    &::before {
-      content: '● ';
-    }
-  }
-}
-
-.bp-reset {
-  padding: 0.45rem 0.75rem;
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-}
-
 .bp-branch {
   display: flex;
   align-items: center;
@@ -394,41 +342,6 @@ const prLabel = computed(() => {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
-}
-
-.bp-action {
-  flex: 1 1 9rem;
-  padding: var(--demo-control-py) var(--demo-control-px);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
-
-  &:disabled {
-    opacity: 0.42;
-    cursor: not-allowed;
-  }
-
-  &.bp-action--primary {
-    border-color: var(--primary);
-    color: var(--primary);
-
-    &:hover:not(:disabled) {
-      background-color: var(--primary);
-      color: #fff;
-    }
-  }
-
-  &.bp-action--danger {
-    border-color: color-mix(in srgb, var(--danger) 55%, transparent);
-    color: var(--danger);
-
-    &:hover:not(:disabled) {
-      background-color: var(--danger);
-      color: #fff;
-    }
-  }
 }
 
 .bp-flow {
@@ -532,8 +445,5 @@ const prLabel = computed(() => {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .bp-action {
-    flex-basis: 100%;
-  }
 }
 </style>

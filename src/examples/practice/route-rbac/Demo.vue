@@ -66,6 +66,11 @@ function pushLog(msg: string): void {
  * 模拟 router.push：
  * //! 真实项目里这段在 router.beforeEach((to) => { if (!allowed) return '/403' })
  */
+/** 单选组回调：把 Naive 抛出的联合类型收窄成 Role */
+function onRoleChange(next: string | number | boolean | undefined): void {
+  if (next === 'guest' || next === 'editor' || next === 'admin') role.value = next
+}
+
 function navigate(key: MenuKey): void {
   const item = routes.find((r) => r.key === key)
   if (!item) return
@@ -111,24 +116,26 @@ function resetAll(): void {
     <!-- 角色切换 -->
     <div class="rbac-roles">
       <span class="rbac-label">当前角色</span>
-      <button
-        v-for="r in allRoles"
-        :key="r"
-        class="seg-btn"
-        :class="{ active: role === r }"
-        @click="role = r"
+      <n-radio-group
+        :value="role"
+        @update:value="onRoleChange"
       >
-        {{ r }}
-      </button>
+        <n-radio-button
+          v-for="r in allRoles"
+          :key="r"
+          :value="r"
+        >
+          {{ r }}
+        </n-radio-button>
+      </n-radio-group>
       <span class="rbac-count">
         可见菜单 <b>{{ visibleMenus.length }}</b> / {{ routes.length }}
       </span>
-      <button
-        class="btn-reset"
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="rbac-body">
@@ -207,22 +214,6 @@ function resetAll(): void {
   color: var(--text-secondary);
 }
 
-.seg-btn {
-  padding: 0.2rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &.active {
-    border-color: var(--primary);
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
 .rbac-count {
   margin-left: auto;
   font-size: 0.8125rem;
@@ -232,16 +223,6 @@ function resetAll(): void {
     font-family: var(--font-mono);
     color: var(--primary);
   }
-}
-
-.btn-reset {
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 }
 
 /* ---------- 主体 ---------- */

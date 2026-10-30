@@ -93,24 +93,23 @@ function resetAll(): void {
       />
 
       <div class="hg-actions">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="save"
         >
           保存
-        </button>
-        <button
-          class="btn-act btn-act--warn"
+        </n-button>
+        <n-button
+          type="warning"
           @click="tryBack"
         >
           模拟浏览器返回
-        </button>
-        <button
-          class="btn-reset"
+        </n-button>
+        <n-button
           @click="resetAll"
         >
           重置
-        </button>
+        </n-button>
       </div>
     </section>
 
@@ -127,18 +126,17 @@ function resetAll(): void {
       </h4>
       <p>你有未保存的修改，离开后将丢失。</p>
       <div class="hg-confirm-actions">
-        <button
-          class="btn-reset"
+        <n-button
           @click="cancelLeave"
         >
           取消
-        </button>
-        <button
-          class="btn-act btn-act--danger"
+        </n-button>
+        <n-button
+          type="error"
           @click="confirmLeave"
         >
           确认离开
-        </button>
+        </n-button>
       </div>
     </div>
 
@@ -236,55 +234,6 @@ function resetAll(): void {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
-}
-
-.btn-act {
-  padding: 0.26rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &--warn {
-    border-color: var(--warning);
-    color: var(--warning);
-
-    &:hover {
-      background-color: var(--warning);
-      color: #fff;
-    }
-  }
-
-  &--danger {
-    border-color: var(--danger);
-    color: var(--danger);
-
-    &:hover {
-      background-color: var(--danger);
-      color: #fff;
-    }
-  }
-}
-
-.btn-reset {
-  padding: 0.24rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-  }
 }
 
 /* ---------- 确认框 ---------- */

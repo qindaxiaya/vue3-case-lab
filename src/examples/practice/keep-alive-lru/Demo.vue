@@ -98,12 +98,12 @@ function resetAll(): void {
       <span>activate <b>{{ activations }}</b></span>
       <span>unmount <b>{{ unmounts }}</b></span>
       <span class="ka-rule">缓存上限 max = 2（LRU）</span>
-      <button
+      <n-button
         class="btn-reset"
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 页面切换 -->
@@ -184,18 +184,12 @@ function resetAll(): void {
   font-size: 0.8125rem;
 }
 
+/* ---------- 标签 ---------- */
+
+/* 观感交给 Naive，只留「把重置推到最右」的布局声明 */
 .btn-reset {
   margin-left: auto;
-  padding: 0.18rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 }
-
-/* ---------- 标签 ---------- */
 
 .ka-tabs {
   display: flex;

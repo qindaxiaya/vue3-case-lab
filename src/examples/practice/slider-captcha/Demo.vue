@@ -234,12 +234,11 @@ const resultText = (): string => {
       <span>耗时 <b>{{ elapsed === null ? '—' : elapsed + ' ms' }}</b></span>
       <span>轨迹点 <b>{{ pointCount }}</b></span>
       <span>方向变化 <b>{{ directionChanges }}</b></span>
-      <button
-        class="btn-ghost"
+      <n-button
         @click="generate"
       >
         换一张
-      </button>
+      </n-button>
     </div>
 
     <p class="sc-hint">
@@ -351,21 +350,6 @@ const resultText = (): string => {
   b {
     font-family: var(--font-mono);
     color: var(--primary);
-  }
-}
-
-.btn-ghost {
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
   }
 }
 

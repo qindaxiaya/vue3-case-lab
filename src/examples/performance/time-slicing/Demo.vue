@@ -243,7 +243,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div class="ts-demo">
     <!-- 控制 -->
     <div class="ts-bar">

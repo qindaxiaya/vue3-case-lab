@@ -139,7 +139,6 @@ function resetAll(): void {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div class="dt-demo">
     <!-- 脉冲波形条 -->
     <div
@@ -213,12 +212,11 @@ function resetAll(): void {
       </section>
     </div>
 
-    <button
-      class="btn-reset"
+    <n-button
       @click="resetAll"
     >
       重置计数与波形
-    </button>
+    </n-button>
   </div>
 </template>
 
@@ -347,22 +345,6 @@ function resetAll(): void {
   b {
     color: var(--text);
     font-family: var(--font-mono);
-  }
-}
-
-.btn-reset {
-  align-self: flex-start;
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
   }
 }
 

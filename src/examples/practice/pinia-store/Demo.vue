@@ -159,18 +159,17 @@ function resetAll(): void {
         placeholder="改名"
         @keydown.enter="rename"
       >
-      <button
-        class="ps-btn"
+      <n-button
+        type="primary"
         @click="rename"
       >
         改名
-      </button>
-      <button
-        class="ps-btn ps-btn--ghost"
+      </n-button>
+      <n-button
         @click="resetAll"
       >
         重置全部
-      </button>
+      </n-button>
     </section>
 
     <!-- 两个组件共享同一 store -->

@@ -313,7 +313,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div class="el-demo">
     <!-- 预设：一键勾选一组常见任务 -->
     <div

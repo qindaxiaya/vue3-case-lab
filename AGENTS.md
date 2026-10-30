@@ -189,7 +189,14 @@
   - `teleport-modal` 的触发按钮换成 Naive 后模板 ref 拿到的是组件实例，焦点归还改成 `triggerRef.value?.$el?.focus()`（类型改成 `{ $el?: HTMLElement }`）
   - 新增常驻场景「响应式丢失模式切换」：默认丢失写法点两次源数据 → 界面停在 0 / 真实 2；切「toRef 修法」→ 界面补成 2，再点 → 3/3；重置 → 0/0 且模式回落，防止单选组接线错误静默通过
   - 验收：eslint、type-check、全量 `check:ui` 27/27、`--sweep` 81/81、16 个案例 `--case`（1280+375 无溢出）、build、check:bundle（106.5 KB）、vitest 53/53
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`
+- ✅ 2026-10-30 演示区 UI 迁移批 6（practice 22 + composables 1，本轮收尾）：剩下的「按钮 + 互斥模式组」全部换 Naive，81 个案例的这批机械迁移完成
+  - 模式组换 `n-radio-group` + `n-radio-button`：`i18n-lazy`（语言，`onLangChange` 收窄成 `Lang`，组上带 `:disabled="loading"`）、`route-rbac`（角色，`onRoleChange` 收窄成 `Role`）、`request-race`（请求策略）、`dynamic-chunk`（按需 / 全量，`onModeChange` 收窄成 `LoadMode`）
+  - 动作按钮换 `n-button`：`chunk-upload`（5）、`pdf-preview`（8：重新生成 / 卸载 / ‹ › / − + / 重置缩放 / 重试）、`toast-queue`（success / error / info / warning / 批量 primary / 清空）、`branch-protection`（规则集与检查结果两个开关改为 `:type` 跟随状态的 n-button；直推 `error`、合并 `primary`、重置默认）、`history-guard`（保存 primary / 模拟返回 warning / 确认离开 error / 取消与重置默认）、`file-upload`（重试失败 / 清空 / 行内取消 / 重试，行内保留 `fu-act` 布局类）、`pinia-store`、`json-viewer`、`file-preview`（示例 chip 用 `size="small"`）、`dynamic-chunk`（注入失败开关 `size="small"` + 状态色）、`color-picker`（吸管 primary / 复制 HEX 默认）、`vitest-gate`、`tracking-sdk`、`slider-captcha`（换一张）、`command-palette`（触发按钮保留 `open-btn` 类，只留标签与快捷键的间距）、`drag-sort`、`debounce-throttle`、`image-compress`、`keep-alive-lru`（重置保留 `margin-left:auto` 布局类）、`composables/use-event-listener`
+  - 豁免（按钮本身就是演示主体 / 面板一部分，保留原生样式）：`ripple-button` 全部（涟漪）、`route-transition` 的 `.rt-tab`（模拟导航条）、`keep-alive-lru` 的 `.ka-tab`（模拟标签页）、`i18n-lazy` 的 `.i18n-cta`（翻译后的示例按钮）、`color-picker` 的 `.value-row`（可复制的值行）、`tracking-sdk` 的 `.tk-cta`（被埋点元素）、`slider-captcha` 的 `.sc-thumb`（滑块本体）、`toast-queue` 的 `.toast-close`（通知里的 ✕）、`json-viewer` 的 `.caret`、`route-rbac` 的 `.rbac-item`、`pinia-store` 内联面板里的 `.ps-btn`（面板代码本身是教学内容）、`optimistic-update` 的 `.like`（心形状态按钮）；`vite-split` 没有按钮
+  - 新增两个常驻场景：「请求模式切换与竞态」（取消模式 0 次旧响应覆盖 / 最终结果正确；不取消模式 2 次覆盖 / 结果串台）、「分包模式切换」（切到全量提示与选中项同步变化，切回按需还原）
+  - 顺手清掉 7 个 Demo 里「演示区共享主题上下文」的过期注释（provider 早已上移到 `CasePage`），并给 `registry.spec.ts` 的「演示组件按需加载成功」加 20s 超时（同时跑 build / dev 时默认 5s 会偶发假红灯）
+  - 验收：eslint、type-check、全量 `check:ui` 29/29、`--sweep` 81/81、23 个案例 `--case`（1280+375 无溢出、零 console 错误）、build、check:bundle（106.6 KB）、vitest 53/53
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`
 
 ## 决策记录
 

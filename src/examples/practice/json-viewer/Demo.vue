@@ -198,7 +198,6 @@ function preview(row: Row): string {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div class="jv-demo">
     <div class="body">
       <!-- 输入区 -->
@@ -208,12 +207,12 @@ function preview(row: Row): string {
       >
         <div class="pane-head">
           <span class="pane-title">输入 JSON</span>
-          <button
-            class="btn-mini"
+          <n-button
+            size="small"
             @click="source = SAMPLE"
           >
             载入示例
-          </button>
+          </n-button>
         </div>
         <!-- Naive 多行输入：v-model:value；等宽字体与底色走下面的 :deep -->
         <n-input
@@ -247,18 +246,18 @@ function preview(row: Row): string {
         <div class="pane-head">
           <span class="pane-title">树视图（点击行复制路径）</span>
           <span class="tree-actions">
-            <button
-              class="btn-mini"
+            <n-button
+              size="small"
               @click="expandAll"
             >
               全展开
-            </button>
-            <button
-              class="btn-mini"
+            </n-button>
+            <n-button
+              size="small"
               @click="collapseAll"
             >
               全折叠
-            </button>
+            </n-button>
           </span>
         </div>
 
@@ -371,21 +370,6 @@ function preview(row: Row): string {
 .tree-actions {
   display: inline-flex;
   gap: 0.35rem;
-}
-
-.btn-mini {
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--demo-radius);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-xs);
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
 }
 
 /* ---------- 输入区 ---------- */
