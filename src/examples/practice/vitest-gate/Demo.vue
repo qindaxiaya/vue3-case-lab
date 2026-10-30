@@ -87,24 +87,22 @@ const statusIcon: Record<StepStatus, string> = {
 </script>
 
 <template>
-  <!-- 演示区共享主题上下文：Naive 控件的浅暗主题与 token 映射从这儿来 -->
   <div class="vg-demo">
     <!-- 控制 -->
     <div class="vg-bar">
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         :disabled="running"
         @click="run"
       >
         {{ running ? '执行中…' : '模拟 CI 运行' }}
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="running"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
       <div class="vg-select">
         <span class="vg-select-label">注入失败</span>
         <!-- Naive 下拉：选项走数组；n-select 的 value 类型是 string 要求的选项值不全为 number，这里 id 全是 string -->
@@ -208,37 +206,6 @@ steps:
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-}
-
-.btn-act,
-.btn-ghost {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border-radius: var(--demo-radius);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-}
-
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .vg-select {

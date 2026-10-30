@@ -119,42 +119,41 @@ function clearAll(): void {
   <div class="tq-demo">
     <!-- 触发区 -->
     <div class="controls">
-      <button
-        class="btn btn--success"
+      <n-button
+        type="success"
         @click="demoSuccess"
       >
         success
-      </button>
-      <button
-        class="btn btn--error"
+      </n-button>
+      <n-button
+        type="error"
         @click="demoError"
       >
         error
-      </button>
-      <button
-        class="btn btn--info"
+      </n-button>
+      <n-button
+        type="info"
         @click="demoInfo"
       >
         info
-      </button>
-      <button
-        class="btn btn--warning"
+      </n-button>
+      <n-button
+        type="warning"
         @click="demoWarning"
       >
         warning
-      </button>
-      <button
-        class="btn btn--batch"
+      </n-button>
+      <n-button
+        type="primary"
         @click="demoBatch"
       >
         批量推 8 条（看排队补位）
-      </button>
-      <button
-        class="btn btn--ghost"
+      </n-button>
+      <n-button
         @click="clearAll"
       >
         清空
-      </button>
+      </n-button>
     </div>
 
     <!-- 状态条：显示中 / 排队中 -->
@@ -223,45 +222,6 @@ function clearAll(): void {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
-}
-
-.btn {
-  padding: 0.32rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--text-secondary);
-  }
-}
-
-.btn--success {
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.btn--error {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-.btn--info {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.btn--warning {
-  border-color: var(--warning);
-  color: var(--warning);
-}
-
-.btn--batch,
-.btn--ghost {
-  color: var(--text-secondary);
 }
 
 /* ---------- 状态条 ---------- */

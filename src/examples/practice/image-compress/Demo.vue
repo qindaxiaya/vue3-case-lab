@@ -269,12 +269,12 @@ onUnmounted(() => {
         >
         <span class="ctl-val">{{ maxEdge }}px</span>
       </label>
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="fileInput?.click()"
       >
         选择图片
-      </button>
+      </n-button>
       <input
         ref="fileInput"
         type="file"
@@ -381,21 +381,6 @@ onUnmounted(() => {
   font-size: 0.8125rem;
   color: var(--primary);
   min-width: 3.4em;
-}
-
-.btn-act {
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .file-hidden {

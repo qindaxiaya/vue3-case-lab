@@ -85,6 +85,11 @@ async function switchLang(lang: Lang): Promise<void> {
 // 汇总
 // ============================================================
 
+/** 单选组回调：Naive 抛出的联合类型先收窄成 Lang，再交给 switchLang */
+function onLangChange(next: string | number | boolean | undefined): void {
+  if (typeof next === 'string') void switchLang(next as Lang)
+}
+
 const totalLoadedSize = computed(() =>
   loaded.value.reduce((sum, l) => sum + (sizes.value[l] ?? 0), 0),
 )
@@ -104,16 +109,19 @@ function resetAll(): void {
   <div class="i18n-demo">
     <!-- 语言切换 -->
     <div class="i18n-bar">
-      <button
-        v-for="l in LANGS"
-        :key="l.key"
-        class="seg-btn"
-        :class="{ active: current === l.key }"
+      <n-radio-group
+        :value="current"
         :disabled="loading"
-        @click="switchLang(l.key)"
+        @update:value="onLangChange"
       >
-        {{ l.label }}
-      </button>
+        <n-radio-button
+          v-for="l in LANGS"
+          :key="l.key"
+          :value="l.key"
+        >
+          {{ l.label }}
+        </n-radio-button>
+      </n-radio-group>
       <span
         v-if="loading"
         class="i18n-loading"
@@ -121,12 +129,11 @@ function resetAll(): void {
       <span class="i18n-size">
         已加载 {{ loaded.length }} / 3 · 合计 {{ totalLoadedSize }} bytes
       </span>
-      <button
-        class="btn-reset"
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 预览卡 -->
@@ -201,27 +208,6 @@ function resetAll(): void {
   flex-wrap: wrap;
 }
 
-.seg-btn {
-  padding: 0.22rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &.active {
-    border-color: var(--primary);
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: wait;
-  }
-}
-
 .i18n-loading {
   font-size: 0.8125rem;
   color: var(--warning);
@@ -231,16 +217,6 @@ function resetAll(): void {
   margin-left: auto;
   font-size: 0.8125rem;
   color: var(--text-secondary);
-}
-
-.btn-reset {
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 }
 
 /* ---------- 预览 ---------- */

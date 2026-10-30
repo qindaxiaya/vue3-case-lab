@@ -162,18 +162,17 @@ function resetCounters(): void {
           />
         </div>
         <div class="actions">
-          <button
-            class="btn-act"
+          <n-button
+            type="primary"
             @click="toggleRaf"
           >
             {{ running ? '暂停' : '恢复' }}
-          </button>
-          <button
-            class="btn-reset"
+          </n-button>
+          <n-button
             @click="resetCounters"
           >
             重置帧计数
-          </button>
+          </n-button>
         </div>
         <p class="panel-note">
           封装要点：pause/resume 幂等保护；onUnmounted 挂 pause——调用方忘记暂停也不泄漏。
@@ -295,36 +294,6 @@ function resetCounters(): void {
 .actions {
   display: flex;
   gap: 0.45rem;
-}
-
-.btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.btn-reset {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
 }
 
 .panel-note {

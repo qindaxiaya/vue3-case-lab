@@ -168,6 +168,11 @@ function reset(): void {
   stats.stale = 0
 }
 
+/** 单选组回调：把 Naive 抛出的联合类型收窄成 Mode */
+function onModeChange(next: string | number | boolean | undefined): void {
+  if (next === 'naive' || next === 'abort') setMode(next)
+}
+
 /** 切换模式时重置，避免两种模式的日志混在一起 */
 function setMode(next: Mode): void {
   if (mode.value === next || running.value) return
@@ -183,42 +188,32 @@ onUnmounted(() => {
 <template>
   <div class="rr-demo">
     <div class="bar">
-      <div
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="请求处理模式"
+        @update:value="onModeChange"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'naive' }"
-          :aria-pressed="mode === 'naive'"
-          @click="setMode('naive')"
-        >
+        <n-radio-button value="naive">
           不取消旧请求
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'abort' }"
-          :aria-pressed="mode === 'abort'"
-          @click="setMode('abort')"
-        >
+        </n-radio-button>
+        <n-radio-button value="abort">
           取消旧请求（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="running"
         @click="simulate"
       >
         {{ running ? '请求中…' : '模拟快速输入' }}
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="running"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <label class="search">
@@ -335,59 +330,9 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+/* 只留排列，观感交给 Naive 单选组 */
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .search {

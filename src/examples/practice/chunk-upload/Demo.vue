@@ -225,19 +225,17 @@ function formatSize(bytes: number): string {
         >
         选择文件
       </label>
-      <button
-        class="btn-ghost"
+      <n-button
         @click="makeTestFile"
       >
         生成 5MB 测试文件
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="!file || running"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 文件信息 -->
@@ -292,27 +290,25 @@ function formatSize(bytes: number): string {
       v-if="chunks.length"
       class="cu-bar"
     >
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         :disabled="running || computing || doneCount === chunks.length"
         @click="start"
       >
         {{ doneCount === chunks.length ? '已完成' : '开始上传' }}
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="!running"
         @click="pause"
       >
         暂停（模拟断网）
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         :disabled="running || doneCount === chunks.length"
         @click="resume"
       >
         续传
-      </button>
+      </n-button>
       <span class="cu-kv">
         完成 <b>{{ doneCount }}</b> / {{ chunks.length }}
         <template v-if="failedCount"> · 失败 <b class="bad">{{ failedCount }}</b></template>
@@ -381,37 +377,6 @@ function formatSize(bytes: number): string {
 
 .cu-input {
   display: none;
-}
-
-.btn-act,
-.btn-ghost {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 /* ---------- 元信息 ---------- */

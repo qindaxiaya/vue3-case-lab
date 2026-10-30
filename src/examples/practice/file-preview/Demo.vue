@@ -239,30 +239,30 @@ onBeforeUnmount(release)
     <!-- 示例 -->
     <div class="fp-samples">
       <span class="fp-samples-label">本地生成示例：</span>
-      <button
-        class="fp-chip"
+      <n-button
+        size="small"
         @click="sampleText"
       >
         文本
-      </button>
-      <button
-        class="fp-chip"
+      </n-button>
+      <n-button
+        size="small"
         @click="sampleImage"
       >
         图片
-      </button>
-      <button
-        class="fp-chip"
+      </n-button>
+      <n-button
+        size="small"
         @click="samplePdf"
       >
         PDF
-      </button>
-      <button
-        class="fp-chip"
+      </n-button>
+      <n-button
+        size="small"
         @click="sampleAudio"
       >
         音频
-      </button>
+      </n-button>
     </div>
 
     <p
@@ -409,21 +409,6 @@ onBeforeUnmount(release)
 .fp-samples-label {
   font-size: 0.8125rem;
   color: var(--text-secondary);
-}
-
-.fp-chip {
-  padding: 0.16rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
 }
 
 .fp-error {

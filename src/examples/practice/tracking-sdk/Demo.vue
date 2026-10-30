@@ -184,18 +184,16 @@ const cards = [
         >
         每 2s 自动上报
       </label>
-      <button
-        class="btn-ghost"
+      <n-button
         @click="flush"
       >
         立即上报
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="tk-body">
@@ -359,21 +357,6 @@ const cards = [
   font-size: 0.8125rem;
   color: var(--text-secondary);
   cursor: pointer;
-}
-
-.btn-ghost {
-  padding: 0.18rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 /* ---------- 主体 ---------- */

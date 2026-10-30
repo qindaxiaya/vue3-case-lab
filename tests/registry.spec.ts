@@ -135,7 +135,9 @@ describe('真实 glob 收录链路（集成）', () => {
     expect(item!.codeFileCount).toBeGreaterThan(0)
   })
 
-  it('演示组件按需加载成功', async () => {
+  // 这一条要现编译一个 SFC + 把 naive-ui 的按需组件一起拉进来，机器忙（同时在跑 build / dev）时
+  // 默认 5s 会偶发超时；给足 20s，避免假红灯
+  it('演示组件按需加载成功', { timeout: 20_000 }, async () => {
     const component = await loadDemoComponent('performance', 'perf-observer')
     // Vue SFC 编译后的组件对象非空
     expect(component).toBeTruthy()

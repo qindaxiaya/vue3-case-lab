@@ -292,19 +292,18 @@ function applyHex(hexStr: string): void {
 
         <!-- 操作行 -->
         <div class="actions">
-          <button
+          <n-button
             v-if="hasEyeDropper"
-            class="btn-act"
+            type="primary"
             @click="pickWithEyeDropper"
           >
             屏幕吸管取色
-          </button>
-          <button
-            class="btn-act"
+          </n-button>
+          <n-button
             @click="copy(hex, 'HEX')"
           >
             复制 HEX
-          </button>
+          </n-button>
         </div>
         <p
           v-if="!hasEyeDropper"
@@ -484,21 +483,6 @@ function applyHex(hexStr: string): void {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
-}
-
-.btn-act {
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .eye-note {

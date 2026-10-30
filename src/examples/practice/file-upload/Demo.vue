@@ -253,19 +253,19 @@ const statusText: Record<Status, string> = {
       <span>失败/取消 <b class="bad">{{ stats.failed }}</b></span>
       <span>总进度 <b>{{ stats.overall }}%</b></span>
       <div class="fu-actions">
-        <button
-          class="fu-mini"
+        <n-button
+          size="small"
           :disabled="!stats.failed"
           @click="retryFailed"
         >
           重试失败
-        </button>
-        <button
-          class="fu-mini"
+        </n-button>
+        <n-button
+          size="small"
           @click="clearAll"
         >
           清空
-        </button>
+        </n-button>
       </div>
     </div>
 
@@ -299,20 +299,22 @@ const statusText: Record<Status, string> = {
             v-if="job.error"
             class="fu-error"
           >{{ job.error }}</span>
-          <button
+          <n-button
             v-if="job.status === 'uploading'"
-            class="fu-mini"
+            class="fu-act"
+            size="small"
             @click="cancelJob(job)"
           >
             取消
-          </button>
-          <button
+          </n-button>
+          <n-button
             v-else-if="job.status === 'error' || job.status === 'canceled'"
-            class="fu-mini"
+            class="fu-act"
+            size="small"
             @click="retry(job)"
           >
             重试
-          </button>
+          </n-button>
         </div>
       </div>
     </div>
@@ -409,26 +411,6 @@ const statusText: Record<Status, string> = {
   margin-left: auto;
   display: flex;
   gap: 0.3rem;
-}
-
-.fu-mini {
-  padding: 0.12rem 0.42rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
 }
 
 /* ---------- 队列 ---------- */
@@ -543,7 +525,7 @@ const statusText: Record<Status, string> = {
   flex: 1;
 }
 
-.fu-item-bottom .fu-mini {
+.fu-item-bottom .fu-act {
   margin-left: auto;
 }
 

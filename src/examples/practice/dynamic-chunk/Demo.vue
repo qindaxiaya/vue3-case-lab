@@ -92,6 +92,11 @@ const mdBlocks = ref<MdBlock[]>([])
  * - 只统计 dynamic-chunk 目录（开发）或 assets 目录（构建）下的请求
  * - 同一个地址只算一次：第二次点击时字节数为 0，正好体现缓存
  */
+/** 单选组回调：把 Naive 抛出的联合类型收窄成 LoadMode */
+function onModeChange(next: string | number | boolean | undefined): void {
+  if (next === 'lazy' || next === 'full') mode.value = next
+}
+
 function collectChunks(names: string[]): { bytes: number; resourceMs: number | null } {
   const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[]
   let bytes = 0
@@ -277,30 +282,19 @@ function featureTitle(key: ModuleKey): string {
   <div class="dc-demo">
     <!-- 模式开关：同一套按钮，两种加载策略 -->
     <div class="mode-bar">
-      <div
+      <n-radio-group
         class="mode-switch"
-        role="group"
+        :value="mode"
         aria-label="加载模式"
+        @update:value="onModeChange"
       >
-        <button
-          type="button"
-          class="mode-btn"
-          :class="{ 'mode-btn--active': mode === 'lazy' }"
-          :aria-pressed="mode === 'lazy'"
-          @click="mode = 'lazy'"
-        >
+        <n-radio-button value="lazy">
           按需加载
-        </button>
-        <button
-          type="button"
-          class="mode-btn"
-          :class="{ 'mode-btn--active': mode === 'full' }"
-          :aria-pressed="mode === 'full'"
-          @click="mode = 'full'"
-        >
+        </n-radio-button>
+        <n-radio-button value="full">
           全量预载
-        </button>
-      </div>
+        </n-radio-button>
+      </n-radio-group>
       <p class="mode-hint">
         {{
           mode === 'lazy'
@@ -327,14 +321,13 @@ function featureTitle(key: ModuleKey): string {
           {{ feature.chunks.join(' + ') }}
         </p>
 
-        <button
-          type="button"
-          class="btn-act"
+        <n-button
+          type="primary"
           :disabled="loading !== null"
           @click="run(feature.key)"
         >
           {{ loading === feature.key ? '加载中…' : '加载并运行' }}
-        </button>
+        </n-button>
 
         <!-- 最近一次点击的真实代价 -->
         <dl
@@ -359,15 +352,13 @@ function featureTitle(key: ModuleKey): string {
 
     <!-- 失败注入：演示错误提示与重试 -->
     <div class="fail-row">
-      <button
-        type="button"
-        class="btn-mini"
-        :class="{ 'btn-mini--on': injectFailure }"
-        :aria-pressed="injectFailure"
+      <n-button
+        size="small"
+        :type="injectFailure ? 'warning' : 'default'"
         @click="injectFailure = !injectFailure"
       >
         {{ injectFailure ? '已开启：下一次点击会失败' : '注入一次加载失败' }}
-      </button>
+      </n-button>
       <span
         v-if="error"
         class="error-text"
@@ -430,13 +421,12 @@ function featureTitle(key: ModuleKey): string {
         <h4 class="log-title">
           加载记录
         </h4>
-        <button
-          type="button"
-          class="btn-mini"
+        <n-button
+          size="small"
           @click="resetReadings"
         >
           清空读数
-        </button>
+        </n-button>
       </header>
 
       <p
@@ -499,31 +489,9 @@ function featureTitle(key: ModuleKey): string {
   gap: 0.6rem 0.9rem;
 }
 
+/* 只留排列，观感交给 Naive 单选组 */
 .mode-switch {
   display: inline-flex;
-  padding: 3px;
-  background-color: var(--surface-muted, rgba(127, 127, 127, 0.1));
-  border: 1px solid var(--border);
-  border-radius: 999px;
-}
-
-.mode-btn {
-  padding: 0.3rem 0.85rem;
-  font-family: inherit;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  transition:
-    color var(--transition),
-    background-color var(--transition);
-}
-
-.mode-btn--active {
-  color: #fff;
-  background-color: var(--primary);
 }
 
 .mode-hint {
@@ -575,34 +543,6 @@ function featureTitle(key: ModuleKey): string {
   word-break: break-all;
 }
 
-.btn-act {
-  padding: 0.42rem 0.7rem;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: var(--primary);
-  border: none;
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  transition:
-    opacity var(--transition),
-    transform var(--transition);
-}
-
-.btn-act:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-act:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.btn-act:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
 /* 测量结果：三列小格子，数字用等宽字体 */
 .feature-metrics {
   display: flex;
@@ -636,30 +576,6 @@ function featureTitle(key: ModuleKey): string {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-}
-
-.btn-mini {
-  padding: 0.26rem 0.65rem;
-  font-family: inherit;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  background-color: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  transition:
-    color var(--transition),
-    border-color var(--transition);
-}
-
-.btn-mini:hover {
-  color: var(--primary);
-  border-color: var(--primary);
-}
-
-.btn-mini--on {
-  color: var(--danger);
-  border-color: var(--danger);
 }
 
 .error-text {

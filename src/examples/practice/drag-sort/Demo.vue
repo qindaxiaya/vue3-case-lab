@@ -127,18 +127,16 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
   <div class="ds-demo">
     <div class="ds-bar">
       <span class="ds-stat">顺序：<b>{{ orderText() }}</b></span>
-      <button
-        class="btn-ghost"
+      <n-button
         @click="shuffle"
       >
         打乱
-      </button>
-      <button
-        class="btn-ghost"
+      </n-button>
+      <n-button
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div
@@ -206,21 +204,6 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 
   b {
     color: var(--primary);
-  }
-}
-
-.btn-ghost {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-
-  &:hover {
-    background-color: var(--code-bg);
-    color: var(--text);
   }
 }
 

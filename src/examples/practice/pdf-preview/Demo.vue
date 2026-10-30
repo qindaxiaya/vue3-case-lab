@@ -256,21 +256,18 @@ onBeforeUnmount(() => {
   <div class="pdf-demo">
     <!-- 第一行：生成、卸载、体积与耗时 -->
     <div class="pdf-bar">
-      <button
-        class="btn-act"
-        type="button"
+      <n-button
+        type="primary"
         @click="regenerate"
       >
         重新生成 PDF
-      </button>
-      <button
-        class="btn-ghost"
-        type="button"
+      </n-button>
+      <n-button
         :disabled="!pdfDoc"
         @click="unload"
       >
         卸载
-      </button>
+      </n-button>
       <span class="pdf-stat">
         大小 <b>{{ size ? (size / 1024).toFixed(1) + ' KB' : '—' }}</b>
       </span>
@@ -285,55 +282,45 @@ onBeforeUnmount(() => {
     <!-- 第二行：翻页与缩放 -->
     <div class="pdf-bar">
       <div class="pdf-group">
-        <button
-          class="btn-ghost"
-          type="button"
+        <n-button
           :disabled="!canPrev"
           aria-label="上一页"
           @click="goPage(page - 1)"
         >
           ‹
-        </button>
+        </n-button>
         <span class="pdf-page">{{ pageCount ? `${page} / ${pageCount}` : '— / —' }}</span>
-        <button
-          class="btn-ghost"
-          type="button"
+        <n-button
           :disabled="!canNext"
           aria-label="下一页"
           @click="goPage(page + 1)"
         >
           ›
-        </button>
+        </n-button>
       </div>
 
       <div class="pdf-group">
-        <button
-          class="btn-ghost"
-          type="button"
+        <n-button
           :disabled="zoom <= MIN_ZOOM || !pdfDoc"
           aria-label="缩小"
           @click="changeZoom(-ZOOM_STEP)"
         >
           −
-        </button>
+        </n-button>
         <span class="pdf-page">{{ zoom }}%</span>
-        <button
-          class="btn-ghost"
-          type="button"
+        <n-button
           :disabled="zoom >= MAX_ZOOM || !pdfDoc"
           aria-label="放大"
           @click="changeZoom(ZOOM_STEP)"
         >
           +
-        </button>
-        <button
-          class="btn-ghost"
-          type="button"
+        </n-button>
+        <n-button
           :disabled="!pdfDoc"
           @click="changeZoom(100 - zoom)"
         >
           重置缩放
-        </button>
+        </n-button>
       </div>
 
       <span class="pdf-src">canvas 渲染 · 无 iframe</span>
@@ -371,13 +358,12 @@ onBeforeUnmount(() => {
         role="alert"
       >
         <p>{{ error }}</p>
-        <button
-          class="btn-act"
-          type="button"
+        <n-button
+          type="primary"
           @click="regenerate"
         >
           重试
-        </button>
+        </n-button>
       </div>
 
       <p
@@ -453,37 +439,6 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-}
-
-.btn-act,
-.btn-ghost {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .pdf-page {
