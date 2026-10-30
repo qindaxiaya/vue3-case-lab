@@ -195,18 +195,17 @@ const vFocus: Directive<HTMLInputElement> = {
       <span class="et-stat">
         编辑 <b>{{ edits }}</b> · 保存 <b>{{ saves }}</b> · 拦截 <b class="bad">{{ rejects }}</b>
       </span>
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="addRow"
       >
         新增行
-      </button>
-      <button
-        class="btn-reset"
+      </n-button>
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <!-- 表格 -->
@@ -363,34 +362,9 @@ const vFocus: Directive<HTMLInputElement> = {
   }
 }
 
-.btn-act {
-  padding: 0.24rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.24rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
 
 /* ---------- 表格 ---------- */
 

@@ -27,6 +27,12 @@ const initialItems: Item[] = Array.from({ length: 6 }, makeItem)
 const items = ref<Item[]>(initialItems.map((item) => ({ ...item })))
 const mode = ref<Mode>('animated')
 
+/** 切换列表动画模式（n-radio-group 发出的是原始值，收窄成 Mode） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'plain' && next !== 'animated') return
+  mode.value = next
+}
+
 const listWrap = ref<HTMLElement | null>(null)
 const busy = ref(false)
 const moved = ref(0)
@@ -142,56 +148,47 @@ function reset(): void {
 <template>
   <div class="tg-demo">
     <div class="bar">
-      <div
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
         class="modes"
-        role="group"
+        :value="mode"
         aria-label="列表动画模式"
+        :disabled="busy"
+        @update:value="setMode"
       >
-        <button
-          class="mode"
-          :class="{ active: mode === 'plain' }"
-          :aria-pressed="mode === 'plain'"
-          @click="mode = 'plain'"
-        >
+        <n-radio-button value="plain">
           普通替换（无动画）
-        </button>
-        <button
-          class="mode"
-          :class="{ active: mode === 'animated' }"
-          :aria-pressed="mode === 'animated'"
-          @click="mode = 'animated'"
-        >
+        </n-radio-button>
+        <n-radio-button value="animated">
           过渡组（推荐）
-        </button>
-      </div>
-      <button
-        class="btn"
+        </n-radio-button>
+      </n-radio-group>
+      <n-button
+        type="primary"
         :disabled="busy"
         @click="apply('shuffle')"
       >
         打乱顺序
-      </button>
-      <button
-        class="btn"
+      </n-button>
+      <n-button
+        type="primary"
         :disabled="busy"
         @click="apply('add')"
       >
         添加一条
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="busy"
         @click="apply('remove')"
       >
         删除首条
-      </button>
-      <button
-        class="btn ghost"
+      </n-button>
+      <n-button
         :disabled="busy"
         @click="reset"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <div class="stats">
@@ -247,59 +244,9 @@ function reset(): void {
   flex-wrap: wrap;
 }
 
+/* 模式组只留排列方式，其余观感交给 Naive 单选按钮 */
 .modes {
   display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg-subtle);
-}
-
-.mode {
-  padding: 0.4rem 0.65rem;
-  border: none;
-  border-radius: calc(var(--demo-radius) - 2px);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: var(--demo-text-sm);
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
-
-  &.active {
-    background-color: var(--surface);
-    color: var(--primary);
-    box-shadow: var(--shadow-soft);
-  }
-}
-
-.btn {
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--primary);
-  border-radius: var(--demo-radius);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: var(--demo-text-md);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn.ghost {
-  border-color: var(--border);
-  color: var(--text-secondary);
-
-  &:hover:not(:disabled) {
-    background-color: var(--code-bg);
-    color: var(--text);
-  }
 }
 
 .stats {

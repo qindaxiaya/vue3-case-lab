@@ -12,7 +12,8 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 const open = ref(false)
 
 /** 触发按钮（关闭后焦点归还） */
-const triggerRef = ref<HTMLButtonElement | null>(null)
+/** 触发按钮：Naive 按钮的模板 ref 拿到的是组件实例，取 $el 才是真实 <button> */
+const triggerRef = ref<{ $el?: HTMLElement } | null>(null)
 /** 弹窗容器（焦点陷阱范围） */
 const modalRef = ref<HTMLElement | null>(null)
 
@@ -43,8 +44,8 @@ function closeModal(): void {
   open.value = false
   //! 还原滚动（不能直接写 ''，可能覆盖页面原有值）
   document.body.style.overflow = prevOverflow
-  //! 焦点归还：无障碍的关键一步
-  ;(triggerRef.value ?? prevActive)?.focus()
+  //! 焦点归还：无障碍的关键一步（组件实例要先取 $el 才是真实按钮）
+  ;(triggerRef.value?.$el ?? prevActive)?.focus()
 }
 
 // ============================================================
@@ -136,13 +137,14 @@ watch(open, (v) => {
       <p class="tp-desc">
         弹窗被 <code>Teleport to="body"</code> 挂到 body；打开时背景滚动锁死。
       </p>
-      <button
+      <n-button
         ref="triggerRef"
         class="btn-act"
+        type="primary"
         @click="openModal"
       >
         打开弹窗
-      </button>
+      </n-button>
       <p class="tp-meta">
         已打开 <b>{{ openCount }}</b> 次 · 上次保存：<b>{{ saved || '—' }}</b>
       </p>
@@ -208,18 +210,17 @@ watch(open, (v) => {
           </div>
 
           <footer class="tp-foot">
-            <button
-              class="btn-reset"
+            <n-button
               @click="closeModal"
             >
               取消
-            </button>
-            <button
-              class="btn-act"
+            </n-button>
+            <n-button
+              type="primary"
               @click="save"
             >
               保存
-            </button>
+            </n-button>
           </footer>
         </div>
       </div>
@@ -286,33 +287,10 @@ watch(open, (v) => {
 
 .btn-act {
   align-self: flex-start;
-  padding: 0.28rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
-.btn-reset {
-  padding: 0.26rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
+
 
 /* ---------- 弹窗（Teleport 到 body 后不受 scoped 限制，靠全局唯一类名） ---------- */
 

@@ -74,12 +74,12 @@ const total = countNodes(tree)
       <p class="tree-meta">
         共 <b>{{ total }}</b> 个节点 · 深度任意 · 插槽接管渲染
       </p>
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="rebuild"
       >
         重置展开状态
-      </button>
+      </n-button>
     </header>
 
     <div class="tree-card">
@@ -173,20 +173,7 @@ const total = countNodes(tree)
   color: var(--text-secondary);
 }
 
-.btn-act {
-  padding: 0.26rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
 .tree-hint {
   margin: 0;

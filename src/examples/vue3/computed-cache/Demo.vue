@@ -138,24 +138,23 @@ function resetAll(): void {
 
     <!-- 操作 -->
     <div class="cc-actions">
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="bumpNoise"
       >
         改无关状态 noise++
-      </button>
-      <button
-        class="btn-act"
+      </n-button>
+      <n-button
+        type="primary"
         @click="bumpPrice"
       >
         改相关状态 price += 10
-      </button>
-      <button
-        class="btn-reset"
+      </n-button>
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </div>
 
     <p class="cc-hint">
@@ -255,34 +254,9 @@ function resetAll(): void {
   flex-wrap: wrap;
 }
 
-.btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.3rem 0.65rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
 
 .cc-hint {
   margin: 0;

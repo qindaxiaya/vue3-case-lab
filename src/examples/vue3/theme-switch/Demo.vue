@@ -56,7 +56,9 @@ onBeforeUnmount(() => {
 // 模式切换
 // ============================================================
 
-function setMode(next: Mode): void {
+/** 切换模式（n-radio-group 发出的是原始值，收窄成 Mode 再用） */
+function setMode(next: string | number | boolean | undefined): void {
+  if (next !== 'light' && next !== 'dark' && next !== 'auto') return
   mode.value = next
   switchCount.value++
   //! 持久化：刷新后读取（真实项目键名与站点主题共用）
@@ -86,18 +88,21 @@ const modeOptions: { key: Mode; label: string }[] = [
   <div class="theme-demo">
     <!-- 模式切换 -->
     <section class="theme-controls">
-      <div class="seg">
-        <button
+      <!-- 互斥模式组：Naive 单选按钮组自带选中态与键盘操作 -->
+      <n-radio-group
+        class="seg"
+        :value="mode"
+        aria-label="主题模式"
+        @update:value="setMode"
+      >
+        <n-radio-button
           v-for="m in modeOptions"
           :key="m.key"
-          class="seg-btn"
-          :class="{ active: mode === m.key }"
-          :aria-pressed="mode === m.key"
-          @click="setMode(m.key)"
+          :value="m.key"
         >
           {{ m.label }}
-        </button>
-      </div>
+        </n-radio-button>
+      </n-radio-group>
 
       <p class="theme-meta">
         系统偏好：<b>{{ systemDark ? '暗色' : '亮色' }}</b>
@@ -105,12 +110,9 @@ const modeOptions: { key: Mode; label: string }[] = [
         · 切换 <b>{{ switchCount }}</b> 次
       </p>
 
-      <button
-        class="btn-reset"
-        @click="resetAll"
-      >
+      <n-button @click="resetAll">
         重置（清除持久化）
-      </button>
+      </n-button>
     </section>
 
     <!-- 局部预览：通过 data-theme + CSS 变量切换 -->
@@ -169,25 +171,9 @@ const modeOptions: { key: Mode; label: string }[] = [
   flex-wrap: wrap;
 }
 
+/* 模式组只留排列方式，其余观感交给 Naive 单选按钮 */
 .seg {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.seg-btn {
-  padding: 0.24rem 0.6rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &.active {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .theme-meta {
@@ -198,20 +184,6 @@ const modeOptions: { key: Mode; label: string }[] = [
   b {
     font-family: var(--font-mono);
     color: var(--primary);
-  }
-}
-
-.btn-reset {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--text);
   }
 }
 

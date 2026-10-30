@@ -76,30 +76,29 @@ function resetCounts(): void {
   <div class="vm-demo">
     <!-- 控制行 -->
     <div class="controls">
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="editRandomRow"
       >
         随机改一行
-      </button>
-      <button
-        class="btn-act"
+      </n-button>
+      <n-button
+        type="primary"
         @click="editRow(0)"
       >
         改第 1 行
-      </button>
-      <button
-        class="btn-act btn-act--warn"
+      </n-button>
+      <n-button
+        type="warning"
         @click="bumpTick"
       >
         无关更新 tick++（{{ globalTick }}）
-      </button>
-      <button
-        class="btn-reset"
+      </n-button>
+      <n-button
         @click="resetCounts"
       >
         重置计数
-      </button>
+      </n-button>
       <span class="stat">
         总渲染 <b>{{ totalRenders }}</b> 次 · 基线 {{ ROW_COUNT }} 行 × 首次渲染
       </span>
@@ -141,45 +140,11 @@ function resetCounts(): void {
   flex-wrap: wrap;
 }
 
-.btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-act--warn {
-  border-color: var(--warning);
-  color: var(--warning);
 
-  &:hover {
-    background-color: var(--warning);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
-}
 
 .stat {
   font-size: 0.875rem;

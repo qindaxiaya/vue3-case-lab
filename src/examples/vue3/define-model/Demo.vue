@@ -65,18 +65,17 @@ function resetAll(): void {
 
     <!-- 操作 -->
     <div class="dm-actions">
-      <button
-        class="btn-act"
+      <n-button
+        type="primary"
         @click="writeFromParent"
       >
         父组件改写两个值
-      </button>
-      <button
-        class="btn-reset"
+      </n-button>
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
       <span class="dm-count">父组件写入 <b>{{ parentWrites }}</b> 次</span>
     </div>
 
@@ -148,34 +147,9 @@ function resetAll(): void {
   flex-wrap: wrap;
 }
 
-.btn-act {
-  padding: 0.28rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.28rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
 
 .dm-count {
   font-size: 0.8125rem;

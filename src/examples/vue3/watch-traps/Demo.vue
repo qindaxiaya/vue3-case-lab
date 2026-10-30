@@ -156,23 +156,22 @@ onUnmounted(() => {
     >
       <header class="exp-head">
         <h3>1 · deep 陷阱</h3>
-        <button
-          class="btn-reset"
+        <n-button
           @click="resetExp1"
         >
           重置
-        </button>
+        </n-button>
       </header>
       <p class="exp-desc">
         改嵌套属性：<code>nested.count</code>。无 deep 只盯引用→不触发；deep 才递归收集。
       </p>
       <div class="exp-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="bumpNested"
         >
           nested.count++
-        </button>
+        </n-button>
         <span class="metric">
           值 <b>{{ obj.nested.count }}</b> ·
           无 deep <b>{{ plainHits }}</b> 次 ·
@@ -196,23 +195,22 @@ onUnmounted(() => {
     >
       <header class="exp-head">
         <h3>2 · onCleanup 取消过期异步</h3>
-        <button
-          class="btn-reset"
+        <n-button
           @click="resetExp2"
         >
           重置
-        </button>
+        </n-button>
       </header>
       <p class="exp-desc">
         快速点两次：第二次触发时第一次被取消，完成的永远是最后一次。
       </p>
       <div class="exp-row">
-        <button
-          class="btn-act"
+        <n-button
+          type="primary"
           @click="fireRequest"
         >
           发起异步请求
-        </button>
+        </n-button>
         <span class="metric">
           发出 <b>{{ reqNo }}</b> 次 · 完成的是 <b>#{{ finishedReq || '—' }}</b>
         </span>
@@ -234,12 +232,11 @@ onUnmounted(() => {
     >
       <header class="exp-head">
         <h3>3 · flush 时机（sync / pre / post）</h3>
-        <button
-          class="btn-reset"
+        <n-button
           @click="resetExp3"
         >
           重置
-        </button>
+        </n-button>
       </header>
       <p class="exp-desc">
         输入任意字符：看三个回调里 DOM 值的差异（sync 读旧 DOM，post 已同步）。
@@ -333,35 +330,9 @@ onUnmounted(() => {
 
 /* ---------- 按钮 ---------- */
 
-.btn-act {
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background-color: transparent;
-  color: var(--primary);
-  font-size: 0.875rem;
-  cursor: pointer;
 
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
-}
 
-.btn-reset {
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-    border-color: var(--text-secondary);
-  }
-}
 
 /* ---------- 输入框 ---------- */
 

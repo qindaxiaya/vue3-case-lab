@@ -51,12 +51,11 @@ function resetAll(): void {
       <p class="mm-hint">
         在「名称」里输入前后空格 → 父级收到的是 trim 后的值（set 转换）。
       </p>
-      <button
-        class="btn-reset"
+      <n-button
         @click="resetAll"
       >
         重置
-      </button>
+      </n-button>
     </section>
   </div>
 </template>
@@ -124,19 +123,7 @@ function resetAll(): void {
   line-height: 1.6;
 }
 
-.btn-reset {
-  padding: 0.24rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  cursor: pointer;
 
-  &:hover {
-    color: var(--text);
-  }
-}
 
 @media (max-width: 760px) {
   .mm-demo {
