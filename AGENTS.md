@@ -209,6 +209,13 @@
   - 教学代码同步：6 个 animation 案例的 `code/styles.css.txt` 删掉「演示优先还原时长」的 reduce 块（否则代码区与 Demo 不一致），降级说明改成「真实项目应跟随系统，本站不降级，用模拟开关演示」；`drawer-slide` 的样式文件原来直接写 reduce 规则，改成与真实 Demo 一致的 `.instant` 分支
   - `check:ui` 两个 reduce 场景改口径：模拟 reduce 后不仅演示区在动，站点外壳（`.back-btn`）过渡也是 0.24s；顺手把列表 / 详情页「等回到顶部按钮出现」的固定 `sleep(400)` 改成最多 2.4s 轮询（本轮 dev 实测撞到过一次假红灯）
   - 验收：dev 场景（减少动态效果 2/2、案例列表、抽屉退场）、全量 `check:ui`、`--sweep` 81/81、vitest 53/53、type-check、lint、build、check:bundle
+- ✅ 2026-10-30 PR #17 已 rebase 合并到 main：15 个提交（演示区 Naive 迁移批 1~6 + 两次「减少动态效果」修复）进入主干，CI `Type check, lint, test, build` 46s 通过；本地 main 同步到 `7f9b4a7`，本地与远端特性分支（`refactor/demo-ui-naive`）已删除
+- 🔄 2026-10-30 演示区 UI 迁移批 7（输入控件起头，css + basics 两个分类）：盘点出 27 个案例还有原生输入控件，按「文本/数字输入框 + 下拉」优先、「开关 / 滑杆 / 文件 / 颜色」下一批的口径分批
+  - `basics/clipboard-api` 手动粘贴框 → `n-input type="textarea" :rows="3"`（等宽字体与纵向拉伸用 `:deep(.n-input__textarea-el)` 落到内层），`.paste` 只留字体
+  - `basics/url-search-params` 关键词框 → `n-input clearable`；地址栏镜像 → `n-input readonly :value`（内层等宽字体用 `:deep(.n-input__input-el)`）；`.kw` / `.url-box` 删掉自绘边框、底色、内边距，只留栅格宽度
+  - 豁免（写进 notes 第 5 段）：`css/has-parent` 的勾选框与三个必填框保留原生 `<input>`——`has(input.req:placeholder-shown)` / `:checked` 依赖真实 DOM 状态，换成组件包装层等于改掉演示本身
+  - `basics/event-loop` 的任务勾选留到「开关」批次再定（属实验输入，不是纯按钮）
+  - 验收：eslint、type-check、两个案例 `--case` 在 1280 / 375 下无横向溢出、零 console 错误
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录

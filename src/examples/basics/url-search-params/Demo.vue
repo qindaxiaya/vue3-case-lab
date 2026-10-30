@@ -245,13 +245,14 @@ watch(page, syncUrl)
           {{ cat }}
         </n-button>
       </div>
-      <input
-        v-model="keyword"
+      <!-- Naive 输入框：Maxlength / clearable 由组件托管，样式走 .kw 只定宽度 -->
+      <n-input
+        v-model:value="keyword"
         class="kw"
-        type="text"
         placeholder="输入关键词（试试中文和空格）"
         aria-label="关键词"
-      >
+        clearable
+      />
       <div class="pager">
         <n-button
           size="small"
@@ -283,13 +284,13 @@ watch(page, syncUrl)
     <!-- 地址栏镜像：只读，可选中复制 -->
     <label class="url-row">
       <span class="url-label">地址栏</span>
-      <input
+      <!-- 只读镜像：readonly 让内容只能选中复制，不能改 -->
+      <n-input
         class="url-box"
-        type="text"
-        readonly
         :value="shareUrl"
+        readonly
         aria-label="当前地址"
-      >
+      />
       <n-button
         type="primary"
         ghost
@@ -397,15 +398,10 @@ watch(page, syncUrl)
   flex-wrap: wrap;
 }
 
+/* 关键词输入：只保留栅格宽度，边框/聚焦态交给 Naive 主题 */
 .kw {
   flex: 1 1 200px;
   min-width: 0;
-  padding: var(--demo-control-py) var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--surface);
-  color: var(--text);
-  font-size: var(--demo-text-md);
 }
 
 .pager {
@@ -429,17 +425,15 @@ watch(page, syncUrl)
   color: var(--text-secondary);
 }
 
+/* 地址栏镜像：等宽 + 浅底色，靠 :deep 落到内层 input；只读不需要边框变色 */
 .url-box {
   flex: 1 1 240px;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: var(--demo-text-xs);
-  user-select: text;
+
+  :deep(.n-input__input-el) {
+    font-family: var(--font-mono);
+    font-size: var(--demo-text-xs);
+  }
 }
 
 .enc {
