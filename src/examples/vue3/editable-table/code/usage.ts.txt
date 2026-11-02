@@ -60,16 +60,23 @@ function onBlur(row: Row, field: EditableField): void {
 //! （nextTick 后再 focus，等 DOM 更新完成）
 if (!commit(row, field)) {
   nextTick(() => {
-    document.querySelector<HTMLInputElement>('.cell-input')?.focus()
+    //! 输入框是组件库封装的：类名落在包装 div 上，要往里找真正的 input
+    const el = document.querySelector<HTMLInputElement>('.cell-input input')
+    el?.focus()
+    el?.select()
   })
 }
 
 // --- 5. 自动聚焦 ---
 
-const vFocus: Directive<HTMLInputElement> = {
+const vFocus: Directive<HTMLElement> = {
   mounted(el) {
-    el.focus()
-    el.select() // 双击进来通常想整体替换
+    //! 原生 input 直接聚焦；组件库的包装元素先找内层真实的 input / textarea
+    const target = el.matches('input, textarea')
+      ? (el as HTMLInputElement | HTMLTextAreaElement)
+      : el.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')
+    target?.focus()
+    target?.select() // 双击进来通常想整体替换
   },
 }
 

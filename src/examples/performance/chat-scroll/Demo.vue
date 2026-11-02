@@ -231,14 +231,14 @@ function resetAll(): void {
       </button>
     </div>
 
-    <!-- 输入 -->
+    <!-- 输入：Naive 输入框；keydown 会从内层 input 冒泡上来，回车发送照旧 -->
     <div class="chat-input-row">
-      <input
-        v-model="input"
+      <n-input
+        v-model:value="input"
         class="chat-input"
         placeholder="输入消息，Enter 发送"
         @keydown.enter="send"
-      >
+      />
       <n-button
         type="primary"
         @click="send"
@@ -384,20 +384,10 @@ function resetAll(): void {
   flex-wrap: wrap;
 }
 
+/* 输入框只保留弹性宽度，边框 / 聚焦态交给 Naive 主题 */
 .chat-input {
   flex: 1;
   min-width: 10rem;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.875rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 }
 
 .chat-hint {

@@ -192,17 +192,19 @@ watch(open, (v) => {
           <div class="tp-body">
             <label class="tp-field">
               <span>姓名</span>
-              <input
-                v-model="form.name"
+              <n-input
+                v-model:value="form.name"
                 placeholder="输入姓名"
-              >
+                aria-label="姓名"
+              />
             </label>
             <label class="tp-field">
               <span>邮箱</span>
-              <input
-                v-model="form.email"
+              <n-input
+                v-model:value="form.email"
                 placeholder="输入邮箱"
-              >
+                aria-label="邮箱"
+              />
             </label>
             <p class="tp-tip">
               Tab 在弹窗内循环、Esc 关闭、点遮罩关闭；关闭后焦点回到「打开弹窗」。
@@ -358,20 +360,6 @@ watch(open, (v) => {
   span {
     font-size: 0.8125rem;
     color: var(--text-secondary);
-  }
-
-  input {
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background-color: var(--bg);
-    color: var(--text);
-    font-size: 0.875rem;
-
-    &:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
   }
 }
 

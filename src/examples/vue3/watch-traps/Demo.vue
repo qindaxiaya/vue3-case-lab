@@ -242,11 +242,12 @@ onUnmounted(() => {
         输入任意字符：看三个回调里 DOM 值的差异（sync 读旧 DOM，post 已同步）。
       </p>
       <div class="exp-row">
-        <input
-          v-model="inputVal"
+        <n-input
+          v-model:value="inputVal"
           class="exp-input"
           placeholder="输入触发三种 flush…"
-        >
+          aria-label="触发三种 flush 的输入"
+        />
         <span
           ref="domRef"
           class="metric"
@@ -339,17 +340,6 @@ onUnmounted(() => {
 .exp-input {
   flex: 1;
   min-width: 120px;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.875rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 }
 
 /* ---------- 日志 ---------- */

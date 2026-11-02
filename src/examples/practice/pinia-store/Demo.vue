@@ -153,12 +153,13 @@ function resetAll(): void {
     <!-- 共享状态 -->
     <section class="ps-user">
       <span class="ps-label">共享用户：<b>{{ store.user }}</b></span>
-      <input
-        v-model="nameDraft"
+      <!-- Naive 输入框：keydown 从内层 input 冒泡上来，回车改名照旧 -->
+      <n-input
+        v-model:value="nameDraft"
         class="ps-input"
         placeholder="改名"
         @keydown.enter="rename"
-      >
+      />
       <n-button
         type="primary"
         @click="rename"
@@ -237,19 +238,9 @@ store.increment()
   }
 }
 
+/* 输入框只定宽度，边框 / 聚焦态交给 Naive 主题 */
 .ps-input {
-  padding: 0.28rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.8125rem;
   width: 9rem;
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 }
 
 .ps-btn {
