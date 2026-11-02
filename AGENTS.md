@@ -220,6 +220,8 @@
   - `basics/event-loop` 的任务勾选留到「开关」批次再定（属实验输入，不是纯按钮）
   - `check:ui` 新增 3 个常驻场景：`请求输入框实时触发搜索`（往内层 input 派发 input 事件 → 请求 1 次、结果来自「vue」、最终结果正确；清空后结果与标记复位）、`表格行内编辑聚焦与提交`（双击出框且焦点落在内层 input、Enter 提交、保存计数 +1、编辑框退出）、`命令面板打开即聚焦`（打开后自动聚焦、输入「复制」后结果被过滤且不是空态）；`时间切片规模与测量` 改为点开 `.n-base-selection` 再按选项文字点 `.n-base-select-option`
   - 验收（preview）：全量 `check:ui` 34/34、`--sweep` 81/81；本批新增的 3 个场景在 dev 与 preview 均通过，`time-slicing` / `request-race` / `editable-table` 由这些场景间接覆盖；6 个未建场景的改动案例走 `--case`，1280 / 375 无横向溢出且零 console 错误；`npx vitest run` 53/53、type-check、lint、build、`check:bundle`（首屏 gzip 106.1 KB）全绿
+  - 状态：分支 `refactor/demo-ui-inputs` 已推送，PR #18 已开、CI 通过、`mergeStateStatus=CLEAN`，**尚未合并**；换设备接着做时先看这条，合并后再开下一批
+  - 下一批（批 8）待办：剩下 16 个案例只有非文本输入——`event-loop` 任务勾选、`progress-ring` 预设滑杆、`perf-observer` 偏移滑杆、`async-suspense` 延迟滑杆 `type=range`、`image-compress` / `chunk-upload` / `file-upload` / `file-preview` 的文件选择、`lazy-image` / `mutation-observer` / `teleport-layer` / `tracking-sdk` / `vite-split` / `ripple-button` / `chat-scroll` / `has-parent` 的勾选框；口径仍是「控件本身就是演示主体的按豁免走并在 notes 第 5 段写明」
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
