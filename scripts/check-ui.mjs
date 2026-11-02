@@ -979,11 +979,24 @@ const SCENARIOS = [
         const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
         const text = (selector) =>
           document.querySelector(selector)?.textContent?.trim() ?? ''
-        const setSelect = async (selector, value) => {
-          const element = document.querySelector(selector)
-          element.value = String(value)
-          element.dispatchEvent(new Event('change', { bubbles: true }))
-          await wait(80)
+        /* Naive 下拉不是原生 select：点开面板（.n-base-selection 才是可点区域），
+           再按选项文字点选；选项列表会被 teleport 到 body，所以全局找一遍 */
+        const pickSelect = async (selector, optionText) => {
+          const root = document.querySelector(selector)
+          const trigger = root?.querySelector('.n-base-selection') ?? root
+          if (!trigger) return false
+          trigger.click()
+          for (let i = 0; i < 24; i++) {
+            const option = [...document.querySelectorAll('.n-base-select-option')]
+              .find((item) => (item.textContent ?? '').trim() === optionText)
+            if (option) {
+              option.click()
+              await wait(150)
+              return true
+            }
+            await wait(50)
+          }
+          return false
         }
         const waitResult = async (selector) => {
           for (let i = 0; i < 80; i++) {
@@ -994,8 +1007,8 @@ const SCENARIOS = [
           return text(selector)
         }
 
-        await setSelect('.ts-total', 10000)
-        await setSelect('.ts-batch', 1000)
+        const totalPicked = await pickSelect('.ts-total', '10,000 条')
+        const batchPicked = await pickSelect('.ts-batch', '1000 条')
 
         document.querySelector('[data-mode="full"]').click()
         const fullFirstText = await waitResult('[data-result="full-first"]')
@@ -1018,8 +1031,11 @@ const SCENARIOS = [
 
         const modes = [...document.querySelectorAll('.ts-demo .seg .n-radio-button')]
         return {
-          totalSelect: document.querySelector('.ts-total').value,
-          batchSelect: document.querySelector('.ts-batch').value,
+          /** Naive 下拉的当前值读可见文字（原生 select 才有 .value） */
+          totalSelect: document.querySelector('.ts-total')?.textContent?.trim() ?? '',
+          batchSelect: document.querySelector('.ts-batch')?.textContent?.trim() ?? '',
+          totalPicked,
+          batchPicked,
           fullFirstText,
           fullBlockText,
           fullDurationText,
@@ -1051,11 +1067,16 @@ const SCENARIOS = [
       const sliceDuration = parseMs(result.sliceDurationText)
       const sliceFrames = Number.parseInt(result.sliceFramesText, 10)
 
-      if (result.totalSelect !== '10000') {
-        failures.push(`数据量没有切到 10000（${result.totalSelect}）`)
+      if (!result.totalPicked || !result.batchPicked) {
+        failures.push(
+          `Naive 下拉没点中选项（数据量 ${result.totalPicked} / 每批 ${result.batchPicked}）`,
+        )
       }
-      if (result.batchSelect !== '1000') {
-        failures.push(`每批没有切到 1000（${result.batchSelect}）`)
+      if (!result.totalSelect.includes('10,000')) {
+        failures.push(`数据量没有切到 10,000（显示 ${result.totalSelect}）`)
+      }
+      if (!result.batchSelect.includes('1000')) {
+        failures.push(`每批没有切到 1000（显示 ${result.batchSelect}）`)
       }
       if (!result.fullTotalText.includes('10,000') || !result.sliceTotalText.includes('10,000')) {
         failures.push(
@@ -1354,6 +1375,157 @@ const SCENARIOS = [
       if (!result.naiveSettled) failures.push('「不取消旧请求」模式下这一轮没有跑完')
       if (result.naiveStale < 1) failures.push(`不取消模式下没有出现旧响应覆盖（${result.naiveStale} 次）`)
       if (result.naiveFinal !== '最终结果 串台') failures.push(`不取消模式下最终结果不是「串台」（${result.naiveFinal}）`)
+      return failures
+    },
+  },
+  {
+    name: '请求输入框实时触发搜索',
+    route: '/cases/practice/request-race',
+    /** 输入框迁 Naive 后：往内层 input 派发 input 事件，仍要能触发请求并正确收尾 */
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const text = (selector) =>
+          document.querySelector(selector)?.innerText?.replace(/\\s+/g, ' ').trim() ?? ''
+        const input = document.querySelector('.rr-demo .input input')
+        if (!input) return { hasInput: false }
+
+        input.focus()
+        input.value = 'vue'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(600)
+        const typedStat = text('.rr-demo .stats')
+        const typedSource = text('.rr-demo section[aria-label="搜索结果"] .panel-head b')
+        const typedFinal = text('.rr-demo .final')
+        const typedItems = document.querySelectorAll('.rr-demo .result li').length
+
+        // 清空输入：应当取消在途请求并把结果清掉
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(400)
+        return {
+          hasInput: true,
+          typedStat,
+          typedSource,
+          typedFinal,
+          typedItems,
+          clearedSource: text('.rr-demo section[aria-label="搜索结果"] .panel-head b'),
+          clearedItems: document.querySelectorAll('.rr-demo .result li').length,
+          clearedFinal: text('.rr-demo .final'),
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (!result.hasInput) {
+        failures.push('没找到 Naive 输入框的内层 input（迁移后 DOM 结构变了？）')
+        return failures
+      }
+      if (!/请求\s*1/.test(result.typedStat)) {
+        failures.push(`输入后没有发起请求（${result.typedStat}）`)
+      }
+      if (!(result.typedItems > 0)) {
+        failures.push(`输入后没有渲染出搜索结果（${result.typedItems} 条）`)
+      }
+      if (!result.typedSource.includes('vue')) {
+        failures.push(`结果没有来自「vue」（${result.typedSource || '空'}）`)
+      }
+      if (!result.typedFinal.includes('正确')) {
+        failures.push(`输入后的最终结果不正确（${result.typedFinal}）`)
+      }
+      if (result.clearedSource || result.clearedItems !== 0) {
+        failures.push(
+          `清空输入后结果没有清掉（${result.clearedSource || '无标题'} / ${result.clearedItems} 条）`,
+        )
+      }
+      if (!result.clearedFinal.includes('—')) {
+        failures.push(`清空输入后最终结果标记没有复位（${result.clearedFinal}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '表格行内编辑聚焦与提交',
+    route: '/cases/vue3/editable-table',
+    /** 行内输入框迁 Naive 后：v-focus 要落到内层 input，Enter 仍能提交 */
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const text = (selector) => document.querySelector(selector)?.innerText?.trim() ?? ''
+        const cell = document.querySelectorAll('.et-table tbody tr')[0]?.querySelectorAll('td')[0]
+        cell?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+        await wait(200)
+
+        const wrapper = cell?.querySelector('.et-input')
+        const input = wrapper?.querySelector('input')
+        const focused = Boolean(input) && document.activeElement === input
+
+        if (input) {
+          input.value = '机械键盘 Pro'
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+          await wait(80)
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        }
+        await wait(200)
+        return {
+          editing: Boolean(wrapper),
+          focused,
+          cellText: cell?.innerText?.trim() ?? '',
+          stat: text('.et-stat'),
+          stillEditing: Boolean(cell?.querySelector('.et-input')),
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (!result.editing) failures.push('双击后没有出现编辑框')
+      if (!result.focused) failures.push('编辑框没有自动聚焦（v-focus 没落到内层 input）')
+      if (!result.cellText.includes('机械键盘 Pro')) {
+        failures.push(`Enter 没有提交新值（${result.cellText}）`)
+      }
+      if (!/保存\s*1/.test(result.stat)) failures.push(`保存计数没有增加（${result.stat}）`)
+      if (result.stillEditing) failures.push('提交后编辑框没有退出')
+      return failures
+    },
+  },
+  {
+    name: '命令面板打开即聚焦',
+    route: '/cases/practice/command-palette',
+    /** 搜索框迁 Naive 后，openPanel 里的 focus() 要落到内层 input 上 */
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        document.querySelector('.cp-demo .open-btn')?.click()
+        await wait(250)
+        const input = document.querySelector('.cp-demo .search-input input')
+        const focused = Boolean(input) && document.activeElement === input
+        const before = document.querySelectorAll('.cp-demo .result-list li').length
+
+        if (input) {
+          input.value = '复制'
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+          await wait(200)
+        }
+        const firstResult = document.querySelector('.cp-demo .result-list li')?.innerText?.trim() ?? ''
+        return {
+          hasInput: Boolean(input),
+          focused,
+          before,
+          after: document.querySelectorAll('.cp-demo .result-list li').length,
+          firstResult,
+          emptyState: firstResult.includes('没有匹配'),
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (!result.hasInput) {
+        failures.push('打开面板后找不到 Naive 搜索框的内层 input')
+        return failures
+      }
+      if (!result.focused) failures.push('打开面板后搜索框没有自动聚焦（focus() 没落到内层 input）')
+      if (!(result.before > 0)) failures.push('打开面板后没有列出命令')
+      if (result.emptyState) failures.push('输入关键词后匹配成了空结果，过滤链路没走通')
+      if (!(result.after > 0 && result.after < result.before)) {
+        failures.push(`输入关键词后结果没有被过滤（${result.before} → ${result.after}）`)
+      }
       return failures
     },
   },

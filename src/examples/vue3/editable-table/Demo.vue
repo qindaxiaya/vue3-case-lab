@@ -140,7 +140,8 @@ function onCellBlur(row: Row, field: EditableField): void {
 
 /** 重新聚焦当前编辑 input（通过 DOM 查询，避免为每个单元格建 ref） */
 function focusCell(): void {
-  const el = document.querySelector<HTMLInputElement>('.et-input')
+  //! n-input 的根是 div，真正能聚焦和选中文字的是它内层的 input
+  const el = document.querySelector<HTMLInputElement>('.et-input input')
   el?.focus()
   el?.select()
 }
@@ -177,10 +178,15 @@ function resetAll(): void {
 // 自动聚焦指令
 // ============================================================
 
-const vFocus: Directive<HTMLInputElement> = {
+const vFocus: Directive<HTMLElement> = {
   mounted(el) {
-    el.focus()
-    el.select()
+    //! 组件库的输入框外面还有一层 div：先找内层真实的 input / textarea，找不到再退回自身
+    const target =
+      el.matches('input, textarea')
+        ? (el as HTMLInputElement | HTMLTextAreaElement)
+        : el.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea')
+    target?.focus()
+    target?.select()
   },
 }
 </script>
@@ -246,14 +252,16 @@ const vFocus: Directive<HTMLInputElement> = {
               :class="{ 'et-cell--error': errorCell === cellKey(row, 'name') }"
               @dblclick="startEdit(row, 'name')"
             >
-              <input
+              <!-- 行内编辑：Naive 小号输入框，keydown / blur 照旧（事件从内层 input 冒泡上来） -->
+              <n-input
                 v-if="isEditing(row, 'name')"
-                v-model="draft"
+                v-model:value="draft"
                 v-focus
                 class="et-input"
+                size="small"
                 @keydown="onCellKeydown($event, row, 'name')"
                 @blur="onCellBlur(row, 'name')"
-              >
+              />
               <span
                 v-else
                 class="et-text"
@@ -266,15 +274,16 @@ const vFocus: Directive<HTMLInputElement> = {
               :class="{ 'et-cell--error': errorCell === cellKey(row, 'price') }"
               @dblclick="startEdit(row, 'price')"
             >
-              <input
+              <n-input
                 v-if="isEditing(row, 'price')"
-                v-model="draft"
+                v-model:value="draft"
                 v-focus
                 class="et-input"
-                inputmode="decimal"
+                size="small"
+                :input-props="{ inputmode: 'decimal' }"
                 @keydown="onCellKeydown($event, row, 'price')"
                 @blur="onCellBlur(row, 'price')"
-              >
+              />
               <span
                 v-else
                 class="et-text"
@@ -287,15 +296,16 @@ const vFocus: Directive<HTMLInputElement> = {
               :class="{ 'et-cell--error': errorCell === cellKey(row, 'stock') }"
               @dblclick="startEdit(row, 'stock')"
             >
-              <input
+              <n-input
                 v-if="isEditing(row, 'stock')"
-                v-model="draft"
+                v-model:value="draft"
                 v-focus
                 class="et-input"
-                inputmode="numeric"
+                size="small"
+                :input-props="{ inputmode: 'numeric' }"
                 @keydown="onCellKeydown($event, row, 'stock')"
                 @blur="onCellBlur(row, 'stock')"
-              >
+              />
               <span
                 v-else
                 class="et-text"
@@ -419,19 +429,14 @@ const vFocus: Directive<HTMLInputElement> = {
   cursor: cell;
 }
 
+/* 行内编辑框：只定宽度与内层字号，边框 / 聚焦态交给 Naive 主题 */
 .et-input {
   width: 100%;
   min-width: 4.5rem;
-  padding: 0.2rem 0.35rem;
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.875rem;
-  font-family: inherit;
 
-  &:focus {
-    outline: 2px solid var(--primary-soft);
+  :deep(.n-input__input-el) {
+    font-size: 0.875rem;
+    font-family: inherit;
   }
 }
 

@@ -85,10 +85,12 @@ function resetAll(): void {
         </span>
       </header>
 
-      <textarea
-        v-model="draft"
+      <!-- Naive 多行输入：v-model:value；行高与等宽字体走下面的 :deep -->
+      <n-input
+        v-model:value="draft"
         class="hg-area"
-        rows="4"
+        type="textarea"
+        :rows="4"
         aria-label="编辑内容"
       />
 
@@ -214,19 +216,12 @@ function resetAll(): void {
   }
 }
 
+/* 多行输入只保留行高与可纵向拉伸，边框 / 聚焦态交给 Naive 主题 */
 .hg-area {
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg);
-  color: var(--text);
-  font-size: 0.875rem;
   line-height: 1.6;
-  resize: vertical;
 
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
+  :deep(.n-input__textarea-el) {
+    resize: vertical;
   }
 }
 

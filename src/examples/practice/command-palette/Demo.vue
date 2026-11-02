@@ -6,6 +6,7 @@
 // ============================================================
 <script setup lang="ts">
 import Fuse from 'fuse.js'
+import type { InputInst } from 'naive-ui'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 // ============================================================
@@ -138,8 +139,8 @@ function segments(label: string, ranges: ResultItem['ranges']): { text: string; 
 const open = ref(false)
 /** 当前选中索引 */
 const selected = ref(0)
-/** 搜索输入框（打开后自动聚焦） */
-const inputEl = ref<HTMLInputElement | null>(null)
+/** 搜索输入框（打开后自动聚焦）：n-input 实例对外暴露 focus() */
+const inputEl = ref<InputInst | null>(null)
 
 /** 打开面板 */
 function openPanel(): void {
@@ -250,13 +251,15 @@ onUnmounted(() => {
             class="search-icon"
             aria-hidden="true"
           >⌕</span>
-          <input
+          <!-- 面板里的搜索框：bordered=false 让它融进自定义搜索行，不出现第二层边框 -->
+          <n-input
             ref="inputEl"
-            v-model="keyword"
+            v-model:value="keyword"
             class="search-input"
             placeholder="输入命令，支持模糊匹配…"
             aria-label="搜索命令"
-          >
+            :bordered="false"
+          />
           <kbd class="esc-hint">Esc</kbd>
         </div>
 
@@ -412,20 +415,11 @@ kbd {
   color: var(--text-secondary);
 }
 
+/* 搜索框只占满剩余宽度：用 Naive 的 CSS 变量把底色改成透明，边框与背景由外层 .search-row 承担 */
 .search-input {
   flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 0.88rem;
-
-  &:focus {
-    outline: none;
-  }
-
-  &::placeholder {
-    color: var(--text-secondary);
-  }
+  --n-color: transparent;
+  --n-color-focus: transparent;
 }
 
 .esc-hint {

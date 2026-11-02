@@ -210,12 +210,16 @@
   - `check:ui` 两个 reduce 场景改口径：模拟 reduce 后不仅演示区在动，站点外壳（`.back-btn`）过渡也是 0.24s；顺手把列表 / 详情页「等回到顶部按钮出现」的固定 `sleep(400)` 改成最多 2.4s 轮询（本轮 dev 实测撞到过一次假红灯）
   - 验收：dev 场景（减少动态效果 2/2、案例列表、抽屉退场）、全量 `check:ui`、`--sweep` 81/81、vitest 53/53、type-check、lint、build、check:bundle
 - ✅ 2026-10-30 PR #17 已 rebase 合并到 main：15 个提交（演示区 Naive 迁移批 1~6 + 两次「减少动态效果」修复）进入主干，CI `Type check, lint, test, build` 46s 通过；本地 main 同步到 `7f9b4a7`，本地与远端特性分支（`refactor/demo-ui-naive`）已删除
-- 🔄 2026-10-30 演示区 UI 迁移批 7（输入控件起头，css + basics 两个分类）：盘点出 27 个案例还有原生输入控件，按「文本/数字输入框 + 下拉」优先、「开关 / 滑杆 / 文件 / 颜色」下一批的口径分批
-  - `basics/clipboard-api` 手动粘贴框 → `n-input type="textarea" :rows="3"`（等宽字体与纵向拉伸用 `:deep(.n-input__textarea-el)` 落到内层），`.paste` 只留字体
-  - `basics/url-search-params` 关键词框 → `n-input clearable`；地址栏镜像 → `n-input readonly :value`（内层等宽字体用 `:deep(.n-input__input-el)`）；`.kw` / `.url-box` 删掉自绘边框、底色、内边距，只留栅格宽度
-  - 豁免（写进 notes 第 5 段）：`css/has-parent` 的勾选框与三个必填框保留原生 `<input>`——`has(input.req:placeholder-shown)` / `:checked` 依赖真实 DOM 状态，换成组件包装层等于改掉演示本身
+- ✅ 2026-10-30 演示区 UI 迁移批 7（输入控件：文本 / 数字输入框 + 下拉，共 11 个案例，分两次提交：css + basics 在前，performance / practice / vue3 在后）：盘点出 27 个案例还有原生输入控件，按「文本/数字输入框 + 下拉」优先、「开关 / 滑杆 / 文件 / 颜色」下一批的口径分批
+  - css + basics：`basics/clipboard-api` 手动粘贴框 → `n-input type="textarea" :rows="3"`（等宽字体与纵向拉伸用 `:deep(.n-input__textarea-el)` 落到内层），`.paste` 只留字体；`basics/url-search-params` 关键词框 → `n-input clearable`，地址栏镜像 → `n-input readonly :value`（内层等宽字体用 `:deep(.n-input__input-el)`），`.kw` / `.url-box` 删掉自绘边框、底色、内边距只留栅格宽度
+  - performance：`chat-scroll` 消息输入框、`time-slicing` 两个 `<select>` → `n-select` + `totalOptions` / `batchOptions`（`.ts-select` 只留宽度，删 `.ts-select:focus-visible`）
+  - practice：`history-guard` textarea、`pinia-store` 改名框、`request-race` 搜索框（`@input="onInput(Event)"` → `@update:value="onValueChange(string)"`，Naive 直接给字符串）、`command-palette` 搜索框（`:bordered="false"` + CSS 变量 `--n-color` / `--n-color-focus` 设透明融进外层搜索行，ref 类型改 `InputInst`）
+  - vue3：`editable-table` 三个行内单元格框 → `n-input size="small"`，`v-focus` 指令与 `focusCell()` 改为「先找内层 `input` / `textarea`，找不到再退回自身」（组件库包装层让类名落在 div 上，直接 `el.focus()` 无效）；`teleport-modal` 姓名 / 邮箱框（焦点陷阱选择器含 `input`，内层 input 照样被收集）；`watch-traps` flush 触发框
+  - 教学代码同步：`vue3/editable-table/code/usage.ts.txt` 的 `focusCell` 与 `vFocus` 改成兼容组件包装层的写法
+  - 豁免（写进 notes 第 5 段）：`css/has-parent` 的勾选框与三个必填框保留原生 `<input>`——`has(input.req:placeholder-shown)` / `:checked` 依赖真实 DOM 状态，换组件包装层等于改掉演示本身；`animation/focus-visible-ring` 的输入框保留原生——这一页对比的就是「裸 input / 按钮 / 链接自身」的 `:focus-visible`
   - `basics/event-loop` 的任务勾选留到「开关」批次再定（属实验输入，不是纯按钮）
-  - 验收：eslint、type-check、两个案例 `--case` 在 1280 / 375 下无横向溢出、零 console 错误
+  - `check:ui` 新增 3 个常驻场景：`请求输入框实时触发搜索`（往内层 input 派发 input 事件 → 请求 1 次、结果来自「vue」、最终结果正确；清空后结果与标记复位）、`表格行内编辑聚焦与提交`（双击出框且焦点落在内层 input、Enter 提交、保存计数 +1、编辑框退出）、`命令面板打开即聚焦`（打开后自动聚焦、输入「复制」后结果被过滤且不是空态）；`时间切片规模与测量` 改为点开 `.n-base-selection` 再按选项文字点 `.n-base-select-option`
+  - 验收（preview）：全量 `check:ui` 34/34、`--sweep` 81/81；本批新增的 3 个场景在 dev 与 preview 均通过，`time-slicing` / `request-race` / `editable-table` 由这些场景间接覆盖；6 个未建场景的改动案例走 `--case`，1280 / 375 无横向溢出且零 console 错误；`npx vitest run` 53/53、type-check、lint、build、`check:bundle`（首屏 gzip 106.1 KB）全绿
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录

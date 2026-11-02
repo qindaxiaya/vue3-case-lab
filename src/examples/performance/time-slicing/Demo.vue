@@ -5,7 +5,7 @@
 // 面板保留最近一次「全量 / 切片」结果，参数一致时可直接对比。
 // ============================================================
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 type Mode = 'slice' | 'full'
 
@@ -114,6 +114,17 @@ function formatMs(value: number | null): string {
 function formatCount(value: number): string {
   return value.toLocaleString('zh-CN')
 }
+
+/**
+ * Naive 的 n-select 收 { label, value } 数组；
+ * value 仍是数字，和原来 <select v-model.number> 的效果一致
+ */
+const totalOptions = computed(() =>
+  TOTAL_OPTIONS.map((value) => ({ label: `${formatCount(value)} 条`, value })),
+)
+const batchOptions = computed(() =>
+  BATCH_OPTIONS.map((value) => ({ label: `${value} 条`, value })),
+)
 
 function saveResult(kind: Mode): void {
   results[kind] = {
@@ -281,39 +292,27 @@ onBeforeUnmount(() => {
       </n-button>
     </div>
 
-    <!-- 参数 -->
+    <!-- 参数：Naive 下拉用 :options 数组（子组件 el-option 那套是别的库的写法） -->
     <div class="ts-config">
       <label class="ts-field">
         数据量
-        <select
-          v-model.number="totalCount"
+        <n-select
+          v-model:value="totalCount"
           class="ts-select ts-total"
+          :options="totalOptions"
           :disabled="rendering"
-        >
-          <option
-            v-for="option in TOTAL_OPTIONS"
-            :key="option"
-            :value="option"
-          >
-            {{ formatCount(option) }} 条
-          </option>
-        </select>
+          aria-label="数据量"
+        />
       </label>
       <label class="ts-field">
         每批
-        <select
-          v-model.number="batchSize"
+        <n-select
+          v-model:value="batchSize"
           class="ts-select ts-batch"
+          :options="batchOptions"
           :disabled="rendering"
-        >
-          <option
-            v-for="option in BATCH_OPTIONS"
-            :key="option"
-            :value="option"
-          >
-            {{ option }} 条
-          </option>
-        </select>
+          aria-label="每批条数"
+        />
       </label>
       <span class="ts-config-note">改参数会清空对比结果</span>
     </div>
@@ -470,11 +469,6 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
-.ts-select:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
 /* ---------- 参数 ---------- */
 
 .ts-config {
@@ -492,13 +486,9 @@ onBeforeUnmount(() => {
   gap: 0.35rem;
 }
 
+/* 下拉只定宽度，边框 / 聚焦态交给 Naive 主题 */
 .ts-select {
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: var(--surface);
-  color: var(--text);
-  font-size: 0.875rem;
+  width: 7.5rem;
 }
 
 .ts-config-note {

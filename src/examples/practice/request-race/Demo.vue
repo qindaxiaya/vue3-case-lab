@@ -125,9 +125,8 @@ async function run(keyword: string): Promise<void> {
   }
 }
 
-/** 手动输入：清空时取消在途请求 */
-function onInput(event: Event): void {
-  const value = (event.target as HTMLInputElement).value
+/** 手动输入：清空时取消在途请求（n-input 的 update:value 直接给字符串） */
+function onValueChange(value: string): void {
   query.value = value
   if (!value.trim()) {
     controller?.abort()
@@ -218,14 +217,16 @@ onUnmounted(() => {
 
     <label class="search">
       <span class="sr-only">搜索关键词</span>
-      <input
+      <!-- Naive 输入框：update:value 直接给字符串，不再自己从 event.target 取值 -->
+      <n-input
         :value="query"
         class="input"
-        type="search"
         placeholder="输入 v / vu / vue 试试…"
-        autocomplete="off"
-        @input="onInput"
-      >
+        clearable
+        :input-props="{ autocomplete: 'off' }"
+        aria-label="搜索关键词"
+        @update:value="onValueChange"
+      />
     </label>
 
     <div class="stats">
@@ -350,21 +351,9 @@ onUnmounted(() => {
   border: 0;
 }
 
+/* 输入框只定宽度，边框 / 聚焦光晕交给 Naive 主题 */
 .input {
   width: 100%;
-  height: var(--demo-control-h);
-  padding: 0 var(--demo-control-px);
-  border: 1px solid var(--border);
-  border-radius: var(--demo-radius);
-  background-color: var(--surface);
-  color: var(--text);
-  font-size: var(--demo-text-md);
-  outline: none;
-
-  &:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
-  }
 }
 
 .stats {
