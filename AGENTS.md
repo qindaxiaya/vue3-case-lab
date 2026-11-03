@@ -230,7 +230,7 @@
   - `check:ui` 新增 2 个常驻场景：`进度滑杆驱动进度环`（聚焦 `[role="slider"]` 手柄后按 ArrowRight，目标值 0% → 1% → 2%，`aria-valuenow` 同步）、`分包优化项勾选`（点同一张 `.vs-opt` 卡片 → `.on` 数量 +1 且首屏估算从 860 KB 降到 680 KB，再点还原）；`事件循环任务开关` 改为点 `[data-task]` 根节点、`懒加载滚动、重置与持续观察` 改为点 `[role="switch"]` 并等一帧再读 `aria-checked`
   - `tests/registry.spec.ts` 的「演示组件按需加载成功」超时 20s → 60s（冷缓存编译 81 个案例 chunk 时偶发假红灯）
   - 验收（preview）：全量 `check:ui` 36/36、`--sweep` 81/81；13 个改动案例 `--case` 在 1280 / 375 无横向溢出且零 console 错误；`npx vitest run` 53/53、type-check、eslint、build、`check:bundle`（首屏 gzip 106.2 KB）全绿
->>>>>>> 09948ba (refactor(demo-ui): 开关、滑杆与勾选迁 Naive（批 8）)
+
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
