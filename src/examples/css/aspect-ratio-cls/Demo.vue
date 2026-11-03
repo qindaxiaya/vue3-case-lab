@@ -336,7 +336,7 @@ onUnmounted(() => {
 
 .below-line {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 

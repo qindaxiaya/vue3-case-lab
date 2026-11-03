@@ -215,14 +215,14 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     font-weight: 600;
     color: var(--text);
   }
 }
 
 .hits {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -233,13 +233,13 @@ function resetAll(): void {
 
 .cell-desc {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.65;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.05rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -258,7 +258,7 @@ function resetAll(): void {
 }
 
 .metric {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b,
@@ -278,7 +278,7 @@ function resetAll(): void {
 
 .footnote {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 

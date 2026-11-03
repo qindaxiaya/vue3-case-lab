@@ -385,13 +385,13 @@ function formatSize(bytes: number): string {
 }
 
 .cu-name {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
   word-break: break-all;
 }
 
 .cu-kv {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -407,8 +407,8 @@ function formatSize(bytes: number): string {
 .cu-instant {
   margin-left: auto;
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
+  border-radius: var(--radius-tag);
+  font-size: var(--demo-text-sm);
   background-color: var(--success);
   color: #fff;
 }
@@ -463,7 +463,7 @@ function formatSize(bytes: number): string {
 .cu-progress {
   flex: 1;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   overflow: hidden;
 
@@ -477,7 +477,7 @@ function formatSize(bytes: number): string {
 
 .cu-pct {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   min-width: 2.4rem;
   text-align: right;
@@ -496,7 +496,7 @@ function formatSize(bytes: number): string {
 
 .cu-log {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 
@@ -509,7 +509,7 @@ function formatSize(bytes: number): string {
   margin: 0;
   padding: 1.1rem;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   border: 1px dashed var(--border);
   border-radius: var(--radius-btn);
@@ -517,13 +517,13 @@ function formatSize(bytes: number): string {
 
 .cu-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

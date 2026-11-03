@@ -196,7 +196,7 @@ onUnmounted(() => {
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: var(--demo-text-lg);
   font-weight: 600;
 }
 

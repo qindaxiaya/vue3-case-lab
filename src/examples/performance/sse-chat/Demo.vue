@@ -234,8 +234,8 @@ const statusText: Record<Status, string> = {
   align-items: center;
   gap: 0.3rem;
   padding: 0.16rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-tag);
+  font-size: var(--demo-text-md);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 
@@ -272,7 +272,7 @@ const statusText: Record<Status, string> = {
 }
 
 .sse-stat {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -303,7 +303,7 @@ const statusText: Record<Status, string> = {
 .sse-bubble {
   padding: 0.5rem 0.65rem;
   border-radius: var(--radius-btn);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.7;
 
   &.user {
@@ -334,7 +334,7 @@ const statusText: Record<Status, string> = {
 
 .sse-empty {
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 }
 
 /* ---------- 日志 ---------- */
@@ -349,7 +349,7 @@ const statusText: Record<Status, string> = {
 
 .sse-events-title {
   padding: 0.3rem 0.55rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
   background-color: var(--code-bg);
@@ -365,7 +365,7 @@ const statusText: Record<Status, string> = {
 
 .sse-event {
   font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -378,13 +378,13 @@ const statusText: Record<Status, string> = {
 
 .sse-hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

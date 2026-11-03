@@ -387,7 +387,7 @@ onUnmounted(() => {
 
   small {
     margin-left: 0.1rem;
-    font-size: 0.9rem;
+    font-size: var(--demo-text-md);
     color: var(--text-secondary);
   }
 }

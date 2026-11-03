@@ -181,14 +181,14 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 .vs-label {
   width: 6.5rem;
   flex-shrink: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .vs-bar {
   flex: 1;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   overflow: hidden;
 }
@@ -196,7 +196,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 .vs-bar-fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   transition: width 0.25s ease-out;
 
   &.before {
@@ -212,18 +212,18 @@ hljs.registerLanguage('typescript', ts)</code></pre>
   width: 7rem;
   text-align: right;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .vs-note {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.2rem;
     background-color: var(--code-bg);
     border-radius: 3px;
@@ -277,19 +277,19 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 }
 
 .vs-opt-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
 }
 
 .vs-opt-desc {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .vs-save {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   flex-shrink: 0;
 }
@@ -305,7 +305,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
   border-radius: var(--radius-btn);
   background-color: var(--code-bg);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre;
@@ -313,7 +313,7 @@ hljs.registerLanguage('typescript', ts)</code></pre>
 
 .vs-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

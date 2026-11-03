@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
   background-color: var(--bg);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.75;
   color: var(--text);
 }
@@ -281,12 +281,12 @@ onBeforeUnmount(() => {
 
 .tw-placeholder {
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 }
 
 .tw-progress {
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   overflow: hidden;
 
@@ -300,7 +300,7 @@ onBeforeUnmount(() => {
 
 .tw-hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   line-height: 1.6;
 }

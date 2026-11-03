@@ -369,7 +369,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text);
 }
 
@@ -380,7 +380,7 @@ onUnmounted(() => {
 
 .ctl-val {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   min-width: 3.4em;
 }
@@ -403,7 +403,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 1.2rem;
   flex-wrap: wrap;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -480,7 +480,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: #374151;
 }
 
@@ -489,10 +489,10 @@ onUnmounted(() => {
   position: absolute;
   bottom: 0.6rem;
   z-index: 3;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   font-family: var(--font-mono);
   padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: rgb(0 0 0 / 0.55);
   color: #fff;
 }
@@ -507,13 +507,13 @@ onUnmounted(() => {
 
 .footnote {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.05rem 0.3rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

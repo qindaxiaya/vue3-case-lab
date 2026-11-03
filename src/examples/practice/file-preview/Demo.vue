@@ -389,7 +389,7 @@ onBeforeUnmount(release)
 }
 
 .fp-drop-text {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -407,13 +407,13 @@ onBeforeUnmount(release)
 }
 
 .fp-samples-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .fp-error {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
 }
 
@@ -432,27 +432,27 @@ onBeforeUnmount(release)
 
 .fp-tag {
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
+  border-radius: var(--radius-tag);
+  font-size: var(--demo-text-sm);
   background-color: var(--primary);
   color: #fff;
 }
 
 .fp-name {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
   word-break: break-all;
 }
 
 .fp-info {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .fp-download {
   margin-left: auto;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   text-decoration: none;
 
@@ -484,7 +484,7 @@ onBeforeUnmount(release)
   max-height: 260px;
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -514,7 +514,7 @@ onBeforeUnmount(release)
 .fp-unknown {
   padding: 1.4rem;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   p {
@@ -525,14 +525,14 @@ onBeforeUnmount(release)
 .fp-unknown-sub {
   margin-top: 0.3rem !important;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
 }
 
 .fp-empty {
   margin: 0;
   padding: 1.2rem;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   border: 1px dashed var(--border);
   border-radius: var(--radius-btn);
@@ -540,13 +540,13 @@ onBeforeUnmount(release)
 
 .fp-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

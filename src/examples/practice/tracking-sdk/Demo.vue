@@ -342,7 +342,7 @@ const cards = [
 }
 
 .tk-kv {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -355,7 +355,7 @@ const cards = [
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -390,7 +390,7 @@ const cards = [
   border-radius: var(--radius-sm);
   background: linear-gradient(120deg, var(--primary), #06b6d4);
   color: #fff;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   text-align: center;
   cursor: pointer;
 }
@@ -415,20 +415,20 @@ const cards = [
 }
 
 .tk-card-title {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
 }
 
 .tk-card-price {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   margin-top: 0.15rem;
 }
 
 .tk-card-meta {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   margin-top: 0.2rem;
   word-break: break-all;
@@ -441,7 +441,7 @@ const cards = [
   border-radius: var(--radius-sm);
   background-color: transparent;
   color: var(--primary);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 
   &:hover {
@@ -470,7 +470,7 @@ const cards = [
   padding: 0.26rem 0.5rem;
   background-color: var(--code-bg);
   border-bottom: 1px solid var(--border);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -487,7 +487,7 @@ const cards = [
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
 }
 
@@ -495,7 +495,7 @@ const cards = [
   padding: 0 0.3rem;
   border-radius: 3px;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 
@@ -523,12 +523,12 @@ const cards = [
 
 .tk-time {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .tk-batch {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.15rem 0;
   border-bottom: 1px dashed var(--border);
 
@@ -551,7 +551,7 @@ const cards = [
 
 .tk-log {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 }
@@ -559,20 +559,20 @@ const cards = [
 .tk-empty {
   margin: 0;
   padding: 0.5rem 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   text-align: center;
 }
 
 .tk-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

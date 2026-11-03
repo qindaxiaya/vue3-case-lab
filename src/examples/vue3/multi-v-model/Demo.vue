@@ -82,7 +82,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0 0 0.4rem;
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     color: var(--text);
   }
 
@@ -102,7 +102,7 @@ function resetAll(): void {
   dt {
     width: 4.2rem;
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     color: var(--text-secondary);
     flex-shrink: 0;
   }
@@ -110,7 +110,7 @@ function resetAll(): void {
   dd {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     color: var(--primary);
     word-break: break-all;
   }
@@ -118,7 +118,7 @@ function resetAll(): void {
 
 .mm-hint {
   margin: 0.45rem 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

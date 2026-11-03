@@ -248,7 +248,7 @@ watch(open, (v) => {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
@@ -261,13 +261,13 @@ watch(open, (v) => {
 .tp-desc,
 .tp-meta {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -283,7 +283,7 @@ watch(open, (v) => {
   margin: 0;
   padding: 0.3rem 0;
   border-bottom: 1px dashed var(--border);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -328,7 +328,7 @@ watch(open, (v) => {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
@@ -337,7 +337,7 @@ watch(open, (v) => {
   border: none;
   background: none;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--demo-text-md);
   cursor: pointer;
 
   &:hover {
@@ -358,14 +358,14 @@ watch(open, (v) => {
   gap: 0.2rem;
 
   span {
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     color: var(--text-secondary);
   }
 }
 
 .tp-tip {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

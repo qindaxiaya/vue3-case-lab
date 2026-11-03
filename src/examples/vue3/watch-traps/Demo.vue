@@ -290,7 +290,7 @@ onUnmounted(() => {
   justify-content: space-between;
 
   h3 {
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     font-weight: 600;
     color: var(--text);
     margin: 0;
@@ -298,14 +298,14 @@ onUnmounted(() => {
 }
 
 .exp-desc {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.05rem 0.3rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -320,7 +320,7 @@ onUnmounted(() => {
 }
 
 .metric {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -351,7 +351,7 @@ onUnmounted(() => {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 5.4rem;

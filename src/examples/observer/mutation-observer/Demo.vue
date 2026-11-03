@@ -280,7 +280,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
@@ -335,7 +335,7 @@ onUnmounted(() => {
 
 .mo-item {
   padding: 0.35rem 0.6rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -354,14 +354,14 @@ onUnmounted(() => {
 
 .log-title {
   margin: 0 0 0.4rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .log-empty {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -379,7 +379,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.4rem;
   font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   padding: 0.2rem 0.4rem;
   border-radius: var(--radius-sm);
 }
@@ -407,7 +407,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: var(--demo-text-xs);
   font-weight: 600;
   border-radius: var(--radius-sm);
   background-color: var(--bg);

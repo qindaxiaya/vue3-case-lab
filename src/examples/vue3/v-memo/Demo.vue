@@ -174,7 +174,7 @@ function resetCounts(): void {
   gap: 0.8rem;
   height: 28px;
   padding: 0 0.6rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   border-bottom: 1px solid var(--border);
 }
 
@@ -195,13 +195,13 @@ function resetCounts(): void {
 
 .row-count {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
 }
 
 .footnote {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 

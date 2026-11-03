@@ -517,7 +517,7 @@ function fpsLevel(fps: number): string {
 }
 
 .live-name {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
@@ -533,7 +533,7 @@ function fpsLevel(fps: number): string {
 }
 
 .live-sub {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -588,7 +588,7 @@ function fpsLevel(fps: number): string {
 }
 
 .metric-name {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
@@ -596,7 +596,7 @@ function fpsLevel(fps: number): string {
 
 .metric-value {
   font-family: var(--font-mono);
-  font-size: 0.95rem;
+  font-size: var(--demo-text-lg);
   font-weight: 600;
 }
 
@@ -609,7 +609,7 @@ function fpsLevel(fps: number): string {
 }
 
 .actions-hint {
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
   margin-bottom: 0.65rem;
 }
@@ -625,7 +625,7 @@ function fpsLevel(fps: number): string {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
@@ -636,7 +636,7 @@ function fpsLevel(fps: number): string {
 
 .block-ms {
   font-family: var(--font-mono);
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--primary);
   min-width: 3rem;
 }
@@ -665,14 +665,14 @@ function fpsLevel(fps: number): string {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
 }
 
 .log-empty {
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -682,7 +682,7 @@ function fpsLevel(fps: number): string {
   padding: 0;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.8;
 }
 

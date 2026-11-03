@@ -124,7 +124,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
   pointer-events: none;
 }
@@ -149,7 +149,7 @@ onUnmounted(() => {
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: var(--demo-text-lg);
   font-weight: 600;
 }
 

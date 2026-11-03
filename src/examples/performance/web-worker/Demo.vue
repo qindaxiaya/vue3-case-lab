@@ -254,7 +254,7 @@ onUnmounted(() => {
 }
 
 .heart-label {
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 
   b {
@@ -264,7 +264,7 @@ onUnmounted(() => {
 }
 
 .heart-hint {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -293,7 +293,7 @@ onUnmounted(() => {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     font-weight: 600;
     color: var(--text);
   }
@@ -317,7 +317,7 @@ onUnmounted(() => {
 
 .path-desc {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.65;
   color: var(--text-secondary);
 
@@ -337,7 +337,7 @@ onUnmounted(() => {
   padding: 0.45rem 0.6rem;
   border-radius: var(--radius-sm);
   background-color: var(--code-bg);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.9;
   color: var(--text-secondary);
 
@@ -349,7 +349,7 @@ onUnmounted(() => {
 
 .footnote {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.7;
   color: var(--text-secondary);
 

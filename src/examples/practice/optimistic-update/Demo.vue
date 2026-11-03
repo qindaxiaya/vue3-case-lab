@@ -408,7 +408,7 @@ function reset(): void {
   flex-shrink: 0;
   padding: 0.35rem 0.55rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--bg);
   color: var(--text-secondary);
   font-size: var(--demo-text-sm);

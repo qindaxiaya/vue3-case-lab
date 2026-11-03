@@ -304,7 +304,7 @@ const resultText = (): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   pointer-events: none;
 }
@@ -318,7 +318,7 @@ const resultText = (): string => {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--primary);
-  font-size: 0.95rem;
+  font-size: var(--demo-text-lg);
   cursor: grab;
   touch-action: none;
 
@@ -344,7 +344,7 @@ const resultText = (): string => {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -355,14 +355,14 @@ const resultText = (): string => {
 
 .sc-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
   max-width: 40rem;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

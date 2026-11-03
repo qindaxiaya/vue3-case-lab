@@ -477,7 +477,7 @@ function featureTitle(key: ModuleKey): string {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 }
 
 /* ---------- 模式开关 ---------- */
@@ -496,7 +496,7 @@ function featureTitle(key: ModuleKey): string {
 
 .mode-hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -521,14 +521,14 @@ function featureTitle(key: ModuleKey): string {
 
 .feature-title {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
 }
 
 .feature-desc {
   flex: 1;
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.65;
   color: var(--text-secondary);
 }
@@ -537,7 +537,7 @@ function featureTitle(key: ModuleKey): string {
 .feature-files {
   margin: 0 0 0.15rem;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--demo-text-xs);
   line-height: 1.5;
   color: var(--primary);
   word-break: break-all;
@@ -558,14 +558,14 @@ function featureTitle(key: ModuleKey): string {
 }
 
 .feature-metrics dt {
-  font-size: 0.7rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
 }
 
 .feature-metrics dd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--demo-text-xs);
   font-weight: 600;
 }
 
@@ -579,7 +579,7 @@ function featureTitle(key: ModuleKey): string {
 }
 
 .error-text {
-  font-size: 0.78rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
 }
 
@@ -595,14 +595,14 @@ function featureTitle(key: ModuleKey): string {
 
 .result-title {
   margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
 }
 
 .result-pre {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: var(--demo-text-xs);
   line-height: 1.7;
   color: var(--text);
   white-space: pre-wrap;
@@ -617,21 +617,21 @@ function featureTitle(key: ModuleKey): string {
 
 .md-heading {
   margin: 0.15rem 0 0;
-  font-size: 0.88rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
 }
 
 .md-list {
   margin: 0;
   padding-left: 1.15rem;
-  font-size: 0.8rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.75;
   color: var(--text-secondary);
 }
 
 .md-p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 }
@@ -653,14 +653,14 @@ function featureTitle(key: ModuleKey): string {
 
 .log-title {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
 }
 
 .log-empty {
   margin: 0;
   padding: 0.6rem 0.75rem;
-  font-size: 0.78rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   background-color: var(--surface);
   border: 1px dashed var(--border);
@@ -670,7 +670,7 @@ function featureTitle(key: ModuleKey): string {
 .log-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.76rem;
+  font-size: var(--demo-text-xs);
 }
 
 .log-table th,
@@ -699,7 +699,7 @@ function featureTitle(key: ModuleKey): string {
 
 .log-total {
   margin: 0;
-  font-size: 0.77rem;
+  font-size: var(--demo-text-xs);
   color: var(--text-secondary);
 }
 

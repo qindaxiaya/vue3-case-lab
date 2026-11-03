@@ -351,7 +351,7 @@ onUnmounted(() => {
 
 kbd {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.1rem 0.35rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -360,7 +360,7 @@ kbd {
 }
 
 .trigger-hint {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -411,7 +411,7 @@ kbd {
 }
 
 .search-icon {
-  font-size: 1rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
 }
 
@@ -444,7 +444,7 @@ kbd {
   padding: 0.5rem 0.65rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
@@ -472,23 +472,23 @@ kbd {
 }
 
 .result-group {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
 
 .result-hint {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .result-empty {
   padding: 1.2rem;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -501,7 +501,7 @@ kbd {
   gap: 0.6rem;
   padding: 0.5rem 0.9rem;
   border-top: 1px solid var(--border);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -513,7 +513,7 @@ kbd {
 
 .foot-feedback {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--primary);
   overflow: hidden;
   text-overflow: ellipsis;
