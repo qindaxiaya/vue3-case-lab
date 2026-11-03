@@ -109,19 +109,19 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
 
 .dm-sub {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -130,7 +130,7 @@ function resetAll(): void {
 
 .dm-value {
   margin: 0.2rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -152,7 +152,7 @@ function resetAll(): void {
 
 
 .dm-count {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -163,7 +163,7 @@ function resetAll(): void {
 
 .dm-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

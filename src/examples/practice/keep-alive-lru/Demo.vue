@@ -167,7 +167,7 @@ function resetAll(): void {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -178,10 +178,10 @@ function resetAll(): void {
 
 .ka-rule {
   padding: 0.08rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--primary-soft);
   color: var(--primary-soft-text);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
 }
 
 /* ---------- 标签 ---------- */
@@ -203,7 +203,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 
   &.active {
@@ -235,7 +235,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
@@ -243,7 +243,7 @@ function resetAll(): void {
 .ka-demo :deep(.ka-stat) {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -253,7 +253,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background-color: var(--bg);
   color: var(--text);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 
   &:focus {
     outline: none;
@@ -263,7 +263,7 @@ function resetAll(): void {
 
 .ka-demo :deep(.ka-tip) {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -276,7 +276,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.85;
   color: var(--text-secondary);
   min-height: 5.6rem;
@@ -284,7 +284,7 @@ function resetAll(): void {
 
 .ka-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

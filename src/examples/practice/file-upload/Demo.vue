@@ -368,7 +368,7 @@ const statusText: Record<Status, string> = {
 }
 
 .fu-drop-text {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -378,7 +378,7 @@ const statusText: Record<Status, string> = {
 
 .fu-notice {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
   line-height: 1.6;
 }
@@ -390,7 +390,7 @@ const statusText: Record<Status, string> = {
   align-items: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -448,7 +448,7 @@ const statusText: Record<Status, string> = {
 }
 
 .fu-name {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -458,14 +458,14 @@ const statusText: Record<Status, string> = {
 
 .fu-size {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .fu-status {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.02rem 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 
@@ -485,7 +485,7 @@ const statusText: Record<Status, string> = {
 
 .fu-progress {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   overflow: hidden;
 
@@ -515,12 +515,12 @@ const statusText: Record<Status, string> = {
 
 .fu-pct {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .fu-error {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
   flex: 1;
 }
@@ -533,7 +533,7 @@ const statusText: Record<Status, string> = {
   margin: 0;
   padding: 1.1rem;
   text-align: center;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   border: 1px dashed var(--border);
   border-radius: var(--radius-btn);
@@ -541,13 +541,13 @@ const statusText: Record<Status, string> = {
 
 .fu-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

@@ -202,13 +202,13 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
 
 .hg-flag {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--success);
 
   &.dirty {
@@ -248,13 +248,13 @@ function resetAll(): void {
 
   h4 {
     margin: 0 0 0.25rem;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 
   p {
     margin: 0 0 0.55rem;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     color: var(--text-secondary);
   }
 }
@@ -274,7 +274,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 4.6rem;
@@ -290,21 +290,21 @@ function resetAll(): void {
 
   h3 {
     margin: 0 0 0.3rem;
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     color: var(--text);
   }
 
   ol {
     margin: 0;
     padding-left: 1.1rem;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     line-height: 1.9;
     color: var(--text-secondary);
   }
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -313,7 +313,7 @@ function resetAll(): void {
 
 .hg-warn {
   margin: 0.4rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--warning);
   line-height: 1.6;
 }

@@ -140,7 +140,7 @@ function retry(): void {
   border-radius: var(--radius-btn);
   color: var(--text-secondary);
   text-align: center;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   animation: async-pulse 1.2s ease-in-out infinite;
 }
 
@@ -162,7 +162,7 @@ function retry(): void {
   border-radius: var(--radius-btn);
   color: var(--danger);
   text-align: center;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
 }
 
 .async-panel {
@@ -180,7 +180,7 @@ function retry(): void {
 
 .async-panel__desc {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
 }
 </style>
@@ -203,7 +203,7 @@ function retry(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
@@ -214,7 +214,7 @@ function retry(): void {
 
 .ctl-val {
   font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--primary);
   min-width: 3.2em;
 }
@@ -224,14 +224,14 @@ function retry(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text);
 }
 
 
 
 .attempt {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 

@@ -130,7 +130,7 @@ const total = countNodes(tree)
 
 .tree-meta {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -157,7 +157,7 @@ const total = countNodes(tree)
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 }
 
 .tree-name {
@@ -166,9 +166,9 @@ const total = countNodes(tree)
 
 .tree-badge {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0 0.3rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 }
@@ -177,13 +177,13 @@ const total = countNodes(tree)
 
 .tree-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

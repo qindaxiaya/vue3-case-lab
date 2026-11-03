@@ -210,13 +210,13 @@ function resetAll(): void {
 }
 
 .rbac-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .rbac-count {
   margin-left: auto;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -252,7 +252,7 @@ function resetAll(): void {
   border-radius: var(--radius-sm);
   background: none;
   color: var(--text);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
   text-align: left;
 
@@ -276,7 +276,7 @@ function resetAll(): void {
 }
 
 .rbac-lock {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
 }
 
 .rbac-page {
@@ -287,7 +287,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0.2rem 0 0.35rem;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
@@ -295,14 +295,14 @@ function resetAll(): void {
 .rbac-path {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .rbac-desc,
 .rbac-note {
   margin: 0 0 0.3rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 
@@ -313,7 +313,7 @@ function resetAll(): void {
 }
 
 .rbac-note {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   opacity: 0.85;
 }
 
@@ -326,7 +326,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 4.8rem;

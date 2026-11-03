@@ -375,7 +375,7 @@ onUnmounted(() => {
 .ratio {
   height: 4px;
   margin-top: 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--border);
   overflow: hidden;
 

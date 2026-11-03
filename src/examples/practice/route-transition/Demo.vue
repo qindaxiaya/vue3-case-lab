@@ -143,7 +143,7 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
   border: 1px solid var(--border);
   background-color: transparent;
   color: var(--text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 
   &.active {
@@ -163,13 +163,13 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
 
   &--reset {
     margin-left: auto;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
   }
 }
 
 .rt-meta {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -179,7 +179,7 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -206,7 +206,7 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
 
   h3 {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: var(--demo-text-md);
     color: var(--text);
   }
 }
@@ -216,13 +216,13 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
   right: 0;
   top: 0;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .rt-desc {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.7;
 }
@@ -268,14 +268,14 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
 }
 
 .rt-stack-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .rt-chip {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.08rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 
@@ -288,13 +288,13 @@ const pageIndex = computed(() => pages.indexOf(current.value) + 1)
 
 .rt-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.65;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

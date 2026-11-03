@@ -311,18 +311,18 @@ onBeforeUnmount(() => {
 
   h3 {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
 
     code {
       font-family: var(--font-mono);
-      font-size: 0.8125rem;
+      font-size: var(--demo-text-sm);
       color: var(--primary);
     }
   }
 }
 
 .dir-tag {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -335,13 +335,13 @@ onBeforeUnmount(() => {
 
 .dir-note {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.22rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
   border: none;
   background: none;
   color: var(--text);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   border-radius: var(--radius-sm);
   cursor: pointer;
 

@@ -180,15 +180,15 @@ function resetAll(): void {
 }
 
 .cc-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .pill {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.12rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   color: var(--text);
 }
@@ -214,7 +214,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0 0 0.2rem;
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     font-weight: 600;
     color: var(--text-secondary);
   }
@@ -230,7 +230,7 @@ function resetAll(): void {
 
 .cc-count {
   margin: 0.15rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -241,7 +241,7 @@ function resetAll(): void {
 
 .cc-note {
   margin: 0.25rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -260,7 +260,7 @@ function resetAll(): void {
 
 .cc-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

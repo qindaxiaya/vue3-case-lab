@@ -397,7 +397,7 @@ function applyHex(hexStr: string): void {
 
 .preview-hex {
   font-family: var(--font-mono);
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   font-weight: 600;
 }
 
@@ -449,7 +449,7 @@ function applyHex(hexStr: string): void {
 .hue-bar {
   position: relative;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   cursor: ew-resize;
   touch-action: none;
   background: linear-gradient(
@@ -487,7 +487,7 @@ function applyHex(hexStr: string): void {
 
 .eye-note {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -521,27 +521,27 @@ function applyHex(hexStr: string): void {
 }
 
 .value-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .value-text {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
 }
 
 .value-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .copied {
   margin: 0;
   min-height: 1.2em;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--success);
 }
 
@@ -555,7 +555,7 @@ function applyHex(hexStr: string): void {
 
 .recent-title {
   margin: 0 0 0.35rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -580,7 +580,7 @@ function applyHex(hexStr: string): void {
 }
 
 .recent-empty {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 

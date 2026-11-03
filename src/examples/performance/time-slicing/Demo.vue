@@ -476,7 +476,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -492,7 +492,7 @@ onBeforeUnmount(() => {
 }
 
 .ts-config-note {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -502,7 +502,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.7rem;
   flex-wrap: wrap;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -523,7 +523,7 @@ onBeforeUnmount(() => {
 }
 
 .ts-row {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.8;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -531,7 +531,7 @@ onBeforeUnmount(() => {
 
 .ts-empty {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   text-align: center;
   padding: 2rem 0;
@@ -548,14 +548,14 @@ onBeforeUnmount(() => {
 .ts-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   white-space: nowrap;
 
   caption {
     padding: 0.45rem 0.6rem;
     text-align: left;
     color: var(--text-secondary);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
   }
 
   th,
@@ -590,7 +590,7 @@ onBeforeUnmount(() => {
 
 .ts-hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   line-height: 1.6;
 }

@@ -275,7 +275,7 @@ function resetAll(): void {
 }
 
 .chat-flag {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--warning);
 
   &.stuck {
@@ -284,7 +284,7 @@ function resetAll(): void {
 }
 
 .chat-stat {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -297,7 +297,7 @@ function resetAll(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -326,7 +326,7 @@ function resetAll(): void {
 
 .chat-loading {
   text-align: center;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   padding: 0.2rem 0;
   flex-shrink: 0;
@@ -345,7 +345,7 @@ function resetAll(): void {
   max-width: 78%;
   padding: 0.55rem 0.75rem;
   border-radius: var(--demo-radius);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.6;
   background-color: var(--code-bg);
   color: var(--text);
@@ -367,11 +367,11 @@ function resetAll(): void {
   right: 0.6rem;
   bottom: 0.6rem;
   padding: 0.45rem 0.8rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   border: 1px solid var(--primary);
   background-color: var(--bg);
   color: var(--primary);
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   cursor: pointer;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
 }
@@ -392,7 +392,7 @@ function resetAll(): void {
 
 .chat-hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
   line-height: 1.7;
 }

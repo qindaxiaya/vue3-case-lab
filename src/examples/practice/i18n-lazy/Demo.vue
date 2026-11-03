@@ -209,13 +209,13 @@ function resetAll(): void {
 }
 
 .i18n-loading {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--warning);
 }
 
 .i18n-size {
   margin-left: auto;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -232,14 +232,14 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: var(--demo-text-md);
     color: var(--text);
   }
 }
 
 .i18n-feature {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.7;
 }
@@ -251,13 +251,13 @@ function resetAll(): void {
   border: 1px solid var(--primary);
   background-color: var(--primary);
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 }
 
 .i18n-note {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -271,14 +271,14 @@ function resetAll(): void {
 
   h4 {
     margin: 0 0 0.3rem;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     color: var(--text-secondary);
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
   }
 
   th {
@@ -308,9 +308,9 @@ function resetAll(): void {
 
 .i18n-chip {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.08rem 0.42rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--code-bg);
   color: var(--text-secondary);
 }
@@ -322,7 +322,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.85;
   color: var(--text-secondary);
   min-height: 4.4rem;
@@ -330,7 +330,7 @@ function resetAll(): void {
 
 .i18n-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

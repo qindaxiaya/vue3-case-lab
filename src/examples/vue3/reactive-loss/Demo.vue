@@ -491,7 +491,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     font-weight: 600;
     color: var(--text);
   }
@@ -506,7 +506,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   border-radius: 50%;
   background-color: var(--primary);
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   margin-right: 0.25rem;
 }
 
@@ -525,7 +525,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.6;
   color: var(--text-secondary);
   white-space: pre-wrap;
@@ -550,7 +550,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 /* ---------- 指标 ---------- */
 
 .loss-metric {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -565,7 +565,7 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
 .loss-status {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
 
   &.bad {
     color: var(--danger);
@@ -577,9 +577,9 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 }
 
 .badge-ok {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--success-soft);
   color: var(--success);
 }
@@ -597,21 +597,21 @@ obj.newKey = x  // Vue 2 要 Vue.set</pre>
 
   h3 {
     margin: 0 0 0.2rem;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 
   ul {
     margin: 0;
     padding-left: 1.1rem;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     line-height: 1.9;
     color: var(--text-secondary);
   }
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);

@@ -215,7 +215,7 @@ function resetAll(): void {
 
 .scope-intro {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -245,7 +245,7 @@ function resetAll(): void {
 
   h3 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--demo-text-lg);
     color: var(--text);
   }
 }
@@ -266,13 +266,13 @@ function resetAll(): void {
 
 .scope-desc {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--text-secondary);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.25rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -281,7 +281,7 @@ function resetAll(): void {
 
 .scope-meta {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -317,7 +317,7 @@ function resetAll(): void {
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.9;
   color: var(--text-secondary);
   min-height: 5rem;

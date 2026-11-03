@@ -192,7 +192,7 @@ function resetCounters(): void {
 .stats {
   display: flex;
   gap: 1.1rem;
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-lg);
   color: var(--text-secondary);
 
   b {
@@ -227,7 +227,7 @@ function resetCounters(): void {
   top: 0.7rem;
   left: 0.9rem;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -238,7 +238,7 @@ function resetCounters(): void {
   left: 0.9rem;
   right: 0.9rem;
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
@@ -270,7 +270,7 @@ function resetCounters(): void {
 
 .panel-title {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -298,7 +298,7 @@ function resetCounters(): void {
 
 .panel-note {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.6;
   color: var(--text-secondary);
 }

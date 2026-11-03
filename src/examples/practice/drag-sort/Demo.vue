@@ -197,7 +197,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 
 .ds-stat {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   flex: 1;
   min-width: 10rem;
@@ -243,7 +243,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 }
 
 .ds-handle {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   letter-spacing: -2px;
 }
@@ -256,7 +256,7 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 }
 
 .ds-label {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text);
   flex: 1;
   overflow: hidden;
@@ -266,13 +266,13 @@ const orderText = (): string => items.value.map((item) => item.id).join(' → ')
 
 .ds-index {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .ds-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
 }

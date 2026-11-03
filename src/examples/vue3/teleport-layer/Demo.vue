@@ -167,7 +167,7 @@ function openPopover(): void {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text);
 }
 
@@ -189,14 +189,14 @@ function openPopover(): void {
 
 .stage-title {
   margin: 0 0 0.3rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text);
 }
 
 .stage-desc {
   margin: 0 0 0.7rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.65;
   color: var(--text-secondary);
 }
@@ -235,14 +235,14 @@ function openPopover(): void {
 
 .popover-title {
   margin: 0 0 0.35rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
   color: var(--text);
 }
 
 .popover-body {
   margin: 0 0 0.55rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -268,14 +268,14 @@ function openPopover(): void {
 
 .modal-title {
   margin: 0 0 0.45rem;
-  font-size: 0.95rem;
+  font-size: var(--demo-text-lg);
   font-weight: 600;
   color: var(--text);
 }
 
 .modal-body {
   margin: 0 0 0.8rem;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   line-height: 1.7;
   color: var(--text-secondary);
 }

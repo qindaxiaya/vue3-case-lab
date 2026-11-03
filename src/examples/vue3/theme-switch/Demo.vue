@@ -178,7 +178,7 @@ const modeOptions: { key: Mode; label: string }[] = [
 
 .theme-meta {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -232,19 +232,19 @@ const modeOptions: { key: Mode; label: string }[] = [
 }
 
 .tp-title {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   font-weight: 600;
 }
 
 .tp-content {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.7;
   color: var(--preview-muted);
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.25rem;
     border-radius: var(--radius-sm);
     background-color: var(--preview-panel);
@@ -259,7 +259,7 @@ const modeOptions: { key: Mode; label: string }[] = [
   border: 1px solid var(--preview-primary);
   background-color: var(--preview-primary);
   color: #fff;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 }
 
@@ -273,20 +273,20 @@ const modeOptions: { key: Mode; label: string }[] = [
 
   h3 {
     margin: 0 0 0.3rem;
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     color: var(--text);
   }
 
   p {
     margin: 0 0 0.35rem;
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     line-height: 1.7;
     color: var(--text-secondary);
   }
 
   code {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     padding: 0.02rem 0.24rem;
     background-color: var(--code-bg);
     border-radius: var(--radius-sm);
@@ -299,7 +299,7 @@ const modeOptions: { key: Mode; label: string }[] = [
   background-color: var(--code-bg);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   line-height: 1.65;
   color: var(--text-secondary);
   overflow-x: auto;

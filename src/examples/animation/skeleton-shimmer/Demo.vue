@@ -490,7 +490,7 @@ onUnmounted(() => {
   width: 4.5rem;
   height: 1.5rem;
   padding: 0 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: var(--primary-soft);
   color: var(--primary-soft-text);
   font-size: var(--demo-text-xs);
@@ -526,7 +526,7 @@ onUnmounted(() => {
 }
 
 .chip.sk {
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
 }
 
 /* 高光从左往右扫：改 background-position 不触发布局，只重绘 */
@@ -613,7 +613,7 @@ onUnmounted(() => {
 .below-line {
   flex: 1;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   background-color: color-mix(in srgb, var(--warning) 28%, transparent);
 }
 

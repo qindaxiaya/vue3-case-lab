@@ -313,7 +313,7 @@ const prLabel = computed(() => {
 
 .bp-badge {
   padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
   font-size: var(--demo-text-xs);
   font-weight: 600;
 

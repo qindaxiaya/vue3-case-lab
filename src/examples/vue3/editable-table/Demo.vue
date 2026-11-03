@@ -353,13 +353,13 @@ const vFocus: Directive<HTMLElement> = {
 }
 
 .et-meta {
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 }
 
 .et-stat {
   margin-left: auto;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--text-secondary);
 
   b {
@@ -387,14 +387,14 @@ const vFocus: Directive<HTMLElement> = {
 .et-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
 
   th {
     text-align: left;
     padding: 0.45rem 0.6rem;
     background-color: var(--code-bg);
     color: var(--text-secondary);
-    font-size: 0.8125rem;
+    font-size: var(--demo-text-sm);
     font-weight: 600;
     white-space: nowrap;
   }
@@ -435,7 +435,7 @@ const vFocus: Directive<HTMLElement> = {
   min-width: 4.5rem;
 
   :deep(.n-input__input-el) {
-    font-size: 0.875rem;
+    font-size: var(--demo-text-md);
     font-family: inherit;
   }
 }
@@ -448,7 +448,7 @@ const vFocus: Directive<HTMLElement> = {
   border: none;
   background: none;
   color: var(--danger);
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   cursor: pointer;
 
   &:hover {
@@ -461,7 +461,7 @@ const vFocus: Directive<HTMLElement> = {
 .et-error {
   margin: 0;
   min-height: 1.2rem;
-  font-size: 0.8125rem;
+  font-size: var(--demo-text-sm);
   color: var(--danger);
 }
 
