@@ -23,6 +23,7 @@ $font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
   // 基础色彩
   --bg: #f9fafb; // 页面底（gray-50）
   --surface: #ffffff; // 卡片/面板（white）
+  --bg-subtle: #f3f4f6; // 次级底色（hover 行 / 预览区 / 弱化层，gray-100）
   --text: #111827; // 正文（gray-900）
   --text-secondary: #6b7280; // 次要文字（gray-500）
   --primary: #4f46e5; // 品牌主色（indigo-600）
@@ -82,6 +83,7 @@ $font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
 .dark {
   --bg: #111827; // 页面底（gray-900）
   --surface: #1f2937; // 卡片/面板（gray-800）
+  --bg-subtle: #26303f; // 次级底色（hover 行 / 预览区 / 弱化层，比 surface 略亮）
   --text: #f9fafb; // 正文
   --text-secondary: #9ca3af; // 次要文字（gray-400）
   --primary: #818cf8; // 主色提亮（indigo-400）

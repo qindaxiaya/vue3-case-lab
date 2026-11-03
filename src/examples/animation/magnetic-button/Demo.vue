@@ -342,10 +342,10 @@ onUnmounted(() => {
 .system-note {
   margin: 0;
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, transparent);
   border-left-width: 3px;
   border-radius: var(--demo-radius);
-  background-color: var(--code-bg);
+  background-color: color-mix(in srgb, var(--warning) 7%, var(--code-bg));
   font-size: var(--demo-text-sm);
   line-height: 1.65;
   color: var(--text);
