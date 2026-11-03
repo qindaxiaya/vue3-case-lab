@@ -60,13 +60,14 @@ function openPopover(): void {
       >
         打开气泡卡
       </n-button>
-      <label class="switch">
-        <input
-          v-model="teleportToBody"
-          type="checkbox"
-        >
-        Teleport 到 body（取消勾选看 overflow 裁剪）
-      </label>
+      <span class="switch">
+        <n-switch
+          v-model:value="teleportToBody"
+          size="small"
+          aria-label="Teleport 到 body"
+        />
+        Teleport 到 body（关掉看 overflow 裁剪）
+      </span>
     </div>
 
     <!-- 演示舞台：overflow:hidden 容器——不 teleport 的弹层会被裁掉 -->
@@ -161,17 +162,13 @@ function openPopover(): void {
   flex-wrap: wrap;
 }
 
+/* 开关行只保留排布与文字样式，开关本体交给 Naive */
 .switch {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.875rem;
   color: var(--text);
-  cursor: pointer;
-
-  input {
-    accent-color: var(--primary);
-  }
 }
 
 

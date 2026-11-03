@@ -91,24 +91,26 @@ function retry(): void {
   <div class="async-demo">
     <!-- 控制行 -->
     <div class="controls">
-      <label class="ctl">
+      <span class="ctl">
         加载延迟
-        <input
-          v-model.number="delayMs"
-          type="range"
-          min="0"
-          max="3000"
-          step="100"
-        >
+        <n-slider
+          v-model:value="delayMs"
+          class="ctl-slider"
+          :min="0"
+          :max="3000"
+          :step="100"
+          aria-label="加载延迟"
+        />
         <span class="ctl-val">{{ delayMs }}ms</span>
-      </label>
-      <label class="switch">
-        <input
-          v-model="failNext"
-          type="checkbox"
-        >
+      </span>
+      <span class="switch">
+        <n-switch
+          v-model:value="failNext"
+          size="small"
+          aria-label="模拟加载失败"
+        />
         模拟加载失败
-      </label>
+      </span>
       <n-button
         type="primary"
         @click="retry"
@@ -203,10 +205,11 @@ function retry(): void {
   gap: 0.5rem;
   font-size: 0.9375rem;
   color: var(--text);
+}
 
-  input[type='range'] {
-    accent-color: var(--primary);
-  }
+/* 滑杆只定宽度，轨道与滑块交给 Naive 主题 */
+.ctl-slider {
+  width: 9rem;
 }
 
 .ctl-val {
@@ -216,17 +219,13 @@ function retry(): void {
   min-width: 3.2em;
 }
 
+/* 开关行只保留排布与文字样式，开关本体交给 Naive */
 .switch {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.9375rem;
   color: var(--text);
-  cursor: pointer;
-
-  input {
-    accent-color: var(--primary);
-  }
 }
 
 

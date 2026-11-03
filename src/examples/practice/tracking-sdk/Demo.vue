@@ -177,13 +177,14 @@ const cards = [
       <span class="tk-kv">队列 <b>{{ queue.length }}</b> / {{ BATCH_SIZE }}</span>
       <span class="tk-kv">已上报 <b>{{ totalSent }}</b></span>
       <span class="tk-kv">批次 <b>{{ batches.length }}</b></span>
-      <label class="tk-switch">
-        <input
-          v-model="autoFlush"
-          type="checkbox"
-        >
+      <span class="tk-switch">
+        <n-switch
+          v-model:value="autoFlush"
+          size="small"
+          aria-label="每 2s 自动上报"
+        />
         每 2s 自动上报
-      </label>
+      </span>
       <n-button
         @click="flush"
       >
@@ -356,7 +357,6 @@ const cards = [
   gap: 0.25rem;
   font-size: 0.8125rem;
   color: var(--text-secondary);
-  cursor: pointer;
 }
 
 /* ---------- 主体 ---------- */

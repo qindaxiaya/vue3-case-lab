@@ -180,13 +180,14 @@ function resetAll(): void {
       <span class="chat-stat">
         消息 <b>{{ messages.length }}</b> · 历史批次 <b>{{ historyBatches }}</b>
       </span>
-      <label class="chat-auto">
-        <input
-          v-model="autoReply"
-          type="checkbox"
-        >
+      <span class="chat-auto">
+        <n-switch
+          v-model:value="autoReply"
+          size="small"
+          aria-label="自动来消息"
+        />
         自动来消息
-      </label>
+      </span>
       <n-button
         class="btn-reset"
         @click="resetAll"
@@ -298,7 +299,6 @@ function resetAll(): void {
   gap: 0.4rem;
   font-size: 0.875rem;
   color: var(--text-secondary);
-  cursor: pointer;
 }
 
 /* 只留布局：把「重置」推到右侧，观感交给 Naive 按钮 */

@@ -101,23 +101,20 @@ function barWidth(kb: number): string {
 
     <!-- 优化项 -->
     <div class="vs-options">
-      <label
+      <n-checkbox
         v-for="opt in options"
         :key="opt.id"
         class="vs-opt"
         :class="{ on: enabled.has(opt.id) }"
+        :checked="enabled.has(opt.id)"
+        @update:checked="toggle(opt.id)"
       >
-        <input
-          type="checkbox"
-          :checked="enabled.has(opt.id)"
-          @change="toggle(opt.id)"
-        >
         <span class="vs-opt-main">
           <span class="vs-opt-label">{{ opt.label }}</span>
           <span class="vs-opt-desc">{{ opt.desc }}</span>
         </span>
         <span class="vs-save">{{ opt.save ? '−' + opt.save + ' KB' : '时序优化' }}</span>
-      </label>
+      </n-checkbox>
     </div>
 
     <!-- 关键代码 -->
@@ -249,7 +246,6 @@ hljs.registerLanguage('typescript', ts)</code></pre>
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background-color: var(--bg);
-  cursor: pointer;
   transition: border-color 0.15s;
 
   &.on {
@@ -257,9 +253,19 @@ hljs.registerLanguage('typescript', ts)</code></pre>
     background-color: var(--primary-soft);
   }
 
-  input {
+  /* 勾选框方块比原生勾选框略高，往上提一点对齐首行文字 */
+  :deep(.n-checkbox-box-wrapper) {
     margin-top: 0.18rem;
-    accent-color: var(--primary);
+  }
+
+  /* 勾选框里的内容仍按「主文 + 节省体积」两栏排，允许换行 */
+  :deep(.n-checkbox__label) {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    flex: 1;
+    padding: 0;
+    white-space: normal;
   }
 }
 

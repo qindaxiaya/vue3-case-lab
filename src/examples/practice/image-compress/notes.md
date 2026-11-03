@@ -63,3 +63,5 @@ async function compressImage(file: File, quality = 0.6, maxEdge = 1200): Promise
 canvas 编码在主线程，几十张大图会阻塞；放 Web Worker（OffscreenCanvas）或串行 + 进度提示。
 
 坑：`toBlob` 是异步回调，忘记 `await` 会拿到 null。边界：需要 AVIF/多档自适应/EXIF 旋转时用 `browser-image-compression` 等库，别手写全套。
+
+豁免：文件选择框保留原生 `<input type="file">`（`display: none`），由「选择图片」按钮点 `click()` 唤起——压缩参数由滑杆给、压缩由 canvas 做，组件库的上传组件会接管文件读取与图片处理，案例就没东西可讲了。

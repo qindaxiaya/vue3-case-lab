@@ -751,14 +751,17 @@ const SCENARIOS = [
       const afterReset = await readLoaded()
 
       // 打开持续观察后滚到底：已加载图片滚出应出现「（已加载）」记录
-      const keepChecked = await evaluate(`(() => {
-        const label = [...document.querySelectorAll('.demo-card .switch')].find((item) =>
+      // （n-switch 是 div role=switch，没有原生 input，点它再读 aria-checked）
+      const keepChecked = await evaluate(`(async () => {
+        const row = [...document.querySelectorAll('.demo-card .switch')].find((item) =>
           item.textContent.includes('持续观察')
         )
-        const input = label?.querySelector('input')
-        if (!input) return false
-        input.click()
-        return input.checked
+        const sw = row?.querySelector('[role="switch"]')
+        if (!sw) return false
+        sw.click()
+        // 等 Vue 把新的 checked 渲染到 aria-checked 上再读
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        return sw.getAttribute('aria-checked') === 'true'
       })()`)
       await evaluate(`(() => {
         const el = document.querySelector('.scroll-area')
@@ -884,8 +887,9 @@ const SCENARIOS = [
         const realBasic = names()
 
         // 只留 Promise.then：验证任务开关真的会改变排入队列的任务
-        document.querySelector('[data-task="timer0"] input').click()
-        document.querySelector('[data-task="micro"] input').click()
+        // （n-checkbox 是 div role=checkbox，没有原生 input，直接点勾选行根节点）
+        document.querySelector('[data-task="timer0"]').click()
+        document.querySelector('[data-task="micro"]').click()
         await wait(50)
         run()
         await wait(150)
@@ -967,6 +971,48 @@ const SCENARIOS = [
         failures.push(`n-radio-button 高度不在 34~40px（${result.modeHeight}px）`)
       }
       if (result.taskCount !== 6) failures.push(`任务开关不是 6 个（${result.taskCount} 个）`)
+      return failures
+    },
+  },
+  {
+    name: '进度滑杆驱动进度环',
+    route: '/cases/animation/progress-ring',
+    /** n-slider 是自绘控件：先聚焦手柄，再用键盘右移确认目标值真的被推上去 */
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const targetText = () =>
+          document.querySelector('.pr-demo .slider > span')?.innerText?.trim() ?? ''
+        const handle = document.querySelector('.pr-demo .slider [role="slider"]')
+        const before = targetText()
+        handle?.focus()
+        handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+        await wait(120)
+        const after = targetText()
+        handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+        await wait(120)
+        const afterAgain = targetText()
+        return {
+          hasHandle: Boolean(handle),
+          before,
+          after,
+          afterAgain,
+          ariaNow: handle?.getAttribute('aria-valuenow') ?? '',
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (!result.hasHandle) {
+        failures.push('没找到 Naive 滑杆的 role="slider" 手柄')
+        return failures
+      }
+      const num = (text) => Number(/(\d+)/.exec(text ?? '')?.[1] ?? NaN)
+      if (!(num(result.after) > num(result.before))) {
+        failures.push(`键盘右移没有推高目标值（${result.before} → ${result.after}）`)
+      }
+      if (!(num(result.afterAgain) > num(result.after))) {
+        failures.push(`第二次右移没有继续加（${result.after} → ${result.afterAgain}）`)
+      }
       return failures
     },
   },
@@ -1573,6 +1619,58 @@ const SCENARIOS = [
         failures.push(`切回按需后提示没有还原（${result.backHint}）`)
       }
       if (!result.backChecked.includes('按需加载')) failures.push(`切回按需后选中项不对（${result.backChecked}）`)
+      return failures
+    },
+  },
+  {
+    name: '分包优化项勾选',
+    route: '/cases/practice/vite-split',
+    /** 优化项换成 n-checkbox 后：点整张卡片仍要能切换，并让首屏估算跟着变 */
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const cards = () => [...document.querySelectorAll('.vs-demo .vs-options .vs-opt')]
+        const firstScreen = () => {
+          const rows = [...document.querySelectorAll('.vs-demo .vs-num')]
+          return rows[1]?.innerText?.trim() ?? ''
+        }
+        const onCount = () => cards().filter((el) => el.classList.contains('on')).length
+        // 挑一张当前没勾的卡片并记住它，来回点同一张，避免第二次点到别的卡
+        const target = cards().find((el) => !el.classList.contains('on'))
+        const beforeScreen = firstScreen()
+        const beforeOn = onCount()
+        target?.click()
+        await wait(120)
+        const pickedScreen = firstScreen()
+        const pickedOn = onCount()
+        target?.click()
+        await wait(120)
+        return {
+          optionCount: cards().length,
+          beforeScreen,
+          beforeOn,
+          pickedScreen,
+          pickedOn,
+          backScreen: firstScreen(),
+          backOn: onCount(),
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.optionCount < 3) {
+        failures.push(`优化项卡片数量不对（${result.optionCount} 个）`)
+      }
+      if (result.pickedOn !== result.beforeOn + 1) {
+        failures.push(`点卡片没有勾上（${result.beforeOn} → ${result.pickedOn}）`)
+      }
+      if (result.pickedScreen === result.beforeScreen) {
+        failures.push(`勾上优化项后首屏估算没变（${result.pickedScreen}）`)
+      }
+      if (result.backOn !== result.beforeOn || result.backScreen !== result.beforeScreen) {
+        failures.push(
+          `再点一次没有还原（勾选 ${result.backOn} / 估算 ${result.backScreen}）`,
+        )
+      }
       return failures
     },
   },

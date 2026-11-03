@@ -247,28 +247,30 @@ onUnmounted(() => {
   <div class="ic-demo">
     <!-- 控制区 -->
     <div class="controls">
-      <label class="ctl">
+      <span class="ctl">
         JPEG 质量
-        <input
-          v-model.number="quality"
-          type="range"
-          min="0.1"
-          max="1"
-          step="0.05"
-        >
+        <n-slider
+          v-model:value="quality"
+          class="ctl-slider"
+          :min="0.1"
+          :max="1"
+          :step="0.05"
+          aria-label="JPEG 质量"
+        />
         <span class="ctl-val">{{ quality.toFixed(2) }}</span>
-      </label>
-      <label class="ctl">
+      </span>
+      <span class="ctl">
         最大边长
-        <input
-          v-model.number="maxEdge"
-          type="range"
-          min="400"
-          max="1600"
-          step="100"
-        >
+        <n-slider
+          v-model:value="maxEdge"
+          class="ctl-slider"
+          :min="400"
+          :max="1600"
+          :step="100"
+          aria-label="最大边长"
+        />
         <span class="ctl-val">{{ maxEdge }}px</span>
-      </label>
+      </span>
       <n-button
         type="primary"
         @click="fileInput?.click()"
@@ -369,11 +371,11 @@ onUnmounted(() => {
   gap: 0.45rem;
   font-size: 0.875rem;
   color: var(--text);
+}
 
-  input[type='range'] {
-    accent-color: var(--primary);
-    width: 120px;
-  }
+/* 滑杆只定宽度，轨道与滑块交给 Naive 主题 */
+.ctl-slider {
+  width: 7.5rem;
 }
 
 .ctl-val {

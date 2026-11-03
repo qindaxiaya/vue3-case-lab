@@ -402,17 +402,18 @@ function fpsLevel(fps: number): string {
       </p>
 
       <div class="action-row">
-        <label class="block-slider">
+        <span class="block-slider">
           卡顿强度
-          <input
-            v-model.number="blockMs"
-            type="range"
-            min="16"
-            max="200"
-            step="4"
-          >
+          <n-slider
+            v-model:value="blockMs"
+            class="block-range"
+            :min="16"
+            :max="200"
+            :step="4"
+            aria-label="卡顿强度"
+          />
           <span class="block-ms">{{ blockMs }}ms</span>
-        </label>
+        </span>
 
         <n-button @click="makeLongTask">
           制造长任务
@@ -626,11 +627,11 @@ function fpsLevel(fps: number): string {
   gap: 0.5rem;
   font-size: 0.9375rem;
   color: var(--text);
+}
 
-  input[type='range'] {
-    width: 8rem;
-    accent-color: var(--primary);
-  }
+/* 滑杆只定宽度，轨道与滑块交给 Naive 主题 */
+.block-range {
+  width: 8rem;
 }
 
 .block-ms {

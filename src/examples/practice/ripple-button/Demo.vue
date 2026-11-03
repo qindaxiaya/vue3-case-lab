@@ -72,24 +72,26 @@ function spawnRipple(e: MouseEvent): void {
   <div class="rb-demo">
     <!-- 控制行 -->
     <div class="controls">
-      <label class="switch">
-        <input
-          v-model="rippleEnabled"
-          type="checkbox"
-        >
+      <span class="switch">
+        <n-switch
+          v-model:value="rippleEnabled"
+          size="small"
+          aria-label="开启波纹"
+        />
         开启波纹
-      </label>
-      <label class="ctl">
+      </span>
+      <span class="ctl">
         时长
-        <input
-          v-model.number="rippleDuration"
-          type="range"
-          min="200"
-          max="1200"
-          step="100"
-        >
+        <n-slider
+          v-model:value="rippleDuration"
+          class="ctl-slider"
+          :min="200"
+          :max="1200"
+          :step="100"
+          aria-label="波纹时长"
+        />
         <span class="ctl-val">{{ rippleDuration }}ms</span>
-      </label>
+      </span>
       <span class="stat">点击次数 <b>{{ clickCount }}</b></span>
     </div>
 
@@ -162,16 +164,11 @@ function spawnRipple(e: MouseEvent): void {
   gap: 0.4rem;
   font-size: 0.875rem;
   color: var(--text);
-  cursor: pointer;
+}
 
-  input[type='checkbox'] {
-    accent-color: var(--primary);
-  }
-
-  input[type='range'] {
-    accent-color: var(--primary);
-    width: 110px;
-  }
+/* 滑杆只定宽度，轨道与滑块交给 Naive 主题 */
+.ctl-slider {
+  width: 7rem;
 }
 
 .ctl-val {

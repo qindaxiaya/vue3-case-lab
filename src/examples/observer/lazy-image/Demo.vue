@@ -190,22 +190,24 @@ onUnmounted(() => {
   <div class="lazy-demo">
     <!-- 控制行：预加载开关 + 统计 -->
     <div class="controls">
-      <label class="switch">
-        <input
-          v-model="usePreload"
-          type="checkbox"
-          @change="rebuildObserver"
-        >
+      <span class="switch">
+        <n-switch
+          v-model:value="usePreload"
+          size="small"
+          aria-label="rootMargin 100px 预加载"
+          @update:value="rebuildObserver"
+        />
         rootMargin 100px 预加载
-      </label>
-      <label class="switch">
-        <input
-          v-model="keepObserving"
-          type="checkbox"
-          @change="onKeepObservingChange"
-        >
+      </span>
+      <span class="switch">
+        <n-switch
+          v-model:value="keepObserving"
+          size="small"
+          aria-label="持续观察已加载图片"
+          @update:value="onKeepObservingChange"
+        />
         持续观察已加载图片
-      </label>
+      </span>
       <n-button @click="resetList">
         重置列表
       </n-button>
@@ -292,17 +294,13 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+/* 开关行只保留排布与文字样式，开关本体交给 Naive */
 .switch {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.9375rem;
   color: var(--text);
-  cursor: pointer;
-
-  input {
-    accent-color: var(--primary);
-  }
 }
 
 .stat {

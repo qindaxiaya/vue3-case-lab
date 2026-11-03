@@ -22,6 +22,8 @@ const serverChunks = new Map<string, Set<number>>()
 const knownHashes = new Set<string>()
 
 const file = ref<File | null>(null)
+/** 隐藏的原生文件框：点按钮时用 click() 打开系统选择器 */
+const fileInput = ref<HTMLInputElement | null>(null)
 const hash = ref('')
 const hashMs = ref<number | null>(null)
 const computing = ref(false)
@@ -215,16 +217,20 @@ function formatSize(bytes: number): string {
 
 <template>
   <div class="cu-demo">
-    <!-- 选择 -->
+    <!-- 选择：原生文件框保持隐藏，由 Naive 按钮触发 click() -->
     <div class="cu-bar">
-      <label class="cu-file">
-        <input
-          type="file"
-          class="cu-input"
-          @change="onPick"
-        >
+      <n-button
+        size="small"
+        @click="fileInput?.click()"
+      >
         选择文件
-      </label>
+      </n-button>
+      <input
+        ref="fileInput"
+        type="file"
+        class="cu-input"
+        @change="onPick"
+      >
       <n-button
         @click="makeTestFile"
       >
@@ -359,20 +365,6 @@ function formatSize(bytes: number): string {
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
-}
-
-.cu-file {
-  padding: 0.22rem 0.55rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  font-size: 0.8125rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: var(--primary);
-    color: #fff;
-  }
 }
 
 .cu-input {

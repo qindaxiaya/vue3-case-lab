@@ -70,3 +70,5 @@ await fetch('/api/upload/merge', { method: 'POST', body: JSON.stringify({ hash, 
 把已完成分片与 hash 存 localStorage/IndexedDB；仅靠内存刷新即丢。
 
 坑：服务端合并必须按 index 排序，不能按到达顺序。边界：小文件（<1MB）直接整传更简单；对象存储通常提供现成的分片上传 SDK，优先用。
+
+豁免：演示区的文件选择框保留原生 `<input type="file">` 并设为 `display: none`，由旁边的 Naive 按钮点 `click()` 唤起系统选择器——组件库的上传组件会接管选文件、进度与取消逻辑，等于把这一页要讲的分片与 hash 计算换掉；被隐藏的原生控件也不存在观感不一致的问题。
