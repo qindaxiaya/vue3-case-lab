@@ -260,8 +260,8 @@ function resetCounters(): void {
 
 .panel {
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  padding: 0.75rem;
+  border-radius: var(--demo-radius);
+  padding: var(--demo-block-pad);
   background-color: var(--bg);
   display: flex;
   flex-direction: column;

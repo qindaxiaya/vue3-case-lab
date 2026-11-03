@@ -190,7 +190,7 @@ onUnmounted(() => {
 }
 
 .stat-name {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 }
 
@@ -201,9 +201,9 @@ onUnmounted(() => {
 }
 
 .hint {
-  font-size: 0.9375rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
   margin: 0;
+  font-size: var(--demo-text-sm);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 </style>

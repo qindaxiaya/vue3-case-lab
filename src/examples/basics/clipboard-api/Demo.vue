@@ -383,7 +383,7 @@ function resetAll(): void {
   border: 1px solid var(--border);
   border-radius: var(--demo-radius);
   background-color: var(--code-bg);
-  padding: 0.6rem 0.8rem;
+  padding: var(--demo-block-pad);
   user-select: text;
 }
 

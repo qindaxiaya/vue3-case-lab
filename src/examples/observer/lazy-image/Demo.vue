@@ -304,7 +304,7 @@ onUnmounted(() => {
 }
 
 .stat {
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -316,7 +316,7 @@ onUnmounted(() => {
 .hint {
   margin: 0;
   font-size: var(--demo-text-sm);
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 

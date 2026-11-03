@@ -147,7 +147,7 @@ function resetCounts(): void {
 
 
 .stat {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {

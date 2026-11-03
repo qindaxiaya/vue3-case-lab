@@ -285,7 +285,7 @@ onUnmounted(() => {
 }
 
 .stat {
-  font-size: 0.9375rem;
+  font-size: var(--demo-text-md);
   color: var(--text-secondary);
 
   b {
@@ -318,8 +318,8 @@ onUnmounted(() => {
 
 .panel {
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
-  padding: 0.6rem;
+  border-radius: var(--demo-radius);
+  padding: var(--demo-block-pad);
   background-color: var(--bg);
   display: flex;
   flex-direction: column;

@@ -70,6 +70,7 @@ $font-mono: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas,
   --demo-control-py: 0.5rem; // 按钮纵向内边距
   --demo-panel-pad: 0.8rem 0.95rem; // 内部卡片/面板内边距
   --demo-panel-gap: 0.7rem; // 面板之间的间距
+  --demo-block-pad: 0.6rem 0.75rem; // 演示区内部「块中块」（面板 / 日志区）统一内边距
   --demo-radius: 0.5rem; // 面板圆角
 
   // 代码高亮主题变量（highlight.js 两主题切换时引用）

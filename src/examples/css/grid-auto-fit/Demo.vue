@@ -337,7 +337,7 @@ onUnmounted(() => {
   border: 1px dashed var(--border);
   border-radius: var(--demo-radius);
   background-color: var(--bg);
-  padding: 0.6rem;
+  padding: var(--demo-block-pad);
   min-height: 180px;
 }
 

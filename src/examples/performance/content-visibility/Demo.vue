@@ -270,7 +270,7 @@ code {
   flex-shrink: 0;
   min-width: 3.2rem;
   text-align: center;
-  padding: 0.05rem 0.35rem;
+  padding: 0.1rem 0.45rem;
   border-radius: var(--radius-tag);
   font-size: var(--demo-text-xs);
 }

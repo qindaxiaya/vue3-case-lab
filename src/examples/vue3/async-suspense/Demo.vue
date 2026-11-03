@@ -237,7 +237,8 @@ function retry(): void {
 
 .hint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--demo-text-sm);
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 </style>
