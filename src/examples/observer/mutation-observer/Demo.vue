@@ -154,30 +154,33 @@ onUnmounted(() => {
   <div class="mo-demo">
     <!-- 配置开关 -->
     <div class="controls">
-      <label class="switch">
-        <input
-          v-model="watchChildList"
-          type="checkbox"
-          @change="rebuild"
-        >
+      <span class="switch">
+        <n-switch
+          v-model:value="watchChildList"
+          size="small"
+          aria-label="childList"
+          @update:value="rebuild"
+        />
         childList
-      </label>
-      <label class="switch">
-        <input
-          v-model="watchAttributes"
-          type="checkbox"
-          @change="rebuild"
-        >
+      </span>
+      <span class="switch">
+        <n-switch
+          v-model:value="watchAttributes"
+          size="small"
+          aria-label="attributes"
+          @update:value="rebuild"
+        />
         attributes
-      </label>
-      <label class="switch">
-        <input
-          v-model="watchCharacter"
-          type="checkbox"
-          @change="rebuild"
-        >
+      </span>
+      <span class="switch">
+        <n-switch
+          v-model:value="watchCharacter"
+          size="small"
+          aria-label="characterData"
+          @update:value="rebuild"
+        />
         characterData
-      </label>
+      </span>
       <span class="stat">节点数 <b>{{ nodeCount }}</b></span>
     </div>
 
@@ -272,17 +275,13 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+/* 开关行只保留排布与文字样式，开关本体交给 Naive */
 .switch {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.9375rem;
   color: var(--text);
-  cursor: pointer;
-
-  input {
-    accent-color: var(--primary);
-  }
 }
 
 .stat {

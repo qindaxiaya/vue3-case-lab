@@ -340,23 +340,20 @@ onUnmounted(() => {
       role="group"
       aria-label="选择要排入的任务"
     >
-      <label
+      <n-checkbox
         v-for="task in TASKS"
         :key="task.id"
         class="task-toggle"
         :data-task="task.id"
+        :checked="isOn(task.id)"
+        @update:checked="toggleTask(task.id)"
       >
-        <input
-          type="checkbox"
-          :checked="isOn(task.id)"
-          @change="toggleTask(task.id)"
-        >
         <span>{{ task.label }}</span>
         <span
           class="tag"
           :class="KIND_META[task.kind].cls"
         >{{ KIND_META[task.kind].badge }}</span>
-      </label>
+      </n-checkbox>
     </div>
 
     <div class="bar">
@@ -495,6 +492,7 @@ onUnmounted(() => {
   gap: 0.4rem;
 }
 
+/* 任务勾选行：外层边框与间距保留，勾选框本体交给 Naive */
 .task-toggle {
   display: inline-flex;
   align-items: center;
@@ -504,11 +502,6 @@ onUnmounted(() => {
   border-radius: var(--demo-radius);
   font-size: var(--demo-text-sm);
   color: var(--text);
-  cursor: pointer;
-
-  input {
-    accent-color: var(--primary);
-  }
 }
 
 .bar {
@@ -518,10 +511,7 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.task-toggle:focus-within {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
+/* 焦点提示交给 Naive 勾选框自身的光圈，避免双层描边 */
 
 .stats {
   display: flex;

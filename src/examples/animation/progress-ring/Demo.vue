@@ -121,10 +121,10 @@ function resetRing(): void {
   }, 60)
 }
 
-/** 滑杆输入：把读数交给统一的设置入口 */
-function onSliderInput(event: Event): void {
-  const input = event.target as HTMLInputElement
-  setProgressTarget(Number(input.value))
+/** 滑杆取值：n-slider 单值模式直接给 number（数组形态只在范围选择时出现） */
+function onSliderValue(value: number | number[]): void {
+  if (typeof value !== 'number') return
+  setProgressTarget(value)
 }
 
 /** 切换驱动方式：停掉定时器，把目标对齐当前进度，计数清零便于对比 */
@@ -254,18 +254,17 @@ onUnmounted(() => {
           <span>动画 <b>{{ mockReduce ? '跳过' : '播放' }}</b></span>
         </div>
 
-        <label class="slider">
+        <div class="slider">
           <span>目标进度 <b>{{ target }}%</b></span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
+          <n-slider
             :value="target"
+            :min="0"
+            :max="100"
+            :step="1"
             aria-label="目标进度"
-            @input="onSliderInput"
-          >
-        </label>
+            @update:value="onSliderValue"
+          />
+        </div>
 
         <div
           class="presets"
@@ -429,12 +428,6 @@ onUnmounted(() => {
   b {
     font-family: var(--font-mono);
     color: var(--text);
-  }
-
-  input {
-    width: 100%;
-    accent-color: var(--primary);
-    cursor: pointer;
   }
 }
 
