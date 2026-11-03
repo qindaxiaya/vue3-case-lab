@@ -381,7 +381,7 @@ const vFocus: Directive<HTMLElement> = {
 .et-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--demo-radius);
 }
 
 .et-table {
@@ -418,7 +418,7 @@ const vFocus: Directive<HTMLElement> = {
   }
 
   tbody tr:hover td {
-    background-color: var(--bg-soft, var(--code-bg));
+    background-color: var(--bg-subtle);
   }
 }
 
@@ -444,15 +444,19 @@ const vFocus: Directive<HTMLElement> = {
   background-color: var(--danger-soft);
 }
 
+/* 行内删除：文字按钮给足点击区与悬停底色，别只剩一条下划线 */
 .btn-del {
   border: none;
   background: none;
   color: var(--danger);
   font-size: var(--demo-text-sm);
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--transition);
 
   &:hover {
-    text-decoration: underline;
+    background-color: color-mix(in srgb, var(--danger) 12%, transparent);
   }
 }
 

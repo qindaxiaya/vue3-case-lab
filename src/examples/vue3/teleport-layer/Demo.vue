@@ -230,7 +230,7 @@ function openPopover(): void {
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
   background-color: var(--bg);
-  box-shadow: var(--shadow-lg, 0 10px 25px rgb(0 0 0 / 0.15));
+  box-shadow: var(--shadow-soft-lg);
 }
 
 .popover-title {

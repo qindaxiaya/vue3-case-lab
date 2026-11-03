@@ -141,9 +141,9 @@ const total = countNodes(tree)
 
 .tree-card {
   border: 1px solid var(--border);
-  border-radius: var(--radius-btn);
+  border-radius: var(--demo-radius);
   background-color: var(--bg);
-  padding: 0.65rem 0.7rem;
+  padding: var(--demo-block-pad);
   max-height: 360px;
   overflow: auto;
 }
