@@ -390,7 +390,9 @@ onUnmounted(() => {
 }
 
 .hint {
-  font-size: 0.8125rem;
+  margin: 0;
+  font-size: var(--demo-text-sm);
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 

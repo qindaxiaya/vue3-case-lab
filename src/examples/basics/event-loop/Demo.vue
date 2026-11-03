@@ -534,7 +534,7 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   border-radius: var(--demo-radius);
   background-color: var(--code-bg);
-  padding: 0.7rem 0.8rem;
+  padding: var(--demo-block-pad);
   overflow-x: auto;
   user-select: text;
   min-height: 180px;

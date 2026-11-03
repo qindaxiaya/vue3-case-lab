@@ -300,9 +300,9 @@ onUnmounted(() => {
 }
 
 .badge {
-  font-size: 0.875rem;
+  font-size: var(--demo-text-xs);
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-tag);
 }
 
 .badge--busy {
