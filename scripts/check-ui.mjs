@@ -23,7 +23,15 @@
  * 退出码：全部通过 0，有失败 1（可直接进 CI 或本地门禁）
  */
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 
 /** 读取 --base 参数，默认验 preview（4173） */
@@ -59,9 +67,33 @@ function readCase() {
   return process.env.CHECK_CASE || ''
 }
 
+/** 截图输出目录：和 chrome profile 一样固定放 node_modules/.tmp，已被 git 忽略 */
+const SHOT_DIR = path.resolve('node_modules/.tmp/shots')
+
 /** 是否跑全案例巡检（81 条路由 × 375px） */
 function readSweep() {
   return process.argv.includes('--sweep') || process.env.CHECK_SWEEP === '1'
+}
+
+/**
+ * 读取 --shot 参数：给演示区拍截图（逗号分隔的「分类/案例」）
+ * 为什么需要：间距、字号、配色漂移这类观感问题断言不出来，但可以每次截同一块区域，
+ * 改完直接比对；截图不参与断言，所以跑完永远返回 0
+ */
+function readShots() {
+  const index = process.argv.indexOf('--shot')
+  if (index === -1) return []
+  const raw = process.argv[index + 1] ?? ''
+  if (!raw || raw.startsWith('--')) return []
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+/** 是否拍暗色（--dark）：一次性把浅/暗两套都截出来，省得手动切主题 */
+function readDark() {
+  return process.argv.includes('--dark')
 }
 
 /** 案例目录根：用来把「只给案例 id」补全成「分类/案例」 */
@@ -104,6 +136,8 @@ const BASE = readBase().replace(/\/$/, '')
 const ONLY = readOnly()
 const CASE = readCase()
 const SWEEP = readSweep()
+const SHOTS = readShots()
+const DARK = readDark()
 /** 内置产物路径断言只在 preview 有意义，dev 是源码直出 */
 const IS_PREVIEW = !/:(5173|5174)$/.test(BASE)
 
@@ -2080,6 +2114,70 @@ async function checkAnimationCases(port) {
   return results
 }
 
+/**
+ * 给一个案例的演示区拍截图（1280 / 375 各一张，可选暗色）
+ * 只截 .demo-card，避免每次都被顶栏和说明区占掉大半个图
+ */
+async function shootCase(port, casePath, dark) {
+  const route = `/cases/${casePath}`
+  const target = await openPage(port, BASE + route)
+  const page = await connectPage(target)
+  const files = []
+
+  try {
+    // 暗色：站点从 localStorage 读 moyu-theme，这里直接写进去并补 .dark 类，不用刷新
+    if (dark) {
+      await page.evaluate(`(() => {
+        localStorage.setItem('moyu-theme', 'dark')
+        document.documentElement.classList.add('dark')
+        return true
+      })()`)
+    }
+
+    for (const width of [1280, 375]) {
+      await page.send('Emulation.setDeviceMetricsOverride', {
+        width,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: width < 500,
+      })
+      await waitForDemo(page)
+      await sleep(500) // 等响应式重排与入场过渡结束，否则会截到半透明状态
+
+      const box = await page.evaluate(`(() => {
+        const card = document.querySelector('.demo-card')
+        if (!card) return null
+        const rect = card.getBoundingClientRect()
+        // 演示很长时截前 2600px 足够看清观感，避免生成超大图
+        return {
+          x: Math.max(0, rect.x + window.scrollX),
+          y: Math.max(0, rect.y + window.scrollY),
+          width: Math.min(rect.width, ${width}),
+          height: Math.min(rect.height, 2600),
+        }
+      })()`)
+      if (!box || box.height < 20) continue
+
+      const shot = await page.send('Page.captureScreenshot', {
+        format: 'png',
+        captureBeyondViewport: true,
+        clip: { ...box, scale: 1 },
+      })
+      const file = path.join(
+        SHOT_DIR,
+        `${casePath.replace(/\//g, '-')}-${width}${dark ? '-dark' : ''}.png`,
+      )
+      writeFileSync(file, Buffer.from(shot.data, 'base64'))
+      files.push(file)
+    }
+  } finally {
+    page.close()
+    await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`).catch(() => {})
+  }
+
+  return files
+}
+
 const chrome = await launchChrome()
 // 兜底：Ctrl+C 或异常退出时也要清干净，不能把进程留给用户
 process.on('exit', () => shutdown(chrome))
@@ -2097,7 +2195,14 @@ try {
   }
 
   const results = []
-  if (CASE) {
+  if (SHOTS.length > 0) {
+    // 截图模式：只出图不断言，路径打印出来方便直接打开
+    mkdirSync(SHOT_DIR, { recursive: true })
+    for (const casePath of SHOTS) {
+      const files = await shootCase(chrome.port, resolveCasePath(casePath), DARK)
+      for (const file of files) results.push({ name: `截图 ${path.basename(file)}`, route: casePath, result: { file }, failures: [] })
+    }
+  } else if (CASE) {
     // 单案例模式：任意案例都能用，不依赖是否写了定制场景
     results.push(await checkCase(chrome.port, resolveCasePath(CASE)))
   } else if (SWEEP) {
@@ -2125,14 +2230,20 @@ try {
     ? `--case ${CASE}`
     : SWEEP
       ? `--sweep${ONLY ? ` --only ${ONLY}` : ''}`
-      : ONLY
-        ? `--only ${ONLY}`
-        : ''
+      : SHOTS.length > 0
+        ? `--shot ${SHOTS.join(',')}${DARK ? '（暗色）' : ''}`
+        : ONLY
+          ? `--only ${ONLY}`
+          : ''
   console.log(`\n[check:ui] 目标：${BASE}${mode ? `（${mode}）` : ''}\n`)
 
   const failed = results.filter((item) => item.failures.length > 0)
 
-  if (SWEEP) {
+  if (SHOTS.length > 0) {
+    // 截图不是断言，不统计通过率
+    for (const item of results) console.log(`✓ ${item.name}`)
+    console.log(`\n[check:ui] 截图完成：${results.length} 张 → ${SHOT_DIR}`)
+  } else if (SWEEP) {
     // 81 条路由逐条打印会刷屏，只列失败项，通过数看汇总
     for (const item of failed) {
       console.log(`✗ ${item.name}`)
@@ -2157,7 +2268,7 @@ try {
       `\n[check:ui] ${failed.length} 个${SWEEP ? '案例' : '场景'}未通过`,
     )
     exitCode = 1
-  } else {
+  } else if (SHOTS.length === 0) {
     console.log(`\n[check:ui] ${results.length} 个${SWEEP ? '案例' : '场景'}全部通过 ✓`)
   }
 } finally {
