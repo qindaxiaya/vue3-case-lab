@@ -231,7 +231,7 @@
   - `tests/registry.spec.ts` 的「演示组件按需加载成功」超时 20s → 60s（冷缓存编译 81 个案例 chunk 时偶发假红灯）
   - 验收（preview）：全量 `check:ui` 36/36、`--sweep` 81/81；13 个改动案例 `--case` 在 1280 / 375 无横向溢出且零 console 错误；`npx vitest run` 53/53、type-check、eslint、build、`check:bundle`（首屏 gzip 106.2 KB）全绿
 
-- 🔄 2026-11-03 演示区视觉打磨（A / B / C 三批，分支 `refactor/demo-visual-polish`，待 PR）：机械迁移（组件 / 字号）收口后，剩下的「同类块各家写一套」靠肉眼找
+- ✅ 2026-11-03 演示区视觉打磨（A / B / C 三批，PR #21 已合并，main `774f636`）：机械迁移（组件 / 字号）收口后，剩下的「同类块各家写一套」靠肉眼找
   - 工具：`check:ui` 新增 `--shot` 截图模式（只截 `.demo-card`，1280 + 375 各一张，`--dark` 拍暗色，输出 `node_modules/.tmp/shots/`，不断言、不参与 CI），用来代替反复开浏览器比对
   - 批 A（同语义块对齐，`4ba8f36`）：新增 `--demo-block-pad`（0.6rem 0.75rem），`.panel`（use-event-listener / mutation-observer / grid-auto-fit）与 `.log`（clipboard-api / event-loop）统一采用；`.panel` 圆角从 `--radius-btn`（12px）收回 `--demo-radius`（8px）；`.stat` / `.stat-name` 统一 `--demo-text-md`；`.badge` 统一 `--radius-tag` + `0.1rem 0.45rem` + `--demo-text-xs`；`.hint` 统一 `--demo-text-sm` + `line-height 1.7`。语义例外不动：skeleton-shimmer 的 `.panel` 是「被演示的卡片预览」（白底 surface），grid-auto-fit 的虚线边框用来标示容器边界
   - 批 B（字面量收敛，`9420470`，59 文件 414 处）：font-size 的 0.75 / 0.8125 / 0.875 / 0.9375rem 精确换成 `--demo-text-xs/sm/md/lg`（389 处）；0.7~1rem 的零碎字号就近归位（25 处），`dynamic-chunk` 从 8 档压到 3 档；`border-radius: 999px` 换 `--radius-tag`。保留大号展示数字（1.05~1.75rem）、`clamp()`、`em`
