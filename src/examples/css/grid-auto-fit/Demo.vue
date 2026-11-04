@@ -6,7 +6,8 @@
 // - ResizeObserver 实时读取容器宽度与列数，统计列数变化次数
 // ============================================================
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import DemoResizeHandle from '../../../components/demo/demo-resize-handle.vue'
 
 /** 布局方案：media = flex + 手写断点表 / autofit = grid auto-fit */
 type LayoutMode = 'media' | 'autofit'
@@ -74,36 +75,22 @@ let lastCols = -1
 
 // ---------- 可拖宽容器 ----------
 
-const panelRef = ref<HTMLElement | null>(null)
-const stageRef = ref<HTMLElement | null>(null)
-/** 面板宽度（px），挂载时按可用宽度初始化 */
+/** 共享把手组件实例：重置、读网格节点都用它 */
+const resizeRef = ref<InstanceType<typeof DemoResizeHandle> | null>(null)
+/** 面板宽度（px）：双向绑定给共享组件，挂载后由它按可用宽度铺满 */
 const panelWidth = ref(320)
-/** 拖拽时记住的起始指针横坐标 */
-let dragStartX = 0
-/** 拖拽时记住的起始面板宽度 */
-let dragStartWidth = 0
-/** 默认宽度（重置时恢复） */
-let defaultWidth = 320
-
-/** 面板行内样式：宽度由拖拽控制，且不允许超出外层容器 */
-const panelStyle = computed(() => ({
-  width: `${panelWidth.value}px`,
-  maxWidth: '100%',
-}))
 
 /** media 模式下单张卡片的 flex-basis：按列数减去间隙均分（8px = gap 0.5rem） */
 const cardStyle = computed(() => ({
   flex: `0 0 calc((100% - ${(cols.value - 1) * 8}px) / ${cols.value})`,
 }))
 
-// ---------- ResizeObserver：宽度 + 列数 + 跳变统计 ----------
-
-let ro: ResizeObserver | null = null
+// ---------- 宽度 / 列数 / 跳变统计（由共享组件的尺寸回调驱动） ----------
 
 /** 读当前列数：autofit 读真实网格，media 用断点表（等价于手写查询的求值结果） */
 function measureCols(): number {
-  if (mode.value === 'media') return colsForMedia(panelWidth.value)
-  const el = panelRef.value
+  if (mode.value === 'media') return colsForMedia(width.value)
+  const el = resizeRef.value?.boxEl
   if (!el) return 1
   // 计算样式里的 gridTemplateColumns 是空格分隔的轨道列表，分段即列数
   const tracks = getComputedStyle(el).gridTemplateColumns.trim()
@@ -116,43 +103,17 @@ function pushLog(text: string): void {
   if (colLogs.value.length > 6) colLogs.value.pop()
 }
 
-function setupObserver(): void {
-  ro?.disconnect()
-  const el = panelRef.value
-  if (!el) return
-  ro = new ResizeObserver(() => {
-    // 面板宽度是拖拽直改的行内样式，读回边框盒宽度保证与显示一致
-    width.value = Math.round(el.getBoundingClientRect().width)
-    const next = measureCols()
-    // lastCols = -1 是首轮回调，只建立基线不记跳变
-    if (lastCols >= 0 && next !== lastCols) {
-      jumps.value++
-      pushLog(`列数 ${lastCols} → ${next}（容器 ${width.value}px）`)
-    }
-    lastCols = next
-    cols.value = next
-  })
-  ro.observe(el)
-}
-
-// ---------- 拖拽调宽（真实 resize，不是按钮假动作） ----------
-
-/** 把手按下：记录起点并用指针捕获接管后续移动 */
-function onHandleDown(event: PointerEvent): void {
-  if (!stageRef.value) return
-  dragStartX = event.clientX
-  dragStartWidth = panelWidth.value
-  // currentTarget 类型是 EventTarget | null，收窄成元素后才能调用指针捕获
-  const handle = event.currentTarget
-  if (handle instanceof HTMLElement) handle.setPointerCapture(event.pointerId)
-}
-
-/** 拖拽中：按横坐标增量改宽度，钳制在 200px ~ 外层可用宽度内 */
-function onHandleMove(event: PointerEvent): void {
-  if (event.buttons !== 1) return
-  const max = stageRef.value?.clientWidth ?? panelWidth.value
-  const next = dragStartWidth + (event.clientX - dragStartX)
-  panelWidth.value = Math.max(200, Math.min(next, max))
+/** 框尺寸变化（共享组件在 ResizeObserver 回调里通知）：回填宽度、列数与跳变流水 */
+function onBoxResize(measured: number): void {
+  width.value = measured
+  const next = measureCols()
+  // lastCols = -1 是首轮回调，只建立基线不记跳变
+  if (lastCols >= 0 && next !== lastCols) {
+    jumps.value++
+    pushLog(`列数 ${lastCols} → ${next}（容器 ${width.value}px）`)
+  }
+  lastCols = next
+  cols.value = next
 }
 
 // ---------- 方案切换与重置 ----------
@@ -162,38 +123,23 @@ function setMode(next: string | number | boolean | undefined): void {
   if (next !== 'media' && next !== 'autofit') return
   if (mode.value === next) return
   mode.value = next
-  resetStats()
+  // 等模板换成另一套布局再读列数：同一宽度下两种方案的列数算法不同
+  void nextTick(resetStats)
 }
 
 function resetStats(): void {
   jumps.value = 0
   colLogs.value = []
-  // 下一轮 ResizeObserver 回调重建基线， restoration 不计入跳变
+  // 下一轮回调重建基线，recovery 不计入跳变
   lastCols = -1
   cols.value = measureCols()
 }
 
-/** 重置：恢复默认宽度并清空统计（宽度变化会触发 RO 自动回填指标） */
+/** 重置：回到「铺满舞台」并清空统计（宽度变化会触发共享组件回调回填指标） */
 function resetAll(): void {
-  panelWidth.value = defaultWidth
+  resizeRef.value?.reset()
   resetStats()
 }
-
-// ---------- 生命周期 ----------
-
-onMounted(() => {
-  const stage = stageRef.value
-  if (stage && stage.clientWidth > 0) {
-    defaultWidth = stage.clientWidth
-    panelWidth.value = defaultWidth
-  }
-  setupObserver()
-})
-
-onUnmounted(() => {
-  ro?.disconnect()
-  ro = null
-})
 </script>
 
 <template>
@@ -228,16 +174,18 @@ onUnmounted(() => {
       <span>断点跳变次数 <b>{{ jumps }}</b> 次</span>
     </div>
 
-    <div
-      ref="stageRef"
-      class="stage"
-    >
-      <!-- 可拖宽容器：auto-fit 模式用纯 CSS 网格；media 模式用 flex + 行内分配 -->
-      <div
-        ref="panelRef"
+    <div class="stage">
+      <!--
+        可拖宽容器：auto-fit 模式用纯 CSS 网格；media 模式用 flex + 行内分配
+        宽度绑定与把手逻辑交给共享组件（三个 CSS 案例复用同一套拖动 / 键盘 / ARIA）
+      -->
+      <DemoResizeHandle
+        ref="resizeRef"
+        v-model="panelWidth"
         class="panel"
         :class="mode === 'autofit' ? 'panel--auto' : 'panel--media'"
-        :style="panelStyle"
+        label="左右拖动调整容器宽度，也可用方向键"
+        @resize="onBoxResize"
       >
         <article
           v-for="card in CARDS"
@@ -249,15 +197,7 @@ onUnmounted(() => {
           <h3>{{ card.title }}</h3>
           <p>{{ card.desc }}</p>
         </article>
-      </div>
-      <div
-        class="handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="左右拖动调整容器宽度"
-        @pointerdown="onHandleDown"
-        @pointermove="onHandleMove"
-      />
+      </DemoResizeHandle>
     </div>
 
     <div class="log-panel">
@@ -329,8 +269,9 @@ onUnmounted(() => {
 /* ---------- 可拖宽舞台 ---------- */
 
 .stage {
-  position: relative;
-  padding-right: 14px;
+  /* 把手宽度：舞台右侧留出同样的内边距接住它（共享组件读的就是这个变量） */
+  --rh-width: 14px;
+  padding-right: var(--rh-width);
 }
 
 .panel {
@@ -388,23 +329,6 @@ onUnmounted(() => {
   color: var(--primary);
   font-family: var(--font-mono);
   font-size: var(--demo-text-xs);
-}
-
-/* 右缘拖拽把手：触屏抬到 40px 高度，保证可点 */
-.handle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 14px;
-  height: 100%;
-  border-radius: var(--radius-sm);
-  background-color: var(--border);
-  cursor: ew-resize;
-  touch-action: none;
-
-  &:hover {
-    background-color: var(--primary);
-  }
 }
 
 /* ---------- 变化流水 ---------- */

@@ -1837,7 +1837,7 @@ const SCENARIOS = [
       const read = () => evaluate(`(() => {
         const box = document.querySelector('.demo-card .frame')
           ?? document.querySelector('.demo-card .preview')
-        const handle = document.querySelector('.demo-card .handle')
+        const handle = document.querySelector('.demo-card .resize-bar')
         const hero = document.querySelector('.demo-card .hero')
         if (!box || !handle || !hero) return null
         const boxRect = box.getBoundingClientRect()
@@ -1858,7 +1858,7 @@ const SCENARIOS = [
       async function dragTo(targetWidth) {
         const before = await read()
         const point = await evaluate(`(() => {
-          const r = document.querySelector('.demo-card .handle').getBoundingClientRect()
+          const r = document.querySelector('.demo-card .resize-bar').getBoundingClientRect()
           return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
         })()`)
         const delta = targetWidth - before.width
@@ -1906,7 +1906,7 @@ const SCENARIOS = [
       const wide = await dragTo(500)
 
       // 键盘也要能调宽：role=separator 可聚焦，方向键每次 16px
-      await evaluate(`document.querySelector('.demo-card .handle').focus()`)
+      await evaluate(`document.querySelector('.demo-card .resize-bar').focus()`)
       for (let i = 0; i < 2; i++) {
         await send('Input.dispatchKeyEvent', {
           type: 'keyDown',
@@ -2006,6 +2006,294 @@ const SCENARIOS = [
         failures.push(
           `切回 clamp 后字号 ${result.clampFontAtKeyWidth}px，应回到 8cqi 曲线（顶到 40px）`,
         )
+      }
+      return failures
+    },
+  },
+  {
+    name: '拖宽把手跟随容器（grid-auto-fit）',
+    route: '/cases/css/grid-auto-fit',
+    facts: async ({ evaluate, send }) => {
+      // 桌面视口 + 滚进视野：指针事件按屏幕坐标派发，元素在视口外就点不到
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 采样：框宽与右缘、把手左缘、真实网格列数 */
+      const read = () => evaluate(`(() => {
+        const box = document.querySelector('.demo-card .panel')
+        const bar = document.querySelector('.demo-card .resize-bar')
+        if (!box || !bar) return null
+        const boxRect = box.getBoundingClientRect()
+        const barRect = bar.getBoundingClientRect()
+        const tracks = getComputedStyle(box).gridTemplateColumns.trim()
+        return {
+          width: Math.round(boxRect.width),
+          boxRight: Math.round(boxRect.right),
+          barLeft: Math.round(barRect.left),
+          cols: tracks ? tracks.split(/\\s+/).length : 0,
+        }
+      })()`)
+
+      /** 真实指针拖动：Demo 靠 buttons === 1 与指针捕获判断 */
+      async function dragTo(targetWidth) {
+        const before = await read()
+        const point = await evaluate(`(() => {
+          const r = document.querySelector('.demo-card .resize-bar').getBoundingClientRect()
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
+        })()`)
+        const delta = targetWidth - before.width
+
+        await send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x: point.x,
+          y: point.y,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        })
+        for (let step = 1; step <= 6; step++) {
+          await send('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x: point.x + Math.round((delta * step) / 6),
+            y: point.y,
+            button: 'left',
+            buttons: 1,
+          })
+          await sleep(30)
+        }
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: point.x + delta,
+          y: point.y,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        })
+
+        // 等 ResizeObserver 回调把宽度与列数写回面板
+        await sleep(280)
+        return read()
+      }
+
+      const initial = await read()
+      if (!initial) return { error: 'no-demo' }
+
+      // 300px 只有 1 列；700px 至少 4 列（auto-fit 的最小列宽 160px）
+      const narrow = await dragTo(300)
+      const wide = await dragTo(700)
+
+      // 键盘：把手可聚焦，← 每次 16px
+      await evaluate(`document.querySelector('.demo-card .resize-bar').focus()`)
+      for (let i = 0; i < 2; i++) {
+        await send('Input.dispatchKeyEvent', {
+          type: 'keyDown',
+          key: 'ArrowLeft',
+          code: 'ArrowLeft',
+          windowsVirtualKeyCode: 37,
+        })
+        await send('Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          key: 'ArrowLeft',
+          code: 'ArrowLeft',
+          windowsVirtualKeyCode: 37,
+        })
+        await sleep(60)
+      }
+      await sleep(280)
+      const afterKey = await read()
+
+      const gapOf = (state) => Math.abs(state.barLeft - state.boxRight)
+
+      return {
+        initialWidth: initial.width,
+        initialCols: initial.cols,
+        initialGap: gapOf(initial),
+        narrowWidth: narrow.width,
+        narrowCols: narrow.cols,
+        narrowGap: gapOf(narrow),
+        wideWidth: wide.width,
+        wideCols: wide.cols,
+        wideGap: gapOf(wide),
+        keyWidth: afterKey.width,
+      }
+    },
+    assert: (result) => {
+      if (result.error) return [`演示没挂载（${result.error}）`]
+
+      const failures = []
+      // 1) 把手是「这条框」的把手：任何宽度下都得贴着自己的右边缘
+      for (const [label, gap] of [
+        ['初始', result.initialGap],
+        ['拖到 300px', result.narrowGap],
+        ['拖到 700px', result.wideGap],
+      ]) {
+        if (gap > 2) failures.push(`${label}时把手离框右边缘 ${gap}px（没跟着容器走）`)
+      }
+      // 2) 拖动要精确落到目标宽度（上限含内边距时会有 14px 死区）
+      if (Math.abs(result.narrowWidth - 300) > 4) {
+        failures.push(`拖到 300px 实测 ${result.narrowWidth}px`)
+      }
+      if (Math.abs(result.wideWidth - 700) > 4) {
+        failures.push(`拖到 700px 实测 ${result.wideWidth}px`)
+      }
+      // 3) 列数必须随宽度变化：300px 1~2 列，700px 4 列以上
+      if (!(result.narrowCols < result.wideCols)) {
+        failures.push(
+          `列数没随宽度变化（300px → ${result.narrowCols} 列，700px → ${result.wideCols} 列）`,
+        )
+      }
+      if (result.wideCols < 4) failures.push(`700px 只有 ${result.wideCols} 列，auto-fit 应能排 4 列`)
+      // 4) 键盘 ← 每次 16px：两次应至少窄 24px
+      if (result.wideWidth - result.keyWidth < 24) {
+        failures.push(`方向键没调宽（${result.wideWidth}px → ${result.keyWidth}px）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '分栏把手拖动改两列占比',
+    route: '/cases/css/container-query',
+    facts: async ({ evaluate, send }) => {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 采样：两列宽度、把手位置与 aria-valuenow（百分比） */
+      const read = () => evaluate(`(() => {
+        const cols = [...document.querySelectorAll('.demo-card .duo-col')]
+        const bar = document.querySelector('.demo-card .resize-bar--split')
+        if (cols.length < 2 || !bar) return null
+        const a = cols[0].getBoundingClientRect()
+        const b = cols[1].getBoundingClientRect()
+        const barRect = bar.getBoundingClientRect()
+        return {
+          aWidth: Math.round(a.width),
+          bWidth: Math.round(b.width),
+          aRight: Math.round(a.right),
+          bLeft: Math.round(b.left),
+          barLeft: Math.round(barRect.left),
+          barWidth: Math.round(barRect.width),
+          ratio: Number(bar.getAttribute('aria-valuenow')),
+        }
+      })()`)
+
+      /** 横向拖动把手 dx 像素 */
+      async function dragBy(dx) {
+        const point = await evaluate(`(() => {
+          const r = document.querySelector('.demo-card .resize-bar--split').getBoundingClientRect()
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
+        })()`)
+
+        await send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x: point.x,
+          y: point.y,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        })
+        for (let step = 1; step <= 6; step++) {
+          await send('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x: point.x + Math.round((dx * step) / 6),
+            y: point.y,
+            button: 'left',
+            buttons: 1,
+          })
+          await sleep(30)
+        }
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: point.x + dx,
+          y: point.y,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        })
+
+        // 等容器查询重算 + 面板回填
+        await sleep(400)
+        return read()
+      }
+
+      const initial = await read()
+      if (!initial) return { error: 'no-demo' }
+
+      const right = await dragBy(120)
+      // 一路拖到左极限：验证 22% 下限真的夹住了
+      const left = await dragBy(-900)
+
+      // 键盘：焦点在把手上，→ 每次 2%
+      await evaluate(`document.querySelector('.demo-card .resize-bar--split').focus()`)
+      await send('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        key: 'ArrowRight',
+        code: 'ArrowRight',
+        windowsVirtualKeyCode: 39,
+      })
+      await send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key: 'ArrowRight',
+        code: 'ArrowRight',
+        windowsVirtualKeyCode: 39,
+      })
+      await sleep(400)
+      const afterKey = await read()
+
+      return {
+        initialRatio: initial.ratio,
+        initialAWidth: initial.aWidth,
+        initialAbarGap: initial.barLeft - initial.aRight,
+        rightRatio: right.ratio,
+        rightAWidth: right.aWidth,
+        rightBarShift: right.barLeft - initial.barLeft,
+        leftRatio: left.ratio,
+        leftAWidth: left.aWidth,
+        keyRatio: afterKey.ratio,
+        // 把手必须始终夹在两列之间
+        betweenOk:
+          initial.barLeft >= initial.aRight - 1 &&
+          initial.barLeft + initial.barWidth <= initial.bLeft + 1,
+      }
+    },
+    assert: (result) => {
+      if (result.error) return [`演示没挂载（${result.error}）`]
+
+      const failures = []
+      if (!result.betweenOk) failures.push('把手没夹在两列之间（布局被撑坏）')
+      // 1) 拖 +120px：把手跟着走，左列变宽，占比跟着涨
+      if (Math.abs(result.rightBarShift - 120) > 8) {
+        failures.push(`拖 120px 后把手只移动了 ${result.rightBarShift}px`)
+      }
+      if (!(result.rightAWidth - result.initialAWidth >= 100)) {
+        failures.push(
+          `左列没跟着变宽（${result.initialAWidth}px → ${result.rightAWidth}px）`,
+        )
+      }
+      if (!(result.rightRatio > result.initialRatio + 6)) {
+        failures.push(`aria-valuenow 没跟着涨（${result.initialRatio} → ${result.rightRatio}）`)
+      }
+      // 2) 拖到左极限：占比夹在 22%，左列明显变窄
+      if (Math.abs(result.leftRatio - 22) > 1) {
+        failures.push(`拖到左极限占比 ${result.leftRatio}%，应该夹在 22%`)
+      }
+      if (!(result.leftAWidth < result.initialAWidth)) {
+        failures.push(`拖到左极限左列没变窄（${result.leftAWidth}px）`)
+      }
+      // 3) 键盘 → 每次 2%
+      if (result.keyRatio - result.leftRatio !== 2) {
+        failures.push(`方向键没按 2% 调整（${result.leftRatio}% → ${result.keyRatio}%）`)
       }
       return failures
     },

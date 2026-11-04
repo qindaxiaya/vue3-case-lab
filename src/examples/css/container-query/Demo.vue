@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import DemoResizeHandle from '../../../components/demo/demo-resize-handle.vue'
 
 /** 对比方案：media = 媒体查询（跟视口） / cq = 容器查询（跟容器） */
 type PackMode = 'media' | 'cq'
@@ -28,9 +29,6 @@ const widths = reactive<Record<SlotKey, number>>({ wide: 0, narrow: 0, duoA: 0, 
 const dirs = reactive<Record<SlotKey, Dir>>({ wide: 'column', narrow: 'column', duoA: 'column', duoB: 'column' })
 
 const mode = ref<PackMode>('cq')
-
-/** 并排两列的分隔位置（0.25~0.75），拖动中间把手改变 */
-const splitPct = ref(0.5)
 
 /** 各摆位挂载后的元素引用（观察容器 / 读卡片排向都要用）
  *  用普通对象而不是 reactive：DOM 节点被响应式代理包一层后，
@@ -124,36 +122,26 @@ function setupObserver(): void {
   for (const el of Object.values(hostEls)) ro?.observe(el)
 }
 
-/** 从节点读回四个摆位的当前宽度 */
+/**
+ * 从节点读回四个摆位的当前宽度
+ * 读的是「内容盒」而不是边框盒：@container 判定用的正是容器内容盒的 inline 尺寸，
+ * 若这里显示边框盒，并排右列会读到 539px 却因为内容盒只有 519px 而判为未适配，
+ * 面板上就像自相矛盾。扣掉边框与左右内边距，显示值与断点判定才对得上。
+ */
 function syncSlots(): void {
   for (const key of ['wide', 'narrow', 'duoA', 'duoB'] as SlotKey[]) {
     const el = hostEls[key]
-    if (el) widths[key] = Math.round(el.getBoundingClientRect().width)
+    if (!el) continue
+    const style = getComputedStyle(el)
+    const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)
+    widths[key] = Math.round(el.clientWidth - padding)
   }
 }
 
-// ---------- 并排分隔条拖拽（真实改布局，不是假按钮） ----------
+// ---------- 并排分隔条：拖拽逻辑交给共享把手组件 ----------
 
-const duoRef = ref<HTMLElement | null>(null)
-let dragStartX = 0
-let dragStartPct = 0.5
-
-function onHandleDown(event: PointerEvent): void {
-  if (!duoRef.value) return
-  dragStartX = event.clientX
-  dragStartPct = splitPct.value
-  // currentTarget 在事件回调里一定是绑定元素，但类型上是 EventTarget | null，收窄后再用
-  const handle = event.currentTarget
-  if (handle instanceof HTMLElement) handle.setPointerCapture(event.pointerId)
-}
-
-function onHandleMove(event: PointerEvent): void {
-  if (event.buttons !== 1 || !duoRef.value) return
-  // 增量换算成百分比；钳制在 22%~78%，保留两侧最小可读宽度
-  const total = duoRef.value.clientWidth || 1
-  const next = dragStartPct + (event.clientX - dragStartX) / total
-  splitPct.value = Math.max(0.22, Math.min(next, 0.78))
-}
+/** 并排两列的分隔位置（0.5 = 正中）：双向绑定给共享组件，拖动时由它换算成占比 */
+const splitPct = ref(0.5)
 
 // ---------- 方案切换与重置 ----------
 
@@ -283,11 +271,8 @@ const CARD = {
       </article>
     </section>
 
-    <!-- 摆位三 / 四：并排两列，中间分隔条可拖 -->
-    <section
-      ref="duoRef"
-      class="duo"
-    >
+    <!-- 摆位三 / 四：并排两列，中间分隔条可拖（拖拽逻辑来自共享把手组件） -->
+    <section class="duo">
       <div
         class="duo-col"
         :style="{ width: `calc((100% - 0.4rem) * ${splitPct})` }"
@@ -315,13 +300,11 @@ const CARD = {
         </section>
       </div>
 
-      <div
+      <DemoResizeHandle
+        v-model="splitPct"
+        mode="split"
         class="duo-handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="左右拖动调整两列占比"
-        @pointerdown="onHandleDown"
-        @pointermove="onHandleMove"
+        label="左右拖动调整两列占比，也可用方向键"
       />
 
       <div class="duo-col">
@@ -517,16 +500,9 @@ const CARD = {
   min-width: 0;
 }
 
+/* 分栏把手：几何与配色用组件的默认值，这里只把它调窄一点 */
 .duo-handle {
-  width: 10px;
-  border-radius: var(--radius-sm);
-  background-color: var(--border);
-  cursor: ew-resize;
-  touch-action: none;
-
-  &:hover {
-    background-color: var(--primary);
-  }
+  --rh-width: 10px;
 }
 
 .hint {
