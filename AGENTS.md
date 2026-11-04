@@ -24,7 +24,8 @@
 - TS strict，禁止 `any`（确需时用 `unknown` + 收窄）；ESLint `no-explicit-any` 为 error
 - 组件 `<script setup lang="ts">`，组件 PascalCase，文件 kebab-case
 - 禁止第三方 UI 组件库、禁止 Pinia；样式用 Sass（SCSS）+ CSS 变量主题，自建全局类 `btn-primary`/`btn-ghost`/`card`/`tag`，案例 Demo 用自身 scoped SCSS
-  - 例外（2026-10-28 换挡）：**Naive UI** 允许用于演示区控件（按钮 / 单选组 / 输入框 / 下拉 / 提示 message），必须按需引入（unplugin-vue-components + NaiveUiResolver），禁止整包 `app.use(naive-ui)`；主题映射收敛在 `src/composables/useNaiveTheme.ts`（浅/暗 token 镜像），演示区由**详情页 `CasePage` 统一包一层共享组件 `src/components/demo/DemoNaive.vue`**（abstract，不渲染 wrapper）——不要在站点壳（App.vue 等）包 provider，barrel import 会把整个 naive-ui 拉进首屏；Demo 是 provider 的子组件，案例里直接 `const message = useMessage()` 用 Naive 提示（顶部居中、max 3、2.4s），不要自建 toast；演示区一律优先用 Naive 组件（按钮 `n-button`、互斥组 `n-radio-group`）而不是自写样式；站点壳与教学型组件（Toast 教学案例 toast-queue / Teleport / 弹窗 / 可编辑表格 / 自定义指令等）仍自建；Pinia 仍禁止
+  - 例外 1（2026-11-04）：**演示区共享控件** `src/components/demo/*.vue` —— 目前只有 `demo-resize-handle.vue`（可拖拽把手，`width` 改宽 / `split` 分栏两种模式），供 `css/fluid-clamp`、`css/grid-auto-fit`、`css/container-query` 三个案例引用。判定标准：**它是测量装置而不是教学内容**，且至少两个案例共用；拖动实现（指针捕获、键盘、ARIA）本身在 `practice/drag-sort` / `slider-captcha` 里讲。其余案例仍须自包含，新抽共享控件要先问
+  - 例外 2（2026-10-28 换挡）：**Naive UI** 允许用于演示区控件（按钮 / 单选组 / 输入框 / 下拉 / 提示 message），必须按需引入（unplugin-vue-components + NaiveUiResolver），禁止整包 `app.use(naive-ui)`；主题映射收敛在 `src/composables/useNaiveTheme.ts`（浅/暗 token 镜像），演示区由**详情页 `CasePage` 统一包一层共享组件 `src/components/demo/DemoNaive.vue`**（abstract，不渲染 wrapper）——不要在站点壳（App.vue 等）包 provider，barrel import 会把整个 naive-ui 拉进首屏；Demo 是 provider 的子组件，案例里直接 `const message = useMessage()` 用 Naive 提示（顶部居中、max 3、2.4s），不要自建 toast；演示区一律优先用 Naive 组件（按钮 `n-button`、互斥组 `n-radio-group`）而不是自写样式；站点壳与教学型组件（Toast 教学案例 toast-queue / Teleport / 弹窗 / 可编辑表格 / 自定义指令等）仍自建；Pinia 仍禁止
 - 暗色模式：`.dark` class 策略（`<html class="dark">`，index.html 内联脚本防闪白）+ `localStorage` 键 `moyu-theme` 持久化
 - 案例目录结构（新增案例零注册成本）：
   ```
@@ -245,6 +246,14 @@
   - `check:ui` 新增常驻场景「流体字号随容器宽度变化」，用 CDP `Input.dispatchMouseEvent` 真实拖动（页面内合成事件拿不到 pointer capture）：拖到 300px 字号必须 ≈24px、500px 顶到 40px、把手与框右边缘差 ≤2px、方向键 500→532、断点式同宽度 28px、切回 clamp 回到 40px。实测数字全部命中
   - `notes.md` 第 3 段与第 5 段踩坑、`code/usage.css.txt` 同步「两层写法 + 元素不能查询自己」
   - 验收（L1 单案例）：`eslint`（案例 + 脚本）、`type-check`、`--only 流体`、`--case css/fluid-clamp`（1280/375 无溢出、零 console 错误）通过；1280 与 375 截图确认：1104px/40.0px、279px/22.3px，把手贴在框右边缘
+- ✅ 2026-11-04 抽出演示区共享控件 `demo-resize-handle`，三个 CSS 案例接入并修掉 `grid-auto-fit` 的同款把手 bug
+  - 用户拍板：拖宽把手抽成组件（不各写一份）；`container-query` 的「分栏比例」分隔条也一起纳入，组件支持 `width` / `split` 两种模式
+  - 组件 `src/components/demo/demo-resize-handle.vue`：`width` 模式自己就是被拖宽的框（插槽放内容、把手绝对定位在框右缘外），`split` 模式自己就是流内那根分隔条（0~1 占比）；指针捕获 / 上下限夹取 / 键盘（改宽 ±16px、Shift 64px；分栏 ±2%、Shift 10%；Home/End）/ ARIA（`role="separator"`，改宽报 px、分栏报百分比）/ ResizeObserver（同时观察自己与父容器）全在组件里；`defineExpose({ boxEl, reset })` 供案例读网格节点与「回到铺满」
+  - 上限 = 父容器**内容宽度**（`clientWidth` 减去左右内边距），`fluid-clamp` 与 `grid-auto-fit` 一并修掉 14px 死区；挂载首次回调若「占位宽度 ≠ 可用宽度」先铺满且这次不回填，避免统计里多出假跳变（截图里曾出现「容器 26px」与「断点跳变次数 1 次」）
+  - 三个案例改成 `<DemoResizeHandle v-model>` + `@resize`：`fluid-clamp` 保留 `.frame` 的 `container-type`（元素不能查询自己）与 `:min="220"`；`grid-auto-fit` 用 `boxEl` 读 `gridTemplateColumns` 数列，切方案时 `nextTick` 后再重测；`container-query` 用 `mode="split"` + `--rh-width: 10px`
+  - 顺手修 `container-query` 的量宽口径：原来读边框盒（539px）去比 520 断点，而 `@container` 判定的是内容盒，面板会出现「539px 却判未适配」的自相矛盾；改成 `clientWidth` 减左右内边距后读数 519px，四个摆位回到 4/4 适配
+  - `check:ui` 新增两个常驻断言：「拖宽把手跟随容器（grid-auto-fit）」（初始 / 300px / 700px 三档把手离框右缘 ≤2px、列数 6→1→4、方向键 700→668）与「分栏把手拖动改两列占比」（50%→61%、左列 556→675、拖到极限夹在 22%、方向键 22%→24%、把手始终夹在两列之间）；流体场景选择器从 `.handle` 改 `.resize-bar`
+  - 验收（preview）：`check:ui` 39/39、`--sweep` 81/81、`vitest` 53/53、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 106.2 KB）、`audit:cases` 0 P0/P1/P2；三个案例 `--case` 在 1280/375 无横向溢出、零 console 错误
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
@@ -333,4 +342,6 @@
 | 2026-11-03 | **演示区引用未定义 CSS 变量要当 bug 修，不是风格问题** | 审计发现 7 个案例引用 `--bg-subtle`、1 个引用 `--bg-soft`，全站从未定义：`background-color: var(--bg-subtle)` 静默失效（更糟的是 `color-mix(in srgb, var(--primary) 16%, var(--bg-subtle))`，变量无效会让整条声明被丢弃，选中态高亮直接消失，看起来像「设计如此」）。修法是补 token（浅 `#f3f4f6` / 暗 `#26303f`）而不是逐处写死，并留了一个「扫演示区 var() 定义」的审计口径进流程 |
 | 2026-11-04 | **`cqi` 必须有容器祖先，容器和字号不能写在同一个元素上** | `fluid-clamp` 的 `8cqi` 一直没生效：`.preview--clamp` 自己写 `clamp(1rem, 8cqi, 2.5rem)`，但 `container-type` 只出现在注释和 notes 里。容器查询单位查的是「最近祖先容器」，元素不能查询自己，也没人给它当容器 → 按规范退回小视口尺寸，字号由浏览器窗口决定、恒定顶格 40px，拖拽宽度只改变换行。修法是分两层：宿主 `.frame` 声明 `container-type: inline-size`，字号留在内层 `.preview`。探针实测同一个 300px 框：有容器 24px、撤掉容器 40px。这条也写进 notes 踩坑第 2 条——「看着容器有了」最容易骗过 review |
 | 2026-11-04 | **拖拽把手的定位挂到「被拖的元素」上，不是整条舞台** | `.handle` 原来是 `.stage` 的绝对定位子元素（`right: 0`），拖动只改预览框内联宽度，把手不动 → 框缩到 300px 后把手还在最右边，用户会觉得「拖了但没反应」。把把手挪进被拖的宿主框（`right: -14px`，舞台留 14px 内边距接住），它天然跟着框走。配套口径：拖动上限用舞台**内容**宽度（`clientWidth - 14`），否则状态比渲染宽 14px，拖回来先有一段死区；RO 回调里只有「舞台量出宽度」时才改状态，且未用户调过宽就一直跟随铺满——早期版本会把布局未就绪的 0 当成用户宽度存下来，`--shot` 模式直接把框锁死成 0 |
+| 2026-11-04 | **拖拽把手抽成演示区共享组件 `demo-resize-handle`（记为第二条例外）** | 三个 CSS 案例各写一份拖动，`fluid-clamp` 刚修好的两个 bug（把手层级、14px 死区）在 `grid-auto-fit` 里原样存活——重复就是 bug 的土壤。判定标准写进约定：它是**测量装置而不是教学内容**，且至少两个案例共用（拖动实现本身在 `drag-sort` / `slider-captcha` / `pull-refresh` 里讲）。两种模式共用一套指针捕获 / 夹取 / 键盘 / ARIA：`width` 自己就是被拖宽的框（插槽放内容），`split` 自己就是流内分隔条（0~1 占比）；上限取父容器**内容宽度**，挂载首次「占位宽度 ≠ 可用宽度」时先铺满且这次不回填，否则案例统计里会多出「容器 26px」「跳变 1 次」的假数据 |
+| 2026-11-04 | **`@container` 的断点要用内容盒宽度去比** | `container-query` 面板一直显示「并排·右 539px · ✗ 未适配（实际纵排）」：539 是边框盒，扣掉 1px 边框与左右 0.55rem 内边距后内容盒只有 519px，刚好落在 520px 断点下方——浏览器判得没错，是显示值用错了盒子。改成 `clientWidth - 左右内边距` 后读数 519px，`expectedDir()` 与 `@container` 用同一个量，四个摆位重新 4/4；这条也当作「看着自相矛盾，先想清楚量的是哪个盒」的踩坑写进 notes |
 | 2026-11-04 | **拖拽类断言用 CDP 鼠标输入，不用页面内合成事件** | `check:ui` 的拖动场景必须走 `Input.dispatchMouseEvent`：Demo 靠 `pointerdown/move` 的 `buttons === 1` 与 `setPointerCapture` 判断，页面里 `dispatchEvent(new PointerEvent(...))` 拿不到指针捕获（还会因 pointerId 无效抛异常）。另外指针事件按屏幕坐标派发，元素在视口外就点不到，场景开头要 `setDeviceMetricsOverride` + `scrollIntoView`，否则会「拖动无效但断言看不出」 |
