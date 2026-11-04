@@ -237,7 +237,7 @@
   - 批 B（字面量收敛，`9420470`，59 文件 414 处）：font-size 的 0.75 / 0.8125 / 0.875 / 0.9375rem 精确换成 `--demo-text-xs/sm/md/lg`（389 处）；0.7~1rem 的零碎字号就近归位（25 处），`dynamic-chunk` 从 8 档压到 3 档；`border-radius: 999px` 换 `--radius-tag`。保留大号展示数字（1.05~1.75rem）、`clamp()`、`em`
   - 批 C（零散细节，`0dae4c7`）：7 个 animation 案例的 `.system-note` 描边改 42% warning 混合、底色改 7% warning 混入 `--code-bg`；**新增 `--bg-subtle`（浅 `#f3f4f6` / 暗 `#26303f`）修掉 7 处引用未定义变量**（`color-mix()` 里引用未定义变量会让整条声明失效，高亮背景直接消失）；editable-table 表格圆角与行 hover、行内删除按钮点击区；recursive-tree 的 `.tree-card` 对齐 token；teleport-layer 换成已有的 `--shadow-soft-lg`
   - 验收：`eslint src/examples`、`type-check`、`build`、`check:bundle`（首屏 gzip 106.2 KB）、dev `--sweep` 81/81 全绿；暗色截图抽查 json-viewer / request-race 正常；演示区已无未定义 CSS 变量
-- ✅ 2026-11-04 修复 `css/fluid-clamp` 两个错：拖拽把手不跟框 + `8cqi` 其实按视口算
+- ✅ 2026-11-04 修复 `css/fluid-clamp` 两个错：拖拽把手不跟框 + `8cqi` 其实按视口算（PR #23 已合并，main `3cf223f`）
   - 现象（用户反馈）：宽度能拖，「柱子」却钉在舞台最右边不动；顺着查发现字号压根没随容器变
   - 根因 1：`.handle` 是 `.stage`（整条舞台）的绝对定位子元素（`right: 0`），预览框只缩自己，把手不动
   - 根因 2：`.preview--clamp` 用了 `8cqi`，但全站没有任何 `container-type`（只在注释与 notes 里「写了」）。容器查询单位找不到可用容器时按规范退回**小视口尺寸**，于是字号由浏览器窗口决定、恒定顶格 40px。探针实测：同一个 300px 宽的框，有容器 24px、撤掉容器 40px
