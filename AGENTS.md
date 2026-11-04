@@ -237,6 +237,14 @@
   - 批 B（字面量收敛，`9420470`，59 文件 414 处）：font-size 的 0.75 / 0.8125 / 0.875 / 0.9375rem 精确换成 `--demo-text-xs/sm/md/lg`（389 处）；0.7~1rem 的零碎字号就近归位（25 处），`dynamic-chunk` 从 8 档压到 3 档；`border-radius: 999px` 换 `--radius-tag`。保留大号展示数字（1.05~1.75rem）、`clamp()`、`em`
   - 批 C（零散细节，`0dae4c7`）：7 个 animation 案例的 `.system-note` 描边改 42% warning 混合、底色改 7% warning 混入 `--code-bg`；**新增 `--bg-subtle`（浅 `#f3f4f6` / 暗 `#26303f`）修掉 7 处引用未定义变量**（`color-mix()` 里引用未定义变量会让整条声明失效，高亮背景直接消失）；editable-table 表格圆角与行 hover、行内删除按钮点击区；recursive-tree 的 `.tree-card` 对齐 token；teleport-layer 换成已有的 `--shadow-soft-lg`
   - 验收：`eslint src/examples`、`type-check`、`build`、`check:bundle`（首屏 gzip 106.2 KB）、dev `--sweep` 81/81 全绿；暗色截图抽查 json-viewer / request-race 正常；演示区已无未定义 CSS 变量
+- ✅ 2026-11-04 修复 `css/fluid-clamp` 两个错：拖拽把手不跟框 + `8cqi` 其实按视口算
+  - 现象（用户反馈）：宽度能拖，「柱子」却钉在舞台最右边不动；顺着查发现字号压根没随容器变
+  - 根因 1：`.handle` 是 `.stage`（整条舞台）的绝对定位子元素（`right: 0`），预览框只缩自己，把手不动
+  - 根因 2：`.preview--clamp` 用了 `8cqi`，但全站没有任何 `container-type`（只在注释与 notes 里「写了」）。容器查询单位找不到可用容器时按规范退回**小视口尺寸**，于是字号由浏览器窗口决定、恒定顶格 40px。探针实测：同一个 300px 宽的框，有容器 24px、撤掉容器 40px
+  - 修法：新增宿主层 `.frame`（宽度绑定 + `container-type: inline-size`），把手改成它的绝对定位子元素（`right: -14px`，舞台留 14px 内边距接住）；字号留在内层 `.preview`——元素不能查询自己，容器与字号必须分两层。顺带：拖拽上限/重置改用舞台内容宽度（修掉 14px 死区）、RO 只在舞台量出宽度后才改状态（避免把「还没布局的 0」存成用户宽度，`--shot` 模式曾因此把框锁死成 0）、把手补 `tabindex` + ←/→（±16px，Shift 64px）+ Home/End
+  - `check:ui` 新增常驻场景「流体字号随容器宽度变化」，用 CDP `Input.dispatchMouseEvent` 真实拖动（页面内合成事件拿不到 pointer capture）：拖到 300px 字号必须 ≈24px、500px 顶到 40px、把手与框右边缘差 ≤2px、方向键 500→532、断点式同宽度 28px、切回 clamp 回到 40px。实测数字全部命中
+  - `notes.md` 第 3 段与第 5 段踩坑、`code/usage.css.txt` 同步「两层写法 + 元素不能查询自己」
+  - 验收（L1 单案例）：`eslint`（案例 + 脚本）、`type-check`、`--only 流体`、`--case css/fluid-clamp`（1280/375 无溢出、零 console 错误）通过；1280 与 375 截图确认：1104px/40.0px、279px/22.3px，把手贴在框右边缘
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
@@ -323,3 +331,6 @@
 | 2026-11-03 | **文件选择框保留原生，只有「自绘的伪按钮」换成 n-button** | `display: none` 的 `input[type=file]` 不可见，没有观感不一致问题；`chunk-upload` 里那个包着隐藏 input 的 `.cu-file` 是自己画的按钮样式，改成 `n-button` + `ref` 触发 `click()`。其余四个（拖拽区 / 压缩）保留原生并写进 notes 第 5 段：拖拽分流、并发与重试、canvas 压缩是案例主体，换成组件库的上传组件就把教学内容一起替换掉了 |
 | 2026-11-03 | **视觉打磨只动数值不改结构，靠 `check:ui --shot` 截图比对** | 81 个案例的 Demo 各写各的样式，同类块（面板 / 日志区 / 指标行 / 徽章 / 提示条）取值不一致，肉眼看得出厚薄与圆角差。这类活没有断言可依，新增 `--shot` 模式（只截 `.demo-card`、1280/375、可 `--dark`）代替反复开浏览器；改法固定为「等值或就近收敛到已有 token」，不新增共享类、不改结构，避免破坏案例自包含与教学代码。`dynamic-chunk` 那种自建 8 档字号的一次压到 3 档；大号展示数字、`clamp()`、`em` 保留（它们是刻意的表达，不是漂移） |
 | 2026-11-03 | **演示区引用未定义 CSS 变量要当 bug 修，不是风格问题** | 审计发现 7 个案例引用 `--bg-subtle`、1 个引用 `--bg-soft`，全站从未定义：`background-color: var(--bg-subtle)` 静默失效（更糟的是 `color-mix(in srgb, var(--primary) 16%, var(--bg-subtle))`，变量无效会让整条声明被丢弃，选中态高亮直接消失，看起来像「设计如此」）。修法是补 token（浅 `#f3f4f6` / 暗 `#26303f`）而不是逐处写死，并留了一个「扫演示区 var() 定义」的审计口径进流程 |
+| 2026-11-04 | **`cqi` 必须有容器祖先，容器和字号不能写在同一个元素上** | `fluid-clamp` 的 `8cqi` 一直没生效：`.preview--clamp` 自己写 `clamp(1rem, 8cqi, 2.5rem)`，但 `container-type` 只出现在注释和 notes 里。容器查询单位查的是「最近祖先容器」，元素不能查询自己，也没人给它当容器 → 按规范退回小视口尺寸，字号由浏览器窗口决定、恒定顶格 40px，拖拽宽度只改变换行。修法是分两层：宿主 `.frame` 声明 `container-type: inline-size`，字号留在内层 `.preview`。探针实测同一个 300px 框：有容器 24px、撤掉容器 40px。这条也写进 notes 踩坑第 2 条——「看着容器有了」最容易骗过 review |
+| 2026-11-04 | **拖拽把手的定位挂到「被拖的元素」上，不是整条舞台** | `.handle` 原来是 `.stage` 的绝对定位子元素（`right: 0`），拖动只改预览框内联宽度，把手不动 → 框缩到 300px 后把手还在最右边，用户会觉得「拖了但没反应」。把把手挪进被拖的宿主框（`right: -14px`，舞台留 14px 内边距接住），它天然跟着框走。配套口径：拖动上限用舞台**内容**宽度（`clientWidth - 14`），否则状态比渲染宽 14px，拖回来先有一段死区；RO 回调里只有「舞台量出宽度」时才改状态，且未用户调过宽就一直跟随铺满——早期版本会把布局未就绪的 0 当成用户宽度存下来，`--shot` 模式直接把框锁死成 0 |
+| 2026-11-04 | **拖拽类断言用 CDP 鼠标输入，不用页面内合成事件** | `check:ui` 的拖动场景必须走 `Input.dispatchMouseEvent`：Demo 靠 `pointerdown/move` 的 `buttons === 1` 与 `setPointerCapture` 判断，页面里 `dispatchEvent(new PointerEvent(...))` 拿不到指针捕获（还会因 pointerId 无效抛异常）。另外指针事件按屏幕坐标派发，元素在视口外就点不到，场景开头要 `setDeviceMetricsOverride` + `scrollIntoView`，否则会「拖动无效但断言看不出」 |

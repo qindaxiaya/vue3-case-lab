@@ -17,6 +17,10 @@
   container-type: inline-size;
 }
 
+/* 注意这是两层：.fluid-title 必须是 .title-host 的子元素。
+   元素不能查询自己——把 container-type 和 clamp 写在同一个元素上，
+   cqi 找不到可用的容器，仍然退回按视口算 */
+
 /* 正文按标题比例缩：跟着同一条流体曲线走，不会出现「标题缩了正文 HUGE」 */
 .fluid-body {
   font-size: 0.55em; /* 1em = 容器根字号，与标题同源 */

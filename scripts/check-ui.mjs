@@ -1815,6 +1815,202 @@ const SCENARIOS = [
     },
   },
   {
+    name: '流体字号随容器宽度变化',
+    route: '/cases/css/fluid-clamp',
+    facts: async ({ evaluate, send }) => {
+      // 桌面视口 + 把演示区滚进视野：指针事件按屏幕坐标派发，元素在视口外就点不到
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await evaluate(
+        `document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`,
+      )
+      await sleep(400)
+
+      /**
+       * 一次采样：容器（宿主框）宽度与右边缘、把手左边缘、标题实测字号
+       * 三个数足够区分两类回归：把手没跟着框走 / 字号其实按视口算
+       */
+      const read = () => evaluate(`(() => {
+        const box = document.querySelector('.demo-card .frame')
+          ?? document.querySelector('.demo-card .preview')
+        const handle = document.querySelector('.demo-card .handle')
+        const hero = document.querySelector('.demo-card .hero')
+        if (!box || !handle || !hero) return null
+        const boxRect = box.getBoundingClientRect()
+        const handleRect = handle.getBoundingClientRect()
+        return {
+          width: Math.round(boxRect.width),
+          boxRight: Math.round(boxRect.right),
+          handleLeft: Math.round(handleRect.left),
+          font: Number(parseFloat(getComputedStyle(hero).fontSize).toFixed(1)),
+          containerType: getComputedStyle(box).containerType,
+        }
+      })()`)
+
+      /**
+       * 真实指针拖动：Demo 靠 pointerdown/move 的 buttons === 1 与指针捕获，
+       * 页面内合成事件拿不到 pointer capture，必须走 CDP 的鼠标输入
+       */
+      async function dragTo(targetWidth) {
+        const before = await read()
+        const point = await evaluate(`(() => {
+          const r = document.querySelector('.demo-card .handle').getBoundingClientRect()
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }
+        })()`)
+        const delta = targetWidth - before.width
+
+        await send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x: point.x,
+          y: point.y,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        })
+
+        // 分成几步移动，贴近真实拖动（一次跳到终点只有一条 pointermove）
+        for (let step = 1; step <= 6; step++) {
+          await send('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x: point.x + Math.round((delta * step) / 6),
+            y: point.y,
+            button: 'left',
+            buttons: 1,
+          })
+          await sleep(30)
+        }
+
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: point.x + delta,
+          y: point.y,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        })
+
+        // 等 ResizeObserver 回调把宽度与字号写回面板
+        await sleep(250)
+        return read()
+      }
+
+      const initial = await read()
+      if (!initial) return { error: 'no-demo' }
+
+      // 300px：8cqi ≈ 24px；500px：正好顶到 40px 上限
+      const narrow = await dragTo(300)
+      const wide = await dragTo(500)
+
+      // 键盘也要能调宽：role=separator 可聚焦，方向键每次 16px
+      await evaluate(`document.querySelector('.demo-card .handle').focus()`)
+      for (let i = 0; i < 2; i++) {
+        await send('Input.dispatchKeyEvent', {
+          type: 'keyDown',
+          key: 'ArrowRight',
+          code: 'ArrowRight',
+          windowsVirtualKeyCode: 39,
+        })
+        await send('Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          key: 'ArrowRight',
+          code: 'ArrowRight',
+          windowsVirtualKeyCode: 39,
+        })
+        await sleep(60)
+      }
+      await sleep(250)
+      const afterKey = await read()
+
+      // 断点式（旧做法）：行内字号写在宿主框上，必须能被子元素继承
+      await evaluate(
+        `[...document.querySelectorAll('.demo-card .n-radio-button')]
+          .find((el) => el.textContent.includes('断点式'))?.click()`,
+      )
+      await sleep(300)
+      const breakpointMode = await read()
+
+      // 切回 clamp：同一宽度下字号应回到 8cqi 曲线
+      await evaluate(
+        `[...document.querySelectorAll('.demo-card .n-radio-button')]
+          .find((el) => el.textContent.includes('clamp'))?.click()`,
+      )
+      await sleep(300)
+      const clampMode = await read()
+
+      /** 把手左边缘与框右边缘的距离（理想 0：把手贴着自己的框） */
+      const gapOf = (state) => Math.abs(state.handleLeft - state.boxRight)
+
+      // 摊平成基本类型：失败时报数看得见（对象会打成 [object Object]）
+      return {
+        containerType: initial.containerType,
+        initialWidth: initial.width,
+        initialFont: initial.font,
+        initialGap: gapOf(initial),
+        narrowWidth: narrow.width,
+        narrowFont: narrow.font,
+        narrowGap: gapOf(narrow),
+        wideWidth: wide.width,
+        wideFont: wide.font,
+        wideGap: gapOf(wide),
+        keyWidth: afterKey.width,
+        breakpointFont: breakpointMode.font,
+        clampFontAtKeyWidth: clampMode.font,
+      }
+    },
+    assert: (result) => {
+      if (result.error) return [`演示没挂载（${result.error}）`]
+
+      const failures = []
+      if (result.containerType === 'normal') {
+        failures.push('宿主框没有声明 container-type: inline-size，8cqi 会退回按视口算')
+      }
+
+      // 1) 把手是「这条框」的把手：必须贴着自己的右边缘，不能钉在舞台最右边
+      const gaps = [
+        ['初始', result.initialGap],
+        ['拖到 300px', result.narrowGap],
+        ['拖到 500px', result.wideGap],
+      ]
+      for (const [label, gap] of gaps) {
+        if (gap > 2) failures.push(`${label}时把手离框右边缘 ${gap}px（没跟着容器走）`)
+      }
+
+      // 2) 字号必须由容器宽度驱动（8cqi），不能退化成按视口算而恒定顶格
+      if (!(result.narrowWidth <= 320)) {
+        failures.push(`拖动没生效：目标 300px，实测 ${result.narrowWidth}px`)
+      }
+      if (!(result.narrowFont >= 22 && result.narrowFont <= 26)) {
+        failures.push(`容器 ${result.narrowWidth}px 时标题 ${result.narrowFont}px，应在 24px 附近`)
+      }
+      if (result.wideFont < 39) {
+        failures.push(`容器 ${result.wideWidth}px 时标题 ${result.wideFont}px，应顶到上限 40px`)
+      }
+      if (result.wideFont - result.narrowFont < 8) {
+        failures.push(
+          `字号没随容器变化（${result.narrowWidth}px → ${result.narrowFont}px，${result.wideWidth}px → ${result.wideFont}px）`,
+        )
+      }
+      // 3) 把手可聚焦，方向键每次 ±16px（两次右移应至少 +24）
+      if (result.keyWidth - result.wideWidth < 24) {
+        failures.push(`方向键没调宽（${result.wideWidth}px → ${result.keyWidth}px）`)
+      }
+      // 4) 断点式仍然生效：532px 落在 480~620 档，应为 28px；切回 clamp 回到 8cqi 曲线
+      if (Math.abs(result.breakpointFont - 28) > 1) {
+        failures.push(`断点式在 ${result.keyWidth}px 时字号 ${result.breakpointFont}px，应为 28px`)
+      }
+      if (!(result.clampFontAtKeyWidth >= 38)) {
+        failures.push(
+          `切回 clamp 后字号 ${result.clampFontAtKeyWidth}px，应回到 8cqi 曲线（顶到 40px）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '列表难度筛选',
     route: '/cases',
     facts: async ({ evaluate }) => {
