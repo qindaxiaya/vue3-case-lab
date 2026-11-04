@@ -15,6 +15,7 @@ declare module 'vue' {
     BackToTop: typeof import('./components/BackToTop.vue')['default']
     CodeWorkbench: typeof import('./components/CodeWorkbench.vue')['default']
     DemoNaive: typeof import('./components/demo/DemoNaive.vue')['default']
+    DemoResizeHandle: typeof import('./components/demo/demo-resize-handle.vue')['default']
     NButton: typeof import('naive-ui')['NButton']
     NCheckbox: typeof import('naive-ui')['NCheckbox']
     NConfigProvider: typeof import('naive-ui')['NConfigProvider']
