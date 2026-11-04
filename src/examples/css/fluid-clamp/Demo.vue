@@ -6,7 +6,8 @@
 // - getComputedStyle 实时读渲染字号（px），不靠样式声明想当然
 // ============================================================
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import DemoResizeHandle from '../../../components/demo/demo-resize-handle.vue'
 
 /** 字号策略：breakpoint = 断点表硬档位 / clamp = 流体连续缩放 */
 type FontMode = 'breakpoint' | 'clamp'
@@ -50,36 +51,11 @@ const bpFontSize = computed(() => fontSizeForBreak(width.value))
 
 // ---------- 可拖宽预览容器 ----------
 
-const stageRef = ref<HTMLElement | null>(null)
-/** 可拖宽的宿主框：宽度绑在它身上，同时它就是 cqi 的查询容器 */
-const frameRef = ref<HTMLDivElement | null>(null)
-const titleRef = ref<HTMLHeadingElement | null>(null)
-/** 宿主框宽度（px），挂载时按可用宽度初始化 */
+/** 把手组件实例：重置时用它回到「铺满舞台」 */
+const resizeRef = ref<InstanceType<typeof DemoResizeHandle> | null>(null)
+/** 宿主框宽度（px）：双向绑定给共享把手组件，挂载后由它按可用宽度铺满 */
 const previewWidth = ref(320)
-/** 把手宽度：舞台右侧留出同样的内边距，把手贴框走时正好落脚在这条缝里 */
-const HANDLE_WIDTH = 14
-let dragStartX = 0
-let dragStartWidth = 0
-/** 用户是否亲手调过宽度：没调过就一直跟随「铺满舞台」 */
-let userSized = false
-
-/** 宿主框行内样式：宽度由拖拽控制（maxWidth 兜住窄屏） */
-const frameStyle = computed(() => ({
-  width: `${previewWidth.value}px`,
-  maxWidth: '100%',
-}))
-
-/**
- * 可拖宽的上限 = 舞台内容宽度（减去给把手预留的 14px）
- * 为什么不用 clientWidth 原值：它含右内边距，会让状态比实际渲染宽 14px，
- * 拖回来时先有一小段「拖了没反应」的死区
- * 布局还没就绪（clientWidth 为 0）时返回 null：此刻的宽度不能拿来改状态
- */
-function stageMaxWidth(): number | null {
-  const stage = stageRef.value
-  if (!stage || stage.clientWidth <= 0) return null
-  return Math.max(220, stage.clientWidth - HANDLE_WIDTH)
-}
+const titleRef = ref<HTMLHeadingElement | null>(null)
 
 // ---------- 字号实测：读计算样式 ----------
 
@@ -90,65 +66,13 @@ function measureFontSize(): number {
   return parseFloat(getComputedStyle(el).fontSize) || 16
 }
 
-let ro: ResizeObserver | null = null
-
-function setupObserver(): void {
-  ro?.disconnect()
-  const el = frameRef.value
-  if (!el) return
-  ro = new ResizeObserver(() => {
-    // 容器宽度真变了才回调：此刻布局已结算，读取字号最可靠
-    width.value = Math.round(el.getBoundingClientRect().width)
-    fontSize.value = measureFontSize()
-
-    const max = stageMaxWidth()
-    // 舞台还没量出宽度（演示区刚挂载 / 页面切换中）：不能拿这个数改状态，
-    // 否则会把「还没布局」的 0 当成用户宽度存下来，框再也回不去
-    if (max === null) return
-    if (!userSized) previewWidth.value = max
-    // 用户亲手调过宽：只在窗口变窄、可用宽度不够时收回，不主动撑回去
-    else if (previewWidth.value > max) previewWidth.value = max
-  })
-  ro.observe(el)
-}
-
-// ---------- 拖拽调宽（真实 resize；拖浏览器窗口同样生效） ----------
-
-function onHandleDown(event: PointerEvent): void {
-  if (!stageRef.value) return
-  dragStartX = event.clientX
-  dragStartWidth = previewWidth.value
-  // currentTarget 类型是 EventTarget | null，收窄成元素后才能调用指针捕获
-  const handle = event.currentTarget
-  if (handle instanceof HTMLElement) handle.setPointerCapture(event.pointerId)
-}
-
-function onHandleMove(event: PointerEvent): void {
-  if (event.buttons !== 1) return
-  const next = dragStartWidth + (event.clientX - dragStartX)
-  const max = stageMaxWidth() ?? previewWidth.value
-  previewWidth.value = Math.max(220, Math.min(next, max))
-  userSized = true
-}
-
 /**
- * 键盘调宽：role=separator 的焦点元素本来就该能用方向键操作
- * Shift 加大步长；Home / End 到两端
+ * 框尺寸变化（共享组件在 ResizeObserver 回调里通知）：
+ * 此刻布局已结算，回填实测宽度并重读字号
  */
-function onHandleKey(event: KeyboardEvent): void {
-  const max = stageMaxWidth() ?? previewWidth.value
-  const step = event.shiftKey ? 64 : 16
-  let next: number
-  if (event.key === 'ArrowLeft') next = previewWidth.value - step
-  else if (event.key === 'ArrowRight') next = previewWidth.value + step
-  else if (event.key === 'Home') next = 220
-  else if (event.key === 'End') next = max
-  else return
-
-  previewWidth.value = Math.max(220, Math.min(next, max))
-  userSized = true
-  // 拦掉方向键的默认滚动，调宽时页面不该跟着上下跑
-  event.preventDefault()
+function onBoxResize(measured: number): void {
+  width.value = measured
+  fontSize.value = measureFontSize()
 }
 
 // ---------- 策略切换与重置 ----------
@@ -167,23 +91,9 @@ function setMode(next: string | number | boolean | undefined): void {
 }
 
 function resetAll(): void {
-  // 回到「铺满舞台」：重新跟随可用宽度，窗口变过也能回到当前能到的最宽
-  userSized = false
-  previewWidth.value = stageMaxWidth() ?? 320
+  // 回到「铺满舞台」：共享组件内部会重新跟随父容器可用宽度
+  resizeRef.value?.reset()
 }
-
-// ---------- 生命周期 ----------
-
-onMounted(() => {
-  // 舞台此刻可能还没量出宽度（演示区刚挂载）：先留 320，RO 回调补正
-  previewWidth.value = stageMaxWidth() ?? 320
-  setupObserver()
-})
-
-onUnmounted(() => {
-  ro?.disconnect()
-  ro = null
-})
 </script>
 
 <template>
@@ -217,18 +127,19 @@ onUnmounted(() => {
       <span>断点条数 <b>{{ mode === 'breakpoint' ? BREAK_COUNT : 0 }}</b> 条</span>
     </div>
 
-    <div
-      ref="stageRef"
-      class="stage"
-    >
-      <!-- 可拖宽宿主框：宽度绑在它身上，同时由它承担容器查询（cqi 的参照物） -->
-      <div
-        ref="frameRef"
+    <div class="stage">
+      <!--
+        可拖宽宿主框：宽度绑定、把手指针 / 键盘、容器查询全交给共享组件
+        （容器不能查询自己，字号仍写在内层 .preview 上）
+      -->
+      <DemoResizeHandle
+        ref="resizeRef"
+        v-model="previewWidth"
         class="frame"
-        :style="[
-          frameStyle,
-          mode === 'breakpoint' ? { fontSize: `${bpFontSize}px` } : {},
-        ]"
+        :min="220"
+        label="左右拖动调整容器宽度，也可用方向键"
+        :style="mode === 'breakpoint' ? { fontSize: `${bpFontSize}px` } : undefined"
+        @resize="onBoxResize"
       >
         <div
           class="preview"
@@ -245,18 +156,7 @@ onUnmounted(() => {
             中间没有一档一档的硬台阶。
           </p>
         </div>
-        <!-- 把手挂在宿主框里：框缩到哪，把手就跟到哪 -->
-        <div
-          class="handle"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="左右拖动调整容器宽度，也可用方向键"
-          tabindex="0"
-          @pointerdown="onHandleDown"
-          @pointermove="onHandleMove"
-          @keydown="onHandleKey"
-        />
-      </div>
+      </DemoResizeHandle>
     </div>
 
     <p class="hint">
@@ -304,20 +204,17 @@ onUnmounted(() => {
 /* ---------- 可拖宽舞台 ---------- */
 
 .stage {
-  position: relative;
-  /* 把手宽度（脚本里的 HANDLE_WIDTH 与它同值） */
-  --handle-w: 14px;
-  /* 右侧留出把手宽度：把手始终贴着自己的框走，不会溢出舞台 */
-  padding-right: var(--handle-w);
+  /* 把手宽度：舞台右侧留出同样的内边距接住它（共享组件读的就是这个变量） */
+  --rh-width: 14px;
+  padding-right: var(--rh-width);
 }
 
 /*
- * 宿主框：宽度由拖拽控制，同时把自己注册成「可按行内尺寸查询」的容器
+ * 宿主框：宽度由共享把手组件绑定，同时把自己注册成「可按行内尺寸查询」的容器
  * 为什么容器在这一层：元素不能查询自己，8cqi 必须由祖先容器提供参照物，
  * 所以字号（.preview--clamp）写在它的子元素上
  */
 .frame {
-  position: relative;
   container-type: inline-size;
   /* 断点式按行内字号渲染（style 绑定）；clamp 式由 .preview--clamp 生效 */
   transition: none;
@@ -357,29 +254,6 @@ onUnmounted(() => {
   line-height: 1.6;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
-}
-
-.handle {
-  position: absolute;
-  top: 0;
-  /* 贴着宿主框的右边缘（往右借 14px，正好落在舞台的预留缝里） */
-  right: calc(var(--handle-w) * -1);
-  width: var(--handle-w);
-  height: 100%;
-  border-radius: var(--radius-sm);
-  background-color: var(--border);
-  cursor: ew-resize;
-  touch-action: none;
-
-  &:hover,
-  &:focus-visible {
-    background-color: var(--primary);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
 }
 
 .hint {
