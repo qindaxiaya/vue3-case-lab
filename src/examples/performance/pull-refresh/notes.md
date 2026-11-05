@@ -14,7 +14,7 @@
 
 手势用 Pointer 事件统一鼠标、触屏和触控笔。按下时先判断列表是否在顶部：`scrollTop > 0` 就不接管，否则会和正常滚动打架；再用 `setPointerCapture` 保证手指滑出元素也能收到 `pointerup`。
 
-下拉位移要乘阻尼系数（案例 0.45）并设上限，否则内容会跟着手指跑太远；松手时只有超过阈值（64px）才刷新。刷新期间用 `refreshing` 互斥，避免重复请求。
+下拉位移要乘阻尼系数（案例 0.45）并设上限，否则内容会跟着手指跑太远；松手时只有超过阈值（64px）才刷新——这个 64px 是**内容位移**，按 0.45 的阻尼换算，手指实际要拖 143px。刷新期间用 `refreshing` 互斥，避免重复请求。
 
 触底判断同样是「距底距离」：`scrollHeight - scrollTop - clientHeight < 48`，再配合 `loadingMore`、`finished` 两个状态。移动端还要加 `overscroll-behavior: contain`，阻止 iOS 整页橡皮筋和下拉手势冲突。
 

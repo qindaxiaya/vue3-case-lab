@@ -19,8 +19,14 @@ const refreshing = ref(false)
 const loadingMore = ref(false)
 /** 是否已到底 */
 const finished = ref(false)
-/** 触发阈值 */
+/** 触发阈值（内容下拉位移，不是手指位移） */
 const THRESHOLD = 64
+/** 阻尼系数：手指移动 1px，内容只走 0.45px */
+const DAMPING = 0.45
+/** 内容位移上限，避免越拉越远 */
+const MAX_PULL = 110
+/** 手指要拖多远才够阈值（给文案用：64 / 0.45 向上取整 = 143px） */
+const FINGER_TO_THRESHOLD = Math.ceil(THRESHOLD / DAMPING)
 /**
  * 面板上显示的下拉位移（精确到 0.1px）
  * 判定、提示文案、数字三处共用这一个值：显示 64 就一定会触发，不会出现「写着 64 却还是下拉刷新」
@@ -57,7 +63,7 @@ function onPointerMove(e: PointerEvent): void {
     return
   }
   //! 阻尼：手指移动 100px，界面只走 45px，避免「拉过头」
-  pull.value = Math.min(110, dy * 0.45)
+  pull.value = Math.min(MAX_PULL, dy * DAMPING)
 }
 
 async function onPointerUp(): Promise<void> {
@@ -175,7 +181,9 @@ function reset(): void {
     </div>
 
     <p class="pr-hint">
-      按住列表向下拖动（鼠标也可以）：超过 {{ THRESHOLD }}px 松手触发刷新；滚到底部自动加载下一页。
+      按住列表向下拖动（鼠标也可以）：<b>内容</b>下拉超过 {{ THRESHOLD }}px 松手触发刷新
+      （阻尼 {{ DAMPING }}，手指要拖 {{ FINGER_TO_THRESHOLD }}px，上限 {{ MAX_PULL }}px）；
+      滚到底部自动加载下一页。
       真实移动端建议用 <code>overscroll-behavior: contain</code> 防止整页回弹。
     </p>
   </div>
