@@ -42,7 +42,8 @@ async function onPointerUp(): Promise<void> {
   if (!dragging.value) return
   dragging.value = false
   // ③ 未达阈值直接归零，交给 CSS transition 回弹
-  if (pull.value >= THRESHOLD && !refreshing.value) await refresh()
+  // 判定用界面显示的那个数（精确到 0.1px），避免「显示 64 却还是下拉刷新」
+  if (Math.round(pull.value * 10) / 10 >= THRESHOLD && !refreshing.value) await refresh()
   else pull.value = 0
 }
 ```
