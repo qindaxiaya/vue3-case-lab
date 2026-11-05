@@ -2441,6 +2441,97 @@ const SCENARIOS = [
     },
   },
   {
+    /**
+     * 两套曝光口径必须一致
+     * 回归点 1：手工测量原先用边框盒（含 1px 边框 + 0.6rem 内边距），观察器用内边距盒
+     * 回归点 2：面板显示取整、判定用原始比例 → 49.6% 显示「50% 可见」却没算曝光
+     * 做法：把第 5 张卡调到「可见略低于 50%」（面板显示 48%），两种模式各数一次
+     */
+    name: '两种曝光口径一致',
+    route: '/cases/observer/intersection-observer',
+    facts: async ({ evaluate }) => {
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 读曝光数与每张卡显示的可见百分比 */
+      const read = () => evaluate(`(() => {
+        const stat = [...document.querySelectorAll('.io-demo .stats span')].find((el) =>
+          el.textContent.includes('曝光')
+        )
+        const pcts = [...document.querySelectorAll('.io-demo .card small')]
+          .map((el) => Number.parseInt(el.textContent ?? '', 10))
+          .filter((n) => Number.isFinite(n))
+        return {
+          exposed: Number(stat?.querySelector('b')?.textContent?.trim() ?? -1),
+          pcts,
+          halfCount: pcts.filter((n) => n >= 50).length,
+        }
+      })()`)
+
+      /** 按面板自己的判定盒算出「第 5 张卡只露出 65px」的滚动位置，避免写死像素 */
+      const target = await evaluate(`(() => {
+        const vp = document.querySelector('.io-demo .viewport')
+        const card = document.querySelectorAll('.io-demo .card')[4]
+        if (!vp || !card) return null
+        const vpRect = vp.getBoundingClientRect()
+        const clipTop = vpRect.top + vp.clientTop
+        const clipBottom = clipTop + vp.clientHeight
+        const cardRect = card.getBoundingClientRect()
+        const visible = Math.min(cardRect.bottom, clipBottom) - Math.max(cardRect.top, clipTop)
+        const need = cardRect.height * 0.5 - 1 - visible
+        vp.scrollTop += need
+        return { scrollTop: Math.round(vp.scrollTop), height: Math.round(cardRect.height) }
+      })()`)
+      if (!target) return { error: 'no-demo' }
+      await sleep(350)
+
+      /** 切到「滚动 + 位置计算」，停在同一个滚动位置 */
+      await evaluate(`[...document.querySelectorAll('.io-demo .modes .n-radio-button')]
+        .find((el) => el.textContent.includes('滚动 + 位置计算'))?.click()`)
+      await sleep(400)
+      // 先归零再回到目标位置：滚动方案只在 scroll 事件里测量，值没变化就不会重算
+      await evaluate(`document.querySelector('.io-demo .viewport').scrollTop = 0`)
+      await sleep(120)
+      await evaluate(`document.querySelector('.io-demo .viewport').scrollTop = ${target.scrollTop}`)
+      await sleep(350)
+      const scrollMode = await read()
+
+      /** 切回观察器：同一个位置，观察器会先给一轮初始回调 */
+      await evaluate(`[...document.querySelectorAll('.io-demo .modes .n-radio-button')]
+        .find((el) => el.textContent.includes('交叉观察器'))?.click()`)
+      await sleep(500)
+      await evaluate(`document.querySelector('.io-demo .viewport').scrollTop = ${target.scrollTop}`)
+      await sleep(350)
+      const observerMode = await read()
+
+      return {
+        scrollTop: target.scrollTop,
+        cardHeight: target.height,
+        scrollExposed: scrollMode.exposed,
+        scrollHalf: scrollMode.halfCount,
+        observerExposed: observerMode.exposed,
+        observerHalf: observerMode.halfCount,
+        pctCount: observerMode.pcts.length,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (r.pctCount !== 12) failures.push(`卡片可见百分比没读全（${r.pctCount} / 12）`)
+      if (r.scrollExposed !== r.scrollHalf) {
+        failures.push(`滚动方案曝光 ${r.scrollExposed} 张，但面板显示 ≥50% 的只有 ${r.scrollHalf} 张`)
+      }
+      if (r.observerExposed !== r.observerHalf) {
+        failures.push(`观察器曝光 ${r.observerExposed} 张，但面板显示 ≥50% 的只有 ${r.observerHalf} 张`)
+      }
+      if (r.scrollExposed !== r.observerExposed) {
+        failures.push(
+          `同一滚动位置两套方案曝光数不同（滚动 ${r.scrollExposed} / 观察器 ${r.observerExposed}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

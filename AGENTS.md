@@ -260,6 +260,11 @@
   - `check:ui` 新增常驻场景「下拉刷新按显示值触发」：真实鼠标拖 142px（阻尼 0.45 → 显示 63.9）提示「下拉刷新」且松手不刷新，拖 143px（显示 64.4）提示「松手刷新」且松手进入「刷新中…」、900ms 后回到「就绪」
   - 踩坑：同一页连续两轮拖动，第一轮会选中文字，第二轮的 `mousemove` 被浏览器当成「拖拽选区」吞掉（6 次移动只收到 1 个 pointermove），场景里每轮开拖前要先 `window.getSelection().removeAllRanges()`
   - 验收：`eslint`（两个案例目录 + `scripts/check-ui.mjs`）、`type-check`、两个案例 `check:ui --case`（1280/375 无横向溢出、零 console 错误）、新场景通过
+- ✅ 2026-11-05 修「显示值与判定值不同源」（第 3、4 项，2 案例）：
+  - `css/container-query`：面板「视口宽度」原读 `window.innerWidth`（把经典滚动条算进去了，约 15px），而媒体查询按不含滚动条的视口判定 → 窗口卡在 900px 附近时面板显示 ≥900 却仍是窄排。改用 `document.documentElement.clientWidth`，与 `@media` 同一个口径；notes 第 4 段采集方式与踩坑第 5 条同步
+  - `observer/intersection-observer`：① 手工测量原用 `getBoundingClientRect()` 边框盒（多算 1px 边框 + 0.6rem 内边距），观察器的 root 用内边距盒，边界帧上两套方案差约 1px；改用 `rootRect.top + root.clientTop` 起算、`clientHeight` 定高。② 面板显示 `Math.round(ratio * 100)` 却按 `ratio >= 0.5` 判定 → 49.6% 显示「50% 可见」却没算曝光；新增 `EXPOSE_PCT = 50` 与 `visiblePct()`，IO 判定、手工判定、模板百分比与进度条四处共用。notes 第 3 段代码与踩坑第 4、5 条同步
+  - `check:ui` 新增常驻场景「两种曝光口径一致」：用面板自己的判定盒算出「第 5 张卡只露 65px」的滚动位置（不写死像素），两种模式各量一次 → `scrollTop=44 / pcts=73,73,100,100,50,50,0… / scrollExposed=6 / observerExposed=6 / 6 张显示 ≥50%` 全对齐；把 Demo 回滚到修复前复跑会红（`观察器曝光 4 张，但面板显示 ≥50% 的只有 6 张`），确认断言真的锁住了这个 bug
+  - 验收（L1）：`eslint`（两个案例目录 + `scripts/check-ui.mjs`）、`type-check`、`check:ui --case css/container-query`、`--case observer/intersection-observer`（1280/375 无横向溢出、零 console 错误）、新场景通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
@@ -353,3 +358,5 @@
 | 2026-11-04 | **拖拽类断言用 CDP 鼠标输入，不用页面内合成事件** | `check:ui` 的拖动场景必须走 `Input.dispatchMouseEvent`：Demo 靠 `pointerdown/move` 的 `buttons === 1` 与 `setPointerCapture` 判断，页面里 `dispatchEvent(new PointerEvent(...))` 拿不到指针捕获（还会因 pointerId 无效抛异常）。另外指针事件按屏幕坐标派发，元素在视口外就点不到，场景开头要 `setDeviceMetricsOverride` + `scrollIntoView`，否则会「拖动无效但断言看不出」 |
 | 2026-11-05 | **面板上显示的那个数，就是判定用的那个数** | `slider-captcha`（`Math.round(dev)` 显示 / `dev <= 5` 判定）与 `pull-refresh`（`Math.round(pull)` 显示 / `pull >= 64` 判定）都出现过「写着 5px 却判失败」「写着 64 却还是下拉刷新」。规则：把取整/格式化提前到存储时（`Math.round(x * 10) / 10`），显示、提示文案、阈值比较三处共用同一个变量，不要「显示时取整、判定时用原值」。这类偏差只在小数像素（HiDPI 的 `clientX`）或阈值边界上出现，肉眼扫代码很难发现，靠常驻场景锁（拖 142px / 143px 两侧分别断言）比靠 review 稳 |
 | 2026-11-05 | **连续拖动场景要先清选区** | 同一页连做两轮 `mousePressed/mouseMoved`：第一轮会在文本上拉出选区，第二轮的 `mousemove` 被浏览器当成「拖拽选区」吞掉（实测 6 次移动只收到 1 个 pointermove），表现为「第二轮怎么拖都不动」。每轮开拖前 `window.getSelection()?.removeAllRanges()` 即可 |
+| 2026-11-05 | **「视口宽度」要跟 `@media` 用同一个口径（`documentElement.clientWidth`）** | `container-query` 面板用 `window.innerWidth` 显示视口宽，它把经典滚动条也算进去（约 15px），而媒体查询按不含滚动条的视口判定。窗口宽度卡在 900px 断点附近时，面板显示 ≥900px 却还是窄排，看着像浏览器判错。凡是「用来和断点比」的视口宽度一律取 `document.documentElement.clientWidth`，与 CSS 侧同源 |
+| 2026-11-05 | **可比的两套实现必须量同一个盒：观察器 root = 内边距盒** | `intersection-observer` 的手工版用 `getBoundingClientRect()`（边框盒）判可见，观察器用的是 root 的内边距盒，同一个滚动位置差 1px，边界帧上曝光数会不一样。手工版改成 `rootRect.top + root.clientTop` 起算、`clientHeight` 定高；判定阈值与面板显示也统一到 `visiblePct()`（`Math.round(ratio * 100) >= 50`），避免「显示 50% 却没算曝光」。这类 1px 级差异过不了肉眼 review，靠「两种模式在同一滚动位置各量一次」的常驻场景锁住（回滚到旧代码该场景会红） |

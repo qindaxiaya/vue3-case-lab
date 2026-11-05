@@ -28,8 +28,8 @@ observer = new IntersectionObserver(
     for (const entry of entries) {
       const id = Number((entry.target as HTMLElement).dataset.id)
       ratioMap[id] = entry.intersectionRatio
-      // ① 半可见即曝光：阈值 0.5 与业务口径对齐，避免露一条边就算
-      if (entry.intersectionRatio >= 0.5) exposed.add(id)
+      // ① 半可见即曝光：阈值 50% 与业务口径对齐，避免露一条边就算
+      if (visiblePct(entry.intersectionRatio) >= EXPOSE_PCT) exposed.add(id)
       if (!entry.isIntersecting) ratioMap[id] = 0
     }
   },
@@ -39,11 +39,16 @@ observer = new IntersectionObserver(
 // ② 旧方案每帧读全部卡片，这正是要对比的成本
 function measureByScroll(): void {
   const rootRect = root.getBoundingClientRect()
+  //! 可见区按内边距盒算：滚动内容就是在这里被裁掉的，观察器的 root 也用它；
+  //! 用边框盒会把 1px 边框 + 0.6rem 内边距算成可见区域，边界帧上和观察器对不上
+  const clipTop = rootRect.top + root.clientTop
+  const clipBottom = clipTop + root.clientHeight
   for (const [id, el] of cardEls) {
     layoutReads.value++
     const rect = el.getBoundingClientRect()
-    const visible = Math.min(rect.bottom, rootRect.bottom) - Math.max(rect.top, rootRect.top)
+    const visible = Math.min(rect.bottom, clipBottom) - Math.max(rect.top, clipTop)
     ratioMap[id] = Math.max(0, Math.min(1, visible / rect.height))
+    if (visiblePct(ratioMap[id]) >= EXPOSE_PCT) exposed.add(id)
   }
 }
 
@@ -77,5 +82,7 @@ onUnmounted(() => observer?.disconnect())
 1. root 配错成 `null` → 以整个页面为视口，滚动容器内部滚动时永远不会触发。
 2. 曝光按「可见比例 > 0」算 → 只露一条边就计数，业务口径通常要 50% 或停留时长。
 3. 忘记 `disconnect` → 路由切换后旧观察器还在观察旧节点，计数虚高。
+4. 手工测量用边框盒、观察器用内边距盒 → 两套方案的「可见」差一个边框 + 内边距，边界帧上计数对不齐。
+5. 面板显示 `Math.round(ratio * 100)` 却按 `ratio >= 0.5` 判定 → 49.6% 会显示「50% 可见」却没算曝光，看起来像漏计。
 
 边界：需要精确知道「可见了多少像素」时，观察器只给比例，仍要读一次尺寸；需要在滚动中实时做吸顶、联动动画时，观察器不够，配合 `scroll` 或 `ResizeObserver` 更合适。本案例的曝光口径是「半可见一次」，不同业务要改 threshold 或加停留时间。
