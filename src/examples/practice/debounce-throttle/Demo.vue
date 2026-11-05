@@ -31,10 +31,9 @@ const waveRef = ref<HTMLElement | null>(null)
 /** 当前最多能放几根柱子；容器变宽/变窄时重算 */
 const maxPulses = ref(36)
 
-/** 单根柱子宽度 + 柱间距（与 scoped 样式里的 .pulse / .wave 保持一致） */
-const PULSE_STRIDE = 6 + 3
-/** 容器左右内边距 0.6rem×2 + 边框 1px×2 的近似值（像素） */
-const WAVE_INSET = 22
+/** 单根柱子宽度与柱间距（与 scoped 样式里的 .pulse / .wave 的 gap 保持一致） */
+const PULSE_WIDTH = 6
+const PULSE_GAP = 3
 /** 兜底最少柱子数：375px 也不至于只剩两三根 */
 const MIN_PULSES = 8
 
@@ -46,8 +45,13 @@ const MIN_PULSES = 8
 function measureWave(): void {
   const el = waveRef.value
   if (!el) return
-  const usable = el.clientWidth - WAVE_INSET
-  maxPulses.value = Math.max(MIN_PULSES, Math.floor(usable / PULSE_STRIDE))
+  // clientWidth 含左右内边距、不含边框，扣掉内边距才是柱子能用的宽度；
+  // 内边距从计算样式读，不写死「22px」这类近似值，改样式时不用同步改常量
+  const styles = getComputedStyle(el)
+  const inner = el.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight)
+  // n 根柱子占 n×宽 + (n-1)×间距（最后一根后面没有间距），所以先补一个间距再整除
+  const fits = Math.floor((inner + PULSE_GAP) / (PULSE_WIDTH + PULSE_GAP))
+  maxPulses.value = Math.max(MIN_PULSES, fits)
   // 容器变窄时立刻把多出来的柱子丢掉，避免溢出到不可见区域
   if (pulses.value.length > maxPulses.value) {
     pulses.value = pulses.value.slice(-maxPulses.value)
