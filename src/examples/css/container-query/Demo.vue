@@ -67,7 +67,9 @@ const fitCount = computed(() =>
 /** 视口宽度（媒体查询的判定依据，窗口缩放时更新） */
 const viewportW = ref(0)
 function syncViewport(): void {
-  viewportW.value = window.innerWidth
+  //! 媒体查询按「不含经典滚动条」的视口算（差值约 15px）；innerWidth 把滚动条也算了进去，
+  //! 断点附近会出现「面板显示 908px，却还是窄排」的自相矛盾，所以取 documentElement.clientWidth
+  viewportW.value = document.documentElement.clientWidth
 }
 
 // ---------- 读实际排向：一切以计算样式为准 ----------

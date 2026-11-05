@@ -42,6 +42,17 @@ const autoRunning = ref(false)
 const exposedCount = computed(() => exposed.size)
 const modeLabel = computed(() => (mode.value === 'observer' ? '交叉观察器' : '滚动 + 位置计算'))
 
+/** 曝光阈值（百分比）：面板显示、观察器判定、手工测量判定三处共用 */
+const EXPOSE_PCT = 50
+
+/**
+ * 可见百分比（取整）
+ * 面板显示与 50% 判定共用这一个值：显示 50% 就一定算曝光，避免「写着 50% 却没被计数」
+ */
+function visiblePct(ratio: number): number {
+  return Math.round(ratio * 100)
+}
+
 let observer: IntersectionObserver | null = null
 let rafId = 0
 
@@ -77,7 +88,7 @@ function setupObserver(): void {
         const id = Number((entry.target as HTMLElement).dataset.id)
         ratioMap[id] = entry.intersectionRatio
         // 半可见即视为一次有效曝光，重复进入不重复计数
-        if (entry.intersectionRatio >= 0.5) exposed.add(id)
+        if (visiblePct(entry.intersectionRatio) >= EXPOSE_PCT) exposed.add(id)
         // 完全离开后把比例归零，界面上能直接看到进出过程
         if (!entry.isIntersecting) ratioMap[id] = 0
       }
@@ -112,16 +123,21 @@ function measureByScroll(): void {
   if (!root) return
 
   scrollFrames.value++
+  //! 可见区域按「内边距盒」算：滚动内容就是在这里被裁掉的，观察器的 root 也用它。
+  //! 用 getBoundingClientRect 的边框盒会白算上 1px 边框 + 左右各 0.6rem 内边距，
+  //! 边界帧上两套方案会一格一格对不上
   const rootRect = root.getBoundingClientRect()
+  const clipTop = rootRect.top + root.clientTop
+  const clipBottom = clipTop + root.clientHeight
 
   for (const [id, el] of cardEls) {
     // 每一次读取都可能触发样式/布局计算，这就是旧方案的主要成本
     layoutReads.value++
     const rect = el.getBoundingClientRect()
-    const visibleHeight = Math.min(rect.bottom, rootRect.bottom) - Math.max(rect.top, rootRect.top)
+    const visibleHeight = Math.min(rect.bottom, clipBottom) - Math.max(rect.top, clipTop)
     const ratio = rect.height > 0 ? Math.max(0, Math.min(1, visibleHeight / rect.height)) : 0
     ratioMap[id] = ratio
-    if (ratio >= 0.5) exposed.add(id)
+    if (visiblePct(ratio) >= EXPOSE_PCT) exposed.add(id)
   }
 }
 
@@ -243,12 +259,12 @@ onUnmounted(() => {
         >
           <div class="card-top">
             <span class="index">{{ card.id + 1 }}</span>
-            <small>{{ Math.round((ratioMap[card.id] ?? 0) * 100) }}% 可见</small>
+            <small>{{ visiblePct(ratioMap[card.id] ?? 0) }}% 可见</small>
           </div>
           <h3>{{ card.title }}</h3>
           <p>{{ card.desc }}</p>
           <div class="ratio">
-            <span :style="{ width: `${Math.round((ratioMap[card.id] ?? 0) * 100)}%` }" />
+            <span :style="{ width: `${visiblePct(ratioMap[card.id] ?? 0)}%` }" />
           </div>
         </article>
       </div>
