@@ -168,9 +168,11 @@ function onPointerUp(): void {
   dragging.value = false
 
   const dev = Math.abs(offset.value - targetX.value)
-  deviation.value = Math.round(dev)
+  //! 面板精确到 0.1px，判定也用同一个值：看到 5 就是通过，不会「显示 5px 却判失败」
+  const shown = Math.round(dev * 10) / 10
+  deviation.value = shown
   elapsed.value = Math.round(performance.now() - startTime)
-  result.value = dev <= TOLERANCE ? 'pass' : 'fail'
+  result.value = shown <= TOLERANCE ? 'pass' : 'fail'
 }
 
 const resultText = (): string => {
@@ -243,7 +245,7 @@ const resultText = (): string => {
 
     <p class="sc-hint">
       前端校验只是「提高脚本成本」，<b>真正的判定必须在服务端</b>：把轨迹、耗时、设备指纹一起提交，
-      由风控判断。仅靠 <code>Math.abs(x - target) &lt; 5</code> 的验证码，几行脚本就能破解。
+      由风控判断。仅靠 <code>Math.abs(x - target) &lt;= 5</code> 的验证码，几行脚本就能破解。
     </p>
   </div>
 </template>

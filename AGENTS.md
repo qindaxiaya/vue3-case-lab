@@ -254,6 +254,12 @@
   - 顺手修 `container-query` 的量宽口径：原来读边框盒（539px）去比 520 断点，而 `@container` 判定的是内容盒，面板会出现「539px 却判未适配」的自相矛盾；改成 `clientWidth` 减左右内边距后读数 519px，四个摆位回到 4/4 适配
   - `check:ui` 新增两个常驻断言：「拖宽把手跟随容器（grid-auto-fit）」（初始 / 300px / 700px 三档把手离框右缘 ≤2px、列数 6→1→4、方向键 700→668）与「分栏把手拖动改两列占比」（50%→61%、左列 556→675、拖到极限夹在 22%、方向键 22%→24%、把手始终夹在两列之间）；流体场景选择器从 `.handle` 改 `.resize-bar`
   - 验收（preview）：`check:ui` 39/39、`--sweep` 81/81、`vitest` 53/53、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 106.2 KB）、`audit:cases` 0 P0/P1/P2；三个案例 `--case` 在 1280/375 无横向溢出、零 console 错误
+- ✅ 2026-11-05 修「面板显示的数 ≠ 判定用的数」（2 案例）：
+  - `practice/slider-captcha`：原先 `deviation = Math.round(dev)` 只用于显示，判定仍是未取整的 `dev <= TOLERANCE`，`dev = 4.6` 时面板写「偏差 5px」却判 ✕ 失败；改成 `Math.round(dev * 10) / 10` 这**一个值**同时用于显示与判定，页内文案的 `< 5` 一并改回 `<= 5`（与 `TOLERANCE = 5` 一致）
+  - `performance/pull-refresh`：同一个病根（显示 `Math.round(pull)`、判定 `pull >= 64`），新增 `shownPull` 统一「下拉数字 / 松手提示 / 触发判定」三处，拖到 63.9 显示 63.9 且不触发、64.4 显示 64.4 并触发；教学代码与 notes 同步
+  - `check:ui` 新增常驻场景「下拉刷新按显示值触发」：真实鼠标拖 142px（阻尼 0.45 → 显示 63.9）提示「下拉刷新」且松手不刷新，拖 143px（显示 64.4）提示「松手刷新」且松手进入「刷新中…」、900ms 后回到「就绪」
+  - 踩坑：同一页连续两轮拖动，第一轮会选中文字，第二轮的 `mousemove` 被浏览器当成「拖拽选区」吞掉（6 次移动只收到 1 个 pointermove），场景里每轮开拖前要先 `window.getSelection().removeAllRanges()`
+  - 验收：`eslint`（两个案例目录 + `scripts/check-ui.mjs`）、`type-check`、两个案例 `check:ui --case`（1280/375 无横向溢出、零 console 错误）、新场景通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
@@ -345,3 +351,5 @@
 | 2026-11-04 | **拖拽把手抽成演示区共享组件 `demo-resize-handle`（记为第二条例外）** | 三个 CSS 案例各写一份拖动，`fluid-clamp` 刚修好的两个 bug（把手层级、14px 死区）在 `grid-auto-fit` 里原样存活——重复就是 bug 的土壤。判定标准写进约定：它是**测量装置而不是教学内容**，且至少两个案例共用（拖动实现本身在 `drag-sort` / `slider-captcha` / `pull-refresh` 里讲）。两种模式共用一套指针捕获 / 夹取 / 键盘 / ARIA：`width` 自己就是被拖宽的框（插槽放内容），`split` 自己就是流内分隔条（0~1 占比）；上限取父容器**内容宽度**，挂载首次「占位宽度 ≠ 可用宽度」时先铺满且这次不回填，否则案例统计里会多出「容器 26px」「跳变 1 次」的假数据 |
 | 2026-11-04 | **`@container` 的断点要用内容盒宽度去比** | `container-query` 面板一直显示「并排·右 539px · ✗ 未适配（实际纵排）」：539 是边框盒，扣掉 1px 边框与左右 0.55rem 内边距后内容盒只有 519px，刚好落在 520px 断点下方——浏览器判得没错，是显示值用错了盒子。改成 `clientWidth - 左右内边距` 后读数 519px，`expectedDir()` 与 `@container` 用同一个量，四个摆位重新 4/4；这条也当作「看着自相矛盾，先想清楚量的是哪个盒」的踩坑写进 notes |
 | 2026-11-04 | **拖拽类断言用 CDP 鼠标输入，不用页面内合成事件** | `check:ui` 的拖动场景必须走 `Input.dispatchMouseEvent`：Demo 靠 `pointerdown/move` 的 `buttons === 1` 与 `setPointerCapture` 判断，页面里 `dispatchEvent(new PointerEvent(...))` 拿不到指针捕获（还会因 pointerId 无效抛异常）。另外指针事件按屏幕坐标派发，元素在视口外就点不到，场景开头要 `setDeviceMetricsOverride` + `scrollIntoView`，否则会「拖动无效但断言看不出」 |
+| 2026-11-05 | **面板上显示的那个数，就是判定用的那个数** | `slider-captcha`（`Math.round(dev)` 显示 / `dev <= 5` 判定）与 `pull-refresh`（`Math.round(pull)` 显示 / `pull >= 64` 判定）都出现过「写着 5px 却判失败」「写着 64 却还是下拉刷新」。规则：把取整/格式化提前到存储时（`Math.round(x * 10) / 10`），显示、提示文案、阈值比较三处共用同一个变量，不要「显示时取整、判定时用原值」。这类偏差只在小数像素（HiDPI 的 `clientX`）或阈值边界上出现，肉眼扫代码很难发现，靠常驻场景锁（拖 142px / 143px 两侧分别断言）比靠 review 稳 |
+| 2026-11-05 | **连续拖动场景要先清选区** | 同一页连做两轮 `mousePressed/mouseMoved`：第一轮会在文本上拉出选区，第二轮的 `mousemove` 被浏览器当成「拖拽选区」吞掉（实测 6 次移动只收到 1 个 pointermove），表现为「第二轮怎么拖都不动」。每轮开拖前 `window.getSelection()?.removeAllRanges()` 即可 |

@@ -2328,6 +2328,119 @@ const SCENARIOS = [
     },
   },
   {
+    /**
+     * 下拉刷新：判定必须跟着面板上显示的那个数走
+     * 回归点：显示用 Math.round、判定用未取整的 pull 时，会出现「写着 64 / 64 却还是『下拉刷新』」
+     * 位移用真实鼠标事件：Demo 靠 pointerdown + 指针捕获判断，页面内合成事件拿不到指针捕获
+     */
+    name: '下拉刷新按显示值触发',
+    route: '/cases/performance/pull-refresh',
+    facts: async ({ evaluate, send }) => {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 读面板：条数、下拉距离（显示值）、提示文案、状态 */
+      const read = () => evaluate(`(() => {
+        const stats = [...document.querySelectorAll('.demo-card .pr-stat')]
+        return {
+          count: Number(stats[0]?.querySelector('b')?.textContent?.trim() ?? 0),
+          pull: Number.parseFloat(stats[1]?.querySelector('b')?.textContent?.trim() ?? '0'),
+          label: document.querySelector('.demo-card .pr-indicator span')?.textContent?.trim() ?? '',
+          state: document.querySelector('.demo-card .pr-state')?.textContent?.trim() ?? '',
+        }
+      })()`)
+
+      /** 从内容区按住往下拖 dy 像素，返回松开前 / 松开后的读数 */
+      async function dragDown(dy) {
+        // 上一轮拖动可能选中了文字，第二轮的 mousemove 会被浏览器当成「拖拽选区」吞掉
+        await evaluate(`window.getSelection()?.removeAllRanges()`)
+        const point = await evaluate(`(() => {
+          const content = document.querySelector('.demo-card .pr-content')
+          const scroller = document.querySelector('.demo-card .pr-scroller')
+          if (scroller) scroller.scrollTop = 0
+          const r = content.getBoundingClientRect()
+          return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 24) }
+        })()`)
+        await send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x: point.x,
+          y: point.y,
+          button: 'left',
+          buttons: 1,
+          clickCount: 1,
+        })
+        // 分几步移动：一步到位时中间态会被合并，读不到拖动过程中的显示值
+        for (let step = 1; step <= 6; step++) {
+          await send('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x: point.x,
+            y: point.y + Math.round((dy * step) / 6),
+            button: 'left',
+            buttons: 1,
+          })
+          await sleep(25)
+        }
+        await sleep(80)
+        const before = await read()
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: point.x,
+          y: point.y + dy,
+          button: 'left',
+          buttons: 0,
+          clickCount: 1,
+        })
+        await sleep(150)
+        return { before, after: await read() }
+      }
+
+      const initial = await read()
+      // 阻尼 0.45：142px × 0.45 = 63.9（显示 63.9，未到阈值）；143px × 0.45 = 64.35（显示 64.4，已到阈值）
+      const below = await dragDown(142)
+      await sleep(300)
+      const belowSettled = await read()
+      const above = await dragDown(143)
+      await sleep(1100) // 模拟刷新 900ms
+      const aboveSettled = await read()
+
+      return {
+        initialCount: initial.count,
+        belowPull: below.before.pull,
+        belowLabel: below.before.label,
+        belowState: below.after.state,
+        belowCount: belowSettled.count,
+        abovePull: above.before.pull,
+        aboveLabel: above.before.label,
+        aboveState: above.after.state,
+        aboveSettledState: aboveSettled.state,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (!(r.belowPull > 0 && r.belowPull < 64)) {
+        failures.push(`下拉 142px 的显示值应在 0~64 之间（实际 ${r.belowPull}）`)
+      }
+      if (r.belowLabel === '松手刷新') failures.push('显示值没到 64 却提示「松手刷新」')
+      if (r.belowState === '刷新中…') failures.push('未到阈值松手却触发了刷新')
+      if (r.belowCount !== r.initialCount) failures.push('未到阈值松手却把列表换掉了')
+      if (!(r.abovePull >= 64)) {
+        failures.push(`下拉 143px 的显示值应 ≥ 64（实际 ${r.abovePull}）`)
+      }
+      if (r.aboveLabel !== '松手刷新') {
+        failures.push(`显示 ${r.abovePull}px 时应提示「松手刷新」（实际「${r.aboveLabel}」）`)
+      }
+      if (r.aboveState !== '刷新中…') failures.push('到了阈值松手却没触发刷新')
+      if (r.aboveSettledState !== '就绪') failures.push(`刷新结束后状态没回到「就绪」（实际「${r.aboveSettledState}」）`)
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

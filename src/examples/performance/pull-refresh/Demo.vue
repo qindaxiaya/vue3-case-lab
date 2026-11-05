@@ -4,7 +4,7 @@
 // 列表滚到底部自动加载下一页；含「刷新中禁止重复触发」状态。
 // ============================================================
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const PAGE_SIZE = 12
 /** 当前数据 */
@@ -21,6 +21,11 @@ const loadingMore = ref(false)
 const finished = ref(false)
 /** 触发阈值 */
 const THRESHOLD = 64
+/**
+ * 面板上显示的下拉位移（精确到 0.1px）
+ * 判定、提示文案、数字三处共用这一个值：显示 64 就一定会触发，不会出现「写着 64 却还是下拉刷新」
+ */
+const shownPull = computed(() => Math.round(pull.value * 10) / 10)
 
 let startY = 0
 let scroller: HTMLElement | null = null
@@ -59,7 +64,7 @@ async function onPointerUp(): Promise<void> {
   if (!dragging.value) return
   dragging.value = false
 
-  if (pull.value >= THRESHOLD && !refreshing.value) {
+  if (shownPull.value >= THRESHOLD && !refreshing.value) {
     await refresh()
   } else {
     pull.value = 0
@@ -114,7 +119,7 @@ function reset(): void {
         共 <b>{{ list.length }}</b> 条
       </span>
       <span class="pr-stat">
-        下拉 <b>{{ Math.round(pull) }}</b> / {{ THRESHOLD }} px
+        下拉 <b>{{ shownPull }}</b> / {{ THRESHOLD }} px
       </span>
       <span
         class="pr-state"
@@ -142,8 +147,8 @@ function reset(): void {
         :style="{ height: `${pull}px` }"
       >
         <span v-if="refreshing">⟳ 正在刷新…</span>
-        <span v-else-if="pull >= THRESHOLD">松手刷新</span>
-        <span v-else-if="pull > 0">下拉刷新</span>
+        <span v-else-if="shownPull >= THRESHOLD">松手刷新</span>
+        <span v-else-if="shownPull > 0">下拉刷新</span>
       </div>
 
       <div
