@@ -1775,8 +1775,10 @@ const SCENARIOS = [
         const input = document.querySelector('.dt-demo .n-input__input-el')
         if (!wave || !input) return { error: 'no-demo' }
 
-        // 与 Demo 里 measureWave 的口径一致：可用宽度 / (柱宽 6 + 间距 3)
-        const capacity = Math.max(8, Math.floor((wave.clientWidth - 22) / 9))
+        // 与 Demo 里 measureWave 的口径一致：内容宽 / (柱宽 6 + 间距 3)，最后一根后面没有间距
+        const cs = getComputedStyle(wave)
+        const inner = wave.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+        const capacity = Math.max(8, Math.floor((inner + 3) / 9))
         const times = capacity + 3
         for (let i = 0; i < times; i++) {
           input.value = 'x'.repeat(i + 1)
@@ -1806,8 +1808,8 @@ const SCENARIOS = [
       if (result.count !== result.capacity) {
         failures.push(`柱子数 ${result.count} ≠ 容器容量 ${result.capacity}（波形应先铺满再丢旧柱子）`)
       }
-      // 右内边距约 11px + 单格不足一整格的余量（<18px），超过就是有明显空白
-      if (result.rightGap > 30) {
+      // 右内边距 9.6px + 边框 1px + 不足一整格的余量（<9px），超过 19px 就是有明显空白
+      if (result.rightGap > 19) {
         failures.push(`最右一根离容器右边 ${result.rightGap}px，波形没铺满`)
       }
       if (result.overflow > 1) failures.push(`波形横向溢出 ${result.overflow}px`)
