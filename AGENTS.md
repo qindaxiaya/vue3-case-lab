@@ -270,6 +270,11 @@
   - `practice/debounce-throttle`：波形容量原来用 `WAVE_INSET = 22` 这个近似值（把边框也算进去了、又多减一格所需间距），窄屏下会少放一根柱子、右侧空出一格多。改为读计算样式的左右内边距、按 `n×6 + (n−1)×3` 算容量（最后一根后面没有间距，先补 3 再整除），删掉魔法常量；`check:ui` 里场景自己的那份公式同步，断言上限从「右缘 30px」收紧到「19px」（边框 1 + 内边距 9.6 + 不足一格的余量 <9）
   - 实测（1280）：容量 73 根、最右一根离容器右缘 **17px**（不足一格，属正常余量，不是缺陷）；`typed=73+3` 时柱子数仍等于容量、`overflow=0`
   - 验收（L1）：`eslint`（两案例目录 + 脚本）、`type-check`、场景「下拉刷新按显示值触发」「防抖波形先铺满再滚动」、`--case performance/pull-refresh`、`--case practice/debounce-throttle`（1280/375 无横向溢出）、`audit:cases` 0 P0/P1/P2
+- ✅ 2026-11-05 扫「显示值与判定值不同源」第三轮（`perf-observer` 的 CLS 等级）：
+  - `performance/perf-observer`：CLS 面板用 `toFixed(3)` 显示、等级却按原始值判（`cls < 0.1` 良好 / `< 0.25` 需改进）→ 0.0996 显示「0.100」仍标绿色「良好」、0.2499 显示「0.250」仍标黄，用户按面板数字对不上规则。新增 `shownCls()`（`Math.round(cls * 1000) / 1000`）与 `fmtCls()`，等级判定与显示共用同一个值；notes 第 5 段补这条坑
+  - 同轮扫出但**用户拍板不改**：`practice/file-upload` ①大小校验 `file.size > 2MB` vs 显示 `toFixed(2) MB`（2MB+1 字节显示「2.00 MB」却被拒，窗口 1 字节）②进度显示 `Math.round(progress)` vs 完成判定 `progress >= 100`（原始 99.5 显示 100%，180ms 后自愈）——两者都是「理论上错、实际看不见」，不为 1 字节 / 180ms 的窗口写补丁
+  - 没给 CLS 加常驻场景：要稳定造出 0.0995~0.1 的 CLS 不现实（偏移量由随机布局决定），改为在 notes 踩坑里写清口径；其余 80 个案例本轮复扫无同类问题（`toFixed` / `Math.round` 全部只用于展示，`chunk-upload` 进度、`vite-split` 占比也都只做显示）
+  - 验收（L1）：`eslint`、`type-check`、`check:ui --case performance/perf-observer`（1280/375 无横向溢出、零 console 错误）、场景「布局偏移注入与重置」通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
 
 ## 决策记录
@@ -367,3 +372,4 @@
 | 2026-11-05 | **可比的两套实现必须量同一个盒：观察器 root = 内边距盒** | `intersection-observer` 的手工版用 `getBoundingClientRect()`（边框盒）判可见，观察器用的是 root 的内边距盒，同一个滚动位置差 1px，边界帧上曝光数会不一样。手工版改成 `rootRect.top + root.clientTop` 起算、`clientHeight` 定高；判定阈值与面板显示也统一到 `visiblePct()`（`Math.round(ratio * 100) >= 50`），避免「显示 50% 却没算曝光」。这类 1px 级差异过不了肉眼 review，靠「两种模式在同一滚动位置各量一次」的常驻场景锁住（回滚到旧代码该场景会红） |
 | 2026-11-05 | **阈值要标明量的是「内容位移」还是「手指位移」** | `pull-refresh` 的 64px 阈值是乘以阻尼之后的内容位移，页内提示却写成「超过 64px 松手触发刷新」，读起来像「手指拖 64px」。文案改成「内容下拉超过 64px（阻尼 0.45，手指要拖 143px）」，并把系数与上限提成常量、由 `Math.ceil(THRESHOLD / DAMPING)` 算出 143，文案不写死数字；凡是「手势位移 × 阻尼 → 界面位移」的案例，阈值一律注明是哪一侧 |
 | 2026-11-05 | **「能放几个」按计算样式算，不写近似常量** | `debounce-throttle` 的波形容量原来用 `WAVE_INSET = 22` 减（把 1px 边框也算进去，还多减了一格间距），窄屏下会少一根柱子、右侧空出一格多；改成读 `getComputedStyle` 的左右内边距 + `clientWidth`（不含边框），按 `n×6 + (n−1)×3` 反解容量（最后一根后面没有间距，先补一个 gap 再整除），改样式不会让常量失配。常驻场景里那份重复公式同步，断言上限收紧到「边框 + 内边距 + 不足一格」，把「只差半格」和「真没铺满」分开 |
+| 2026-11-05 | **等级/评级也要按「显示值」判，不能按原始值** | `perf-observer` 的 CLS 用 `toFixed(3)` 显示、等级按未取整的原始值判，0.0996 会写成「0.100」还标绿色「良好」，与旁边的规则（良好 <0.1）自相矛盾。同 `slider-captcha` / `pull-refresh` 一个道理：先把格式化提前，`shownCls()` 同时喂给显示与 `clsLevel()`。区分严重程度：能显示出来的矛盾（数字与文字/颜色冲突）必须修；只在 1 字节或一个 tick（<200ms）里存在的窗口不写补丁（`file-upload` 的 2MB 边界与 99.5% 进度），避免为不可见边界加复杂度 |

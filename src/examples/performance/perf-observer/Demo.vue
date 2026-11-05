@@ -286,10 +286,25 @@ function fmtHeap(v: number | null): string {
   return v === null ? '—' : `${v.toFixed(1)} MB`
 }
 
+/**
+ * CLS 显示与等级判定共用的值（保留 3 位小数）
+ * 面板写「0.100」就必须判成「需改进」：显示时取整、判定用原始值会出现
+ * 0.0996 显示 0.100 却标绿色「良好」，用户按面板数字对不上规则
+ */
+function shownCls(cls: number): number {
+  return Math.round(cls * 1000) / 1000
+}
+
+/** CLS 面板文本（与等级判定同源） */
+function fmtCls(cls: number): string {
+  return shownCls(cls).toFixed(3)
+}
+
 /** CLS 等级（良好 <0.1 / 需改进 <0.25 / 差 ≥0.25） */
 function clsLevel(cls: number): string {
-  if (cls < 0.1) return 'good'
-  if (cls < 0.25) return 'warn'
+  const shown = shownCls(cls)
+  if (shown < 0.1) return 'good'
+  if (shown < 0.25) return 'warn'
   return 'bad'
 }
 
@@ -376,7 +391,7 @@ function fpsLevel(fps: number): string {
         <span
           class="metric-value"
           :class="`lvl-${clsLevel(metrics.cls)}`"
-        >{{ metrics.cls.toFixed(3) }}</span>
+        >{{ fmtCls(metrics.cls) }}</span>
         <!-- CLS sparkline -->
         <svg
           class="spark spark--cls"
