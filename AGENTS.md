@@ -69,7 +69,7 @@
 
 ## 当前进度
 
-- **阶段**：共 83 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 3 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 84 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 4 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -288,7 +288,13 @@
   - 封装四件事：`reactive` 状态 + `watch` 自动写（同一 tick 合并）、读时三态（空 / 坏 JSON / 可解析）、逐字段校验（`typeof` + 第三参 `guards` 白名单卡住联合类型）、自愈写回；`read()` 放在 `watch()` 之前，避免初始化读出来的值被当成用户改动多写一次
   - `check:ui` 新增常驻场景「存储脏数据下两种读法不同」：清空 → 连续改 3 次昵称（两边写入次数各 +3）→ 写坏 JSON / 错类型后重新读取，断言提示文案、存储原文是否被修好、档位与存储里的字段
   - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 107.4 KB）、`audit:cases` 83 案例 0 P0/P1/P2、全量 `check:ui` 43/43（preview）、`--sweep` 83/83、`--case composables/use-storage`（1280 / 375 无横向溢出、零 console 错误）、截图（浅 / 暗、1280 / 375）
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`
+- ✅ 2026-11-06 扩充 `composables` 分类（第 3 个案例 `use-keyboard-shortcut`，共 84 案例）：
+  - `composables/use-keyboard-shortcut`：左边手写（三个快捷键各挂一个 window 监听器、只判 `altKey`、没判焦点），右边 `useKeyboardShortcuts(键位表)`（一个监听器分发 + 修饰键全等比对 + 输入框让路 + `onScopeDispose` 解绑）；用模式单选组让两套实现轮流生效，避免同时响应
+  - 本例特意避开 `Ctrl/Cmd+K`（站点顶栏全局搜索已占用），改用 `Alt + K` 打开快速跳转、`/` 聚焦输入框、`Esc` 关闭
+  - 让路规则：焦点在输入框且该组合没有 `ctrl/meta/alt` 时直接 `return`（不 `preventDefault`，字符照常输入）；`Esc` 不产生字符、是退出语义，所以照样生效，否则用户会被困在输入框里
+  - `check:ui` 新增常驻场景「快捷键在输入框里让路」：用 CDP 真实按键（`rawKeyDown` + `char` + `keyUp`）验证手写版吞掉 `/`、`Alt+Shift+K` 误触发、3 个监听器；封装版 1 个监听器、字符正常输入、修饰键精确、`Alt+K` 命中且 `Esc` 关闭
+  - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 108.0 KB）、`audit:cases` 84 案例 0 P0/P1/P2、全量 `check:ui` 44/44（preview）、`--sweep` 84/84、`--case composables/use-keyboard-shortcut`（1280 / 375 无横向溢出、零 console 错误）、截图（浅 / 暗、1280 / 375）
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`
 
 ## 决策记录
 
@@ -389,3 +395,5 @@
 | 2026-11-06 | **`composables` 分类扩充：只讲「封装本身怎么设计」，不重复已有机制** | `composables` 长期只有 `use-event-listener`。新增案例的选题标准是「已有案例都没讲过的那一层」：监听清理在 `use-event-listener`、高频合并渲染在 `debounce-throttle`、请求竞态在 `request-race`、元素尺寸在 `observer/*`、剪贴板在 `basics/clipboard-api`，所以 `use-media-query` 只讲封装的三件事（环境判断 / 初始值同步 / 作用域清理）与「谁来做比较」。演示一律并排实时对照 + 可核对计数（回调次数、比较次数），不写毫秒估算；对比面板的计数必须来自真实事件（「模拟拖窗」也是真派发 `resize`，不是伪造数字） |
 | 2026-11-06 | **`use-storage` 的对比点选「脏数据怎么读」，不选「刷新会不会丢」** | 两边只要都记得写，刷新都不会丢，这个维度比不出封装价值；真正的分水岭在读取侧：`JSON.parse` 失败、字段类型不对、旧版本残留的多余字段。演示因此做成「同一个表单、两边各一个存储键 + 共同的『写入坏 JSON / 写入错类型 / 重新读取』按钮」，确保两边读到同一份脏数据。`typeof` 只能挡「数字塞进字符串字段」，`'huge'` 同样是 `string`，所以封装留了第三参 `guards` 白名单；「只提示错误不修存储」被当作反面写法写进注释与踩坑——用户下次进来还要再失败一次 |
 | 2026-11-06 | **演示里的脏数据只能喂给原生控件或字符串值，不能喂 `n-input` 数字** | `check:ui` 把 `console.warn` 也算失败，而 Naive `n-input` 的 `value` prop 只接受 `String \| Array`，塞 `123` 会打出 `Invalid prop` 警告，把「旧做法的后果」变成脚本红灯。做法是把坏类型放在 `size`（字符串联合类型，单选组接受任意值）与 `dark`（`"yes"`，开关只认 `=== true`）上，坏类型照样能看出差异，且不触发组件库告警 |
+| 2026-11-06 | **快捷键案例的让路规则：无修饰键才让路，`Esc` 例外** | 「输入框里的按键算打字」这条规则不能一刀切：`Ctrl+K` / `Alt+K` 在输入框里仍然有意义（打开搜索、打开面板），所以只有「没有 `ctrl/meta/alt`」的组合才让路，且让路时必须直接 `return`、不能 `preventDefault`（调了字符就进不去）。`Esc` 不产生字符、是退出语义，在输入框里也该能关浮层，所以列入旁路，否则用户打完字想关面板却毫无反应。演示里这条规则被 CDP 真实按键锁住：手写版输入框打不出 `/`，封装版能打出来且计数为「已忽略」 |
+| 2026-11-06 | **验证「按键能不能打出字符」必须用 CDP 真实按键** | 页面内 `dispatchEvent(new KeyboardEvent('keydown'))` 只会触发监听器，不会走浏览器默认行为，`preventDefault` 有没有生效完全测不出来（输入框照样是空的，看起来像「字符被吞了」）。`check:ui` 的快捷键场景改用 `Input.dispatchKeyEvent` 的 `rawKeyDown` + `char` + `keyUp`，修饰键用位掩码（`Alt` = 1、`Shift` = 8），才能验证「手写版吞掉 `/`、封装版正常输入」这条核心差异 |

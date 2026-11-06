@@ -2766,6 +2766,166 @@ const SCENARIOS = [
     },
   },
   {
+    name: '快捷键在输入框里让路',
+    route: '/cases/composables/use-keyboard-shortcut',
+    facts: async ({ evaluate, send }) => {
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(420)
+
+      /**
+       * 真实按键：rawKeyDown 负责 keydown 监听，char 负责把字符插进输入框
+       * （页面内 new KeyboardEvent 不会产生文字，验证不出「/ 能不能打出来」）
+       */
+      const press = async (key, code, vk, modifiers = 0, text = '') => {
+        await send('Input.dispatchKeyEvent', {
+          type: 'rawKeyDown',
+          key,
+          code,
+          windowsVirtualKeyCode: vk,
+          modifiers,
+        })
+        if (text) {
+          await send('Input.dispatchKeyEvent', {
+            type: 'char',
+            key,
+            text,
+            unmodifiedText: text,
+            modifiers,
+          })
+        }
+        await send('Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          key,
+          code,
+          windowsVirtualKeyCode: vk,
+          modifiers,
+        })
+        await sleep(110)
+      }
+
+      const read = () =>
+        evaluate(`(() => {
+          const num = (key) => Number(document.querySelector('[data-stat="' + key + '"]')?.textContent?.trim() ?? -1)
+          return {
+            manualListeners: num('manual-listeners'),
+            autoListeners: num('auto-listeners'),
+            manualHits: num('manual-hits'),
+            autoHits: num('auto-hits'),
+            manualMiss: num('manual-miss'),
+            autoIgnored: num('auto-ignored'),
+            typing: document.querySelector('[data-stat="typing"] input')?.value ?? '',
+            palette: Boolean(document.querySelector('[data-stat="palette"]')),
+            logText: document.querySelector('[data-stat="logs"]')?.innerText.replace(/\\s+/g, ' ').trim() ?? '',
+          }
+        })()`)
+
+      const focusInput = () =>
+        evaluate(`document.querySelector('[data-stat="typing"] input')?.focus()`)
+      const clickMode = (label) =>
+        evaluate(`[...document.querySelectorAll('.uk-demo .n-radio-button')]
+          .find((el) => el.textContent.includes('${label}'))?.click()`)
+
+      // ① 手写模式：Alt+K 命中，Alt+Shift+K 也被当成 Alt+K
+      const manualStart = await read()
+      await press('k', 'KeyK', 75, 1)
+      const afterAltK = await read()
+      await press('k', 'KeyK', 75, 9)
+      const afterShiftK = await read()
+      await press('Escape', 'Escape', 27)
+      const afterEsc = await read()
+
+      // ② 手写模式 + 输入框里打 /：字符被 preventDefault 吞掉
+      await focusInput()
+      await press('/', 'Slash', 191, 0, '/')
+      const manualSlash = await read()
+
+      // ③ 切到封装版：监听器只剩 1 个，手写那几个全部解绑
+      await clickMode('封装版')
+      await sleep(200)
+      const autoStart = await read()
+
+      await press('k', 'KeyK', 75, 1)
+      const autoAltK = await read()
+      await press('k', 'KeyK', 75, 9)
+      const autoShiftK = await read()
+      await press('Escape', 'Escape', 27)
+      const autoEsc = await read()
+
+      // ④ 封装版 + 输入框里打 /：快捷键让路，字符正常输入
+      await focusInput()
+      await press('/', 'Slash', 191, 0, '/')
+      const autoSlash = await read()
+
+      return {
+        manualListeners: manualStart.manualListeners,
+        autoListenersAtStart: manualStart.autoListeners,
+        manualHitsAfterAltK: afterAltK.manualHits,
+        manualPaletteAfterAltK: afterAltK.palette,
+        manualHitsAfterShiftK: afterShiftK.manualHits,
+        manualPaletteAfterEsc: afterEsc.palette,
+        manualHitsAfterSlash: manualSlash.manualHits,
+        manualMissAfterSlash: manualSlash.manualMiss,
+        manualTypingAfterSlash: manualSlash.typing,
+        autoListeners: autoStart.autoListeners,
+        manualListenersInAuto: autoStart.manualListeners,
+        autoHitsAfterAltK: autoAltK.autoHits,
+        autoPaletteAfterAltK: autoAltK.palette,
+        autoHitsAfterShiftK: autoShiftK.autoHits,
+        autoPaletteAfterEsc: autoEsc.palette,
+        autoHitsAfterSlash: autoSlash.autoHits,
+        autoIgnoredAfterSlash: autoSlash.autoIgnored,
+        autoTypingAfterSlash: autoSlash.typing,
+        autoLog: autoSlash.logText,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (r.manualListeners !== 3) {
+        failures.push(`手写版应挂 3 个监听器，实际 ${r.manualListeners}`)
+      }
+      if (r.autoListenersAtStart !== 0) {
+        failures.push(`手写模式下封装版不应挂监听器，实际 ${r.autoListenersAtStart}`)
+      }
+      if (r.manualHitsAfterAltK !== 1 || !r.manualPaletteAfterAltK) {
+        failures.push(`手写版 Alt+K 没命中（命中 ${r.manualHitsAfterAltK}）`)
+      }
+      if (r.manualHitsAfterShiftK !== 2) {
+        failures.push(`手写版没有把 Alt+Shift+K 误当成 Alt+K（命中 ${r.manualHitsAfterShiftK}）`)
+      }
+      if (r.manualPaletteAfterEsc) failures.push('手写版 Esc 没有关闭快速跳转')
+      if (r.manualMissAfterSlash !== 1) {
+        failures.push(`手写版在输入框里按 / 没有记成误触发（${r.manualMissAfterSlash}）`)
+      }
+      if (r.manualTypingAfterSlash !== '') {
+        failures.push(`手写版把输入框里的 / 吞掉了，字符应为空：${r.manualTypingAfterSlash}`)
+      }
+      if (r.autoListeners !== 1) failures.push(`封装版应只挂 1 个监听器，实际 ${r.autoListeners}`)
+      if (r.manualListenersInAuto !== 0) {
+        failures.push(`切到封装版后手写版监听器没解绑，剩 ${r.manualListenersInAuto}`)
+      }
+      if (r.autoHitsAfterAltK !== 1 || !r.autoPaletteAfterAltK) {
+        failures.push(`封装版 Alt+K 没命中（命中 ${r.autoHitsAfterAltK}）`)
+      }
+      if (r.autoHitsAfterShiftK !== 1) {
+        failures.push(`封装版 Alt+Shift+K 仍然触发（命中 ${r.autoHitsAfterShiftK}）`)
+      }
+      if (r.autoPaletteAfterEsc) failures.push('封装版 Esc 没有关闭快速跳转')
+      if (r.autoHitsAfterSlash !== 2) {
+        failures.push(`封装版在输入框里按 / 仍算命中（命中 ${r.autoHitsAfterSlash}）`)
+      }
+      if (r.autoIgnoredAfterSlash !== 1) {
+        failures.push(`封装版没有记录输入框里被忽略的 /（${r.autoIgnoredAfterSlash}）`)
+      }
+      if (r.autoTypingAfterSlash !== '/') {
+        failures.push(`封装版让路后 / 应该能打进输入框：${r.autoTypingAfterSlash}`)
+      }
+      if (!r.autoLog.includes('已忽略')) {
+        failures.push(`日志里没有「已忽略」记录：${r.autoLog}`)
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
