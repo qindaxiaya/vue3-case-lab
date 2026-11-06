@@ -1,0 +1,40 @@
+// ============================================================
+// 在页面里怎么用：两条查询拼出三档断点
+// 对照：旧写法每次 resize 都要自己读宽度、比较两档
+// ============================================================
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useMediaQuery } from './useMediaQuery'
+
+type Bp = 'mobile' | 'tablet' | 'desktop'
+
+/** 三档断点：≥768 平板，≥1024 桌面 */
+const mdUp = useMediaQuery('(min-width: 768px)')
+const lgUp = useMediaQuery('(min-width: 1024px)')
+
+// 两条布尔值拼出断点：不需要读任何宽度，也没有阈值比较
+const bp = computed<Bp>(() => {
+  if (!mdUp.value) return 'mobile'
+  return lgUp.value ? 'desktop' : 'tablet'
+})
+
+// ---------- 对照：旧写法（每缩放一次都要重算） ----------
+
+const calls = ref(0)
+const bpByWidth = ref<Bp>('desktop')
+
+function onResize(): void {
+  calls.value++
+  //! 每次 resize 都要重读 innerWidth 再比两档，
+  //! 而拖动过程中浏览器会连发几十次 resize
+  const w = window.innerWidth
+  bpByWidth.value = w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop'
+}
+
+onMounted(() => {
+  window.addEventListener('resize', onResize, { passive: true })
+})
+
+onUnmounted(() => {
+  //! 手写监听必须自己成对解绑，漏一次就泄漏一次
+  window.removeEventListener('resize', onResize)
+})
