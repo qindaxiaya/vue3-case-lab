@@ -69,7 +69,7 @@
 
 ## 当前进度
 
-- **阶段**：共 82 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 2 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 83 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 3 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -282,7 +282,13 @@
   - 额外暴露「口径差」：`innerWidth` 含经典滚动条、媒体查询不含，断点边界上两套判定会差一档，面板在不一致时给提示
   - `check:ui` 新增常驻场景「媒体查询只在跨断点时回调」：点「模拟拖窗 30 次」（连发 30 个真实 resize、宽度不变）→ 手写版回调 +30 / 比较 +60、封装版 +0；再用 CDP 把视口 1400 → 700 → 1400，两条查询各翻转一次（`change` +2 / +2），断点徽章同步为「移动 / 桌面」
   - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 106.8 KB）、`audit:cases` 82 案例 0 P0/P1/P2、全量 `check:ui` 42/42（preview）、`--sweep` 82/82、`--case composables/use-media-query`（1280 / 375 无横向溢出、零 console 错误）
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`
+- ✅ 2026-11-06 扩充 `composables` 分类（第 2 个案例 `use-storage`，共 83 案例）：
+  - `composables/use-storage`：左边手写 `getItem + JSON.parse + Object.assign`（读一次、每个字段各写一处 `setItem`），右边 `useStorage(key, defaults, guards)`（`reactive` 镜像 + `watch` 自动落盘 + 读时校验并自愈）；同屏并排对照，两边各用一个存储键
+  - 对比点定为「脏数据怎么读」：坏 JSON（左边只提示失败、存储里仍是 `{oops`；右边回退默认值并把存储改回合法 JSON）、字段类型不对（左边档位显示 `huge（不是合法选项）`、多余字段留在存储里；右边回退「中」并丢弃 `theme` / `dark`）
+  - 封装四件事：`reactive` 状态 + `watch` 自动写（同一 tick 合并）、读时三态（空 / 坏 JSON / 可解析）、逐字段校验（`typeof` + 第三参 `guards` 白名单卡住联合类型）、自愈写回；`read()` 放在 `watch()` 之前，避免初始化读出来的值被当成用户改动多写一次
+  - `check:ui` 新增常驻场景「存储脏数据下两种读法不同」：清空 → 连续改 3 次昵称（两边写入次数各 +3）→ 写坏 JSON / 错类型后重新读取，断言提示文案、存储原文是否被修好、档位与存储里的字段
+  - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 107.4 KB）、`audit:cases` 83 案例 0 P0/P1/P2、全量 `check:ui` 43/43（preview）、`--sweep` 83/83、`--case composables/use-storage`（1280 / 375 无横向溢出、零 console 错误）、截图（浅 / 暗、1280 / 375）
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`
 
 ## 决策记录
 
@@ -381,3 +387,5 @@
 | 2026-11-05 | **「能放几个」按计算样式算，不写近似常量** | `debounce-throttle` 的波形容量原来用 `WAVE_INSET = 22` 减（把 1px 边框也算进去，还多减了一格间距），窄屏下会少一根柱子、右侧空出一格多；改成读 `getComputedStyle` 的左右内边距 + `clientWidth`（不含边框），按 `n×6 + (n−1)×3` 反解容量（最后一根后面没有间距，先补一个 gap 再整除），改样式不会让常量失配。常驻场景里那份重复公式同步，断言上限收紧到「边框 + 内边距 + 不足一格」，把「只差半格」和「真没铺满」分开 |
 | 2026-11-05 | **等级/评级也要按「显示值」判，不能按原始值** | `perf-observer` 的 CLS 用 `toFixed(3)` 显示、等级按未取整的原始值判，0.0996 会写成「0.100」还标绿色「良好」，与旁边的规则（良好 <0.1）自相矛盾。同 `slider-captcha` / `pull-refresh` 一个道理：先把格式化提前，`shownCls()` 同时喂给显示与 `clsLevel()`。区分严重程度：能显示出来的矛盾（数字与文字/颜色冲突）必须修；只在 1 字节或一个 tick（<200ms）里存在的窗口不写补丁（`file-upload` 的 2MB 边界与 99.5% 进度），避免为不可见边界加复杂度 |
 | 2026-11-06 | **`composables` 分类扩充：只讲「封装本身怎么设计」，不重复已有机制** | `composables` 长期只有 `use-event-listener`。新增案例的选题标准是「已有案例都没讲过的那一层」：监听清理在 `use-event-listener`、高频合并渲染在 `debounce-throttle`、请求竞态在 `request-race`、元素尺寸在 `observer/*`、剪贴板在 `basics/clipboard-api`，所以 `use-media-query` 只讲封装的三件事（环境判断 / 初始值同步 / 作用域清理）与「谁来做比较」。演示一律并排实时对照 + 可核对计数（回调次数、比较次数），不写毫秒估算；对比面板的计数必须来自真实事件（「模拟拖窗」也是真派发 `resize`，不是伪造数字） |
+| 2026-11-06 | **`use-storage` 的对比点选「脏数据怎么读」，不选「刷新会不会丢」** | 两边只要都记得写，刷新都不会丢，这个维度比不出封装价值；真正的分水岭在读取侧：`JSON.parse` 失败、字段类型不对、旧版本残留的多余字段。演示因此做成「同一个表单、两边各一个存储键 + 共同的『写入坏 JSON / 写入错类型 / 重新读取』按钮」，确保两边读到同一份脏数据。`typeof` 只能挡「数字塞进字符串字段」，`'huge'` 同样是 `string`，所以封装留了第三参 `guards` 白名单；「只提示错误不修存储」被当作反面写法写进注释与踩坑——用户下次进来还要再失败一次 |
+| 2026-11-06 | **演示里的脏数据只能喂给原生控件或字符串值，不能喂 `n-input` 数字** | `check:ui` 把 `console.warn` 也算失败，而 Naive `n-input` 的 `value` prop 只接受 `String \| Array`，塞 `123` 会打出 `Invalid prop` 警告，把「旧做法的后果」变成脚本红灯。做法是把坏类型放在 `size`（字符串联合类型，单选组接受任意值）与 `dark`（`"yes"`，开关只认 `=== true`）上，坏类型照样能看出差异，且不触发组件库告警 |

@@ -1,0 +1,45 @@
+// ============================================================
+// 在组件里怎么用：一个状态对象，读写都不碰 localStorage
+// 对照：手写版要自己 parse、自己在每个字段的修改处调 setItem
+// ============================================================
+import { useStorage } from './useStorage'
+
+type Prefs = { name: string; size: 'small' | 'medium' | 'large'; dark: boolean }
+
+// 默认值同时是「字段白名单 + 类型模板」；
+// 第三参是字段级校验，用来卡住联合类型（typeof 挡不住 'huge'）
+const { state: prefs, raw, message, repaired } = useStorage(
+  'app:prefs',
+  {
+    name: '访客',
+    size: 'medium' as 'small' | 'medium' | 'large',
+    dark: false,
+  },
+  {
+    size: (value) => value === 'small' || value === 'medium' || value === 'large',
+  },
+)
+
+// 之后改 prefs 就行，写入是自动的；不需要在任何地方再调 setItem
+prefs.name = '小明'
+
+// ---------- 对照：手写版 ----------
+
+const KEY = 'app:prefs:manual'
+const manual = { name: '访客', size: 'medium' as Prefs['size'], dark: false }
+
+function saveManual(): void {
+  //! 每个字段改一次就要调一次，漏一处就「界面变了、刷新丢掉」
+  localStorage.setItem(KEY, JSON.stringify(manual))
+}
+
+function readManual(): void {
+  const text = localStorage.getItem(KEY)
+  if (!text) return
+  //! 能解析就信：类型不对、字段多余、结构变了都不管，
+  //! 读坏一次，用户下次进来继续坏
+  Object.assign(manual, JSON.parse(text) as Partial<Prefs>)
+}
+
+readManual()
+saveManual()

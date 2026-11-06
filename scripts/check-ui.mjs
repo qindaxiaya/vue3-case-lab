@@ -2627,6 +2627,145 @@ const SCENARIOS = [
     },
   },
   {
+    name: '存储脏数据下两种读法不同',
+    route: '/cases/composables/use-storage',
+    facts: async ({ evaluate }) => {
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 从面板 DOM 读两边的存储原文、提示、输入框值与档位 */
+      const read = () => evaluate(`(() => {
+        const text = (key) => document.querySelector('[data-stat="' + key + '"]')?.textContent?.trim() ?? ''
+        const input = (key) => document.querySelector('[data-stat="' + key + '"] input')?.value ?? ''
+        return {
+          manualRaw: text('manual-raw').replace('存储原文：', '').trim(),
+          autoRaw: text('auto-raw').replace('存储原文：', '').trim(),
+          manualMsg: text('manual-msg'),
+          autoMsg: text('auto-msg'),
+          manualSize: text('manual-size'),
+          autoSize: text('auto-size'),
+          manualName: input('manual-name'),
+          autoName: input('auto-name'),
+        }
+      })()`)
+
+      /** 按文案点按钮（Naive 按钮渲染成 <button class="n-button">） */
+      const click = (label) => evaluate(`[...document.querySelectorAll('.us-demo .actions .n-button')]
+        .find((el) => el.textContent.includes('${label}'))?.click()`)
+
+      await click('清空存储')
+      await sleep(220)
+      const cleared = await read()
+
+      /** 连续改三次昵称：两边每次改动都该落盘一次，差的是「谁负责调用写入」 */
+      const type = (key, value) => evaluate(`(() => {
+        const input = document.querySelector('[data-stat="${key}"] input')
+        if (!input) return false
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+        setter.call(input, '${value}')
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      })()`)
+
+      /** 读两边面板上的累计写入次数 */
+      const writes = () => evaluate(`(() => ({
+        manual: Number(document.querySelector('[data-stat="manual-writes"]')?.textContent?.trim() ?? -1),
+        auto: Number(document.querySelector('[data-stat="auto-writes"]')?.textContent?.trim() ?? -1),
+      }))()`)
+
+      const writesBefore = await writes()
+      for (const value of ['小', '小明', '小明好']) {
+        await type('manual-name', value)
+        await type('auto-name', value)
+        await sleep(60)
+      }
+      await sleep(220)
+      const writesAfter = await writes()
+
+      await click('写入坏 JSON')
+      await sleep(140)
+      const dirty = await read()
+
+      await click('重新读取')
+      await sleep(280)
+      const afterBadJson = await read()
+
+      await click('写入错类型')
+      await sleep(140)
+      await click('重新读取')
+      await sleep(280)
+      const afterBadTypes = await read()
+
+      /** 面板上的存储原文是不是合法 JSON */
+      const parseable = (text) => {
+        try {
+          JSON.parse(text)
+          return true
+        } catch {
+          return false
+        }
+      }
+
+      return {
+        clearedManualRaw: cleared.manualRaw,
+        manualWriteDelta: writesAfter.manual - writesBefore.manual,
+        autoWriteDelta: writesAfter.auto - writesBefore.auto,
+        dirtyBothSame: dirty.manualRaw === '{oops' && dirty.autoRaw === '{oops',
+        manualBadJsonMsg: afterBadJson.manualMsg,
+        autoBadJsonMsg: afterBadJson.autoMsg,
+        manualRawKeptBroken: afterBadJson.manualRaw === '{oops',
+        autoRawValid: parseable(afterBadJson.autoRaw),
+        manualName: afterBadTypes.manualName,
+        manualSize: afterBadTypes.manualSize,
+        autoName: afterBadTypes.autoName,
+        autoSize: afterBadTypes.autoSize,
+        autoRawClean:
+          !afterBadTypes.autoRaw.includes('huge') &&
+          !afterBadTypes.autoRaw.includes('theme') &&
+          !afterBadTypes.autoRaw.includes('yes'),
+        autoRawSize: (() => {
+          try {
+            return JSON.parse(afterBadTypes.autoRaw).size
+          } catch {
+            return '（不是合法 JSON）'
+          }
+        })(),
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (r.clearedManualRaw !== '（空）') {
+        failures.push(`清空后手写版存储原文不是空：${r.clearedManualRaw}`)
+      }
+      if (r.manualWriteDelta !== 3) {
+        failures.push(`手写版改 3 次昵称应写 3 次，实际 ${r.manualWriteDelta}`)
+      }
+      if (r.autoWriteDelta !== 3) {
+        failures.push(`封装版改 3 次昵称应写 3 次，实际 ${r.autoWriteDelta}`)
+      }
+      if (!r.dirtyBothSame) failures.push('两边没有读到同一份坏 JSON')
+      if (!r.manualBadJsonMsg.includes('读取失败')) {
+        failures.push(`坏 JSON 下没有提示读取失败：${r.manualBadJsonMsg}`)
+      }
+      if (!r.autoBadJsonMsg.includes('不是合法 JSON')) {
+        failures.push(`封装版没有识别出坏 JSON：${r.autoBadJsonMsg}`)
+      }
+      if (!r.manualRawKeptBroken) failures.push('手写版居然修好了存储（应原样保留坏数据）')
+      if (!r.autoRawValid) failures.push(`封装版没有把存储改回合法 JSON：${r.autoRawValid}`)
+      if (r.manualName !== '小明') failures.push(`手写版没有按存储原样填入昵称：${r.manualName}`)
+      if (!r.manualSize.includes('不是合法选项')) {
+        failures.push(`手写版没有暴露非法档位：${r.manualSize}`)
+      }
+      if (r.autoName !== '小明') failures.push(`封装版丢了合法字段：${r.autoName}`)
+      if (!r.autoSize.includes('中')) failures.push(`封装版没有把非法档位回退「中」：${r.autoSize}`)
+      if (!r.autoRawClean) failures.push('封装版存储里还留着非法 / 多余字段')
+      if (r.autoRawSize !== 'medium') {
+        failures.push(`封装版存储里的字号不是默认值：${r.autoRawSize}`)
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
