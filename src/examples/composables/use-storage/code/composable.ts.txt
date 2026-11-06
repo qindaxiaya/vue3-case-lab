@@ -1,0 +1,107 @@
+// ============================================================
+// useStorage：把一份状态镜像到 localStorage
+// 关键点：读时校验 + 回退 + 修好存储，写时自动同步
+// ============================================================
+import { reactive, ref, watch } from 'vue'
+
+/** 允许直接持久化的字段值类型：对象 / 数组请自己序列化成字符串 */
+type Primitive = string | number | boolean
+
+/** 字段级校验：返回 true 表示这个值可用；联合类型 / 取值范围要自己补 */
+type FieldGuards<T> = { [K in keyof T]?: (value: unknown) => boolean }
+
+/**
+ * 响应式持久化
+ * @param key      存储键
+ * @param defaults 默认值，同时充当「字段白名单 + 类型模板」
+ * @param guards   可选：比 typeof 更细的字段校验
+ */
+export function useStorage<T extends Record<string, Primitive>>(
+  key: string,
+  defaults: T,
+  guards?: FieldGuards<T>,
+) {
+  // 状态是真相：界面读它、写它，存储只是它的镜像
+  const state = reactive({ ...defaults }) as T
+  /** 存储原文（面板展示 / 排错用） */
+  const raw = ref('')
+  /** 最近一次读取的结论 */
+  const message = ref('')
+  /** 累计写入次数 */
+  const writes = ref(0)
+  /** 这次读取是否修复过存储 */
+  const repaired = ref(false)
+
+  /**
+   * 逐字段校验
+   * 只认 defaults 里有的字段，类型不一致的退回默认值，
+   * 存储里多出来的字段（旧版本残留）直接丢掉
+   */
+  function sanitize(input: unknown): T {
+    const next = { ...defaults }
+    if (!input || typeof input !== 'object') return next
+    const source = input as Record<string, unknown>
+    const target = next as Record<string, Primitive>
+    for (const field of Object.keys(defaults)) {
+      const value = source[field]
+      //! typeof 只能挡住「数字塞进字符串字段」这种粗错：
+      //! 'huge' 的 typeof 同样是 string，联合类型必须传 guards 列白名单
+      const guard = guards?.[field as keyof T]
+      const valid = guard ? guard(value) : typeof value === typeof defaults[field]
+      if (valid) {
+        target[field] = value as Primitive
+      }
+    }
+    return next
+  }
+
+  /** 写一次：当前状态 → 存储 */
+  function write(): void {
+    localStorage.setItem(key, JSON.stringify(state))
+    writes.value++
+    raw.value = JSON.stringify(state)
+  }
+
+  /** 读一次：坏 JSON 与非法字段都在这里兜住，并顺手把存储改对 */
+  function read(): void {
+    raw.value = localStorage.getItem(key) ?? ''
+    repaired.value = false
+
+    if (!raw.value) {
+      message.value = '存储为空，使用默认值'
+      return
+    }
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw.value)
+    } catch {
+      //! 坏 JSON 不能只「显示个错误」：不把存储改对，
+      //! 用户下次进来还要再失败一次
+      Object.assign(state, defaults)
+      write()
+      repaired.value = true
+      message.value = '不是合法 JSON：已回退默认值，并把存储改回正确内容'
+      return
+    }
+
+    const clean = sanitize(parsed)
+    // 序列化后不一致，说明确实有字段被丢掉或改回默认
+    const changed = JSON.stringify(clean) !== JSON.stringify(parsed)
+    Object.assign(state, clean)
+
+    if (changed) {
+      write()
+      repaired.value = true
+      message.value = '有非法字段或多余字段：已按默认值校验，并把存储改回正确内容'
+    } else {
+      message.value = '读取成功，字段全部通过校验'
+    }
+  }
+
+  //! 先读再挂 watch：否则初始化读出来的值会被当成一次用户改动再写回去
+  read()
+  watch(state, write)
+
+  return { state, raw, message, writes, repaired, read, write }
+}
