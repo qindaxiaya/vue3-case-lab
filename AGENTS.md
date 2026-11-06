@@ -70,7 +70,8 @@
 ## 当前进度
 
 - **阶段**：共 84 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 4 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
-- 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
+- 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务，已完成，保留为历史记录）
+- 遗留任务计划：`docs/superpowers/plans/2026-11-06-remaining-tasks.md`（Task 1~6：CASES.md + CI 校验 → new-case 脚手架 → notes 同源校验 →（待确认）行号点击联动 / 375px 截图留档 → v0.2 tag）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
 - 已完成：
