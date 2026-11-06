@@ -69,7 +69,7 @@
 
 ## 当前进度
 
-- **阶段**：共 81 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 1 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 82 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 2 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
 - 需求来源：`E:\MyProject\myProject\vue3-case-library-spec.md`（38 案例清单，用户要求全部实现）
@@ -275,7 +275,14 @@
   - 同轮扫出但**用户拍板不改**：`practice/file-upload` ①大小校验 `file.size > 2MB` vs 显示 `toFixed(2) MB`（2MB+1 字节显示「2.00 MB」却被拒，窗口 1 字节）②进度显示 `Math.round(progress)` vs 完成判定 `progress >= 100`（原始 99.5 显示 100%，180ms 后自愈）——两者都是「理论上错、实际看不见」，不为 1 字节 / 180ms 的窗口写补丁
   - 没给 CLS 加常驻场景：要稳定造出 0.0995~0.1 的 CLS 不现实（偏移量由随机布局决定），改为在 notes 踩坑里写清口径；其余 80 个案例本轮复扫无同类问题（`toFixed` / `Math.round` 全部只用于展示，`chunk-upload` 进度、`vite-split` 占比也都只做显示）
   - 验收（L1）：`eslint`、`type-check`、`check:ui --case performance/perf-observer`（1280/375 无横向溢出、零 console 错误）、场景「布局偏移注入与重置」通过
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`
+- ✅ 2026-11-06 扩充 `composables` 分类（第 1 个案例 `use-media-query`，共 82 案例）：
+  - 选题口径：`composables` 原先只有 `use-event-listener`，是导航上唯一明显偏薄的分类；新案例避开已覆盖内容（`use-event-listener` 的监听清理、`debounce-throttle`、`request-race`、`observer/*`、`clipboard-api`），只讲「封装本身怎么设计」
+  - `composables/use-media-query`：左边手写 `resize + innerWidth`（每缩放一次重读宽度、比两档断点），右边 `useMediaQuery(query)` 订阅 `matchMedia` 的 `change`；同屏并排对照，计数全部来自真实事件
+  - 封装三件事：环境判断（无 `window` 返回恒 false）、初始值同步（否则首帧闪错布局）、`onScopeDispose` 自动解绑（组件卸载与 `effectScope.stop()` 都走清理）；两条查询（≥768 / ≥1024）拼出移动 / 平板 / 桌面三档
+  - 额外暴露「口径差」：`innerWidth` 含经典滚动条、媒体查询不含，断点边界上两套判定会差一档，面板在不一致时给提示
+  - `check:ui` 新增常驻场景「媒体查询只在跨断点时回调」：点「模拟拖窗 30 次」（连发 30 个真实 resize、宽度不变）→ 手写版回调 +30 / 比较 +60、封装版 +0；再用 CDP 把视口 1400 → 700 → 1400，两条查询各翻转一次（`change` +2 / +2），断点徽章同步为「移动 / 桌面」
+  - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 106.8 KB）、`audit:cases` 82 案例 0 P0/P1/P2、全量 `check:ui` 42/42（preview）、`--sweep` 82/82、`--case composables/use-media-query`（1280 / 375 无横向溢出、零 console 错误）
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`
 
 ## 决策记录
 
@@ -373,3 +380,4 @@
 | 2026-11-05 | **阈值要标明量的是「内容位移」还是「手指位移」** | `pull-refresh` 的 64px 阈值是乘以阻尼之后的内容位移，页内提示却写成「超过 64px 松手触发刷新」，读起来像「手指拖 64px」。文案改成「内容下拉超过 64px（阻尼 0.45，手指要拖 143px）」，并把系数与上限提成常量、由 `Math.ceil(THRESHOLD / DAMPING)` 算出 143，文案不写死数字；凡是「手势位移 × 阻尼 → 界面位移」的案例，阈值一律注明是哪一侧 |
 | 2026-11-05 | **「能放几个」按计算样式算，不写近似常量** | `debounce-throttle` 的波形容量原来用 `WAVE_INSET = 22` 减（把 1px 边框也算进去，还多减了一格间距），窄屏下会少一根柱子、右侧空出一格多；改成读 `getComputedStyle` 的左右内边距 + `clientWidth`（不含边框），按 `n×6 + (n−1)×3` 反解容量（最后一根后面没有间距，先补一个 gap 再整除），改样式不会让常量失配。常驻场景里那份重复公式同步，断言上限收紧到「边框 + 内边距 + 不足一格」，把「只差半格」和「真没铺满」分开 |
 | 2026-11-05 | **等级/评级也要按「显示值」判，不能按原始值** | `perf-observer` 的 CLS 用 `toFixed(3)` 显示、等级按未取整的原始值判，0.0996 会写成「0.100」还标绿色「良好」，与旁边的规则（良好 <0.1）自相矛盾。同 `slider-captcha` / `pull-refresh` 一个道理：先把格式化提前，`shownCls()` 同时喂给显示与 `clsLevel()`。区分严重程度：能显示出来的矛盾（数字与文字/颜色冲突）必须修；只在 1 字节或一个 tick（<200ms）里存在的窗口不写补丁（`file-upload` 的 2MB 边界与 99.5% 进度），避免为不可见边界加复杂度 |
+| 2026-11-06 | **`composables` 分类扩充：只讲「封装本身怎么设计」，不重复已有机制** | `composables` 长期只有 `use-event-listener`。新增案例的选题标准是「已有案例都没讲过的那一层」：监听清理在 `use-event-listener`、高频合并渲染在 `debounce-throttle`、请求竞态在 `request-race`、元素尺寸在 `observer/*`、剪贴板在 `basics/clipboard-api`，所以 `use-media-query` 只讲封装的三件事（环境判断 / 初始值同步 / 作用域清理）与「谁来做比较」。演示一律并排实时对照 + 可核对计数（回调次数、比较次数），不写毫秒估算；对比面板的计数必须来自真实事件（「模拟拖窗」也是真派发 `resize`，不是伪造数字） |

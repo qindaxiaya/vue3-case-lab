@@ -1,0 +1,44 @@
+// ============================================================
+// useMediaQuery：把一条媒体查询封装成响应式布尔值
+// 关键点：初始值同步给出、只在结果翻转时更新、作用域结束自动解绑
+// ============================================================
+import { onScopeDispose, ref } from 'vue'
+import type { Ref } from 'vue'
+
+/**
+ * 订阅一条媒体查询
+ * @param query  媒体查询串，例如 '(min-width: 768px)'
+ * @param onFlip 可选：结果翻转时通知调用方（计数 / 打日志 / 打点都行）
+ */
+export function useMediaQuery(query: string, onFlip?: (matches: boolean) => void): Ref<boolean> {
+  const matches = ref(false)
+
+  //! 为什么要判环境：构建期与服务端渲染没有 window，
+  //! 直接调用 matchMedia 会在模块导入阶段就抛错，整个包都跑不起来
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return matches
+  }
+
+  const mql = window.matchMedia(query)
+
+  // 初始值同步给：否则首帧会先按 false 渲染一次，
+  // 明明是桌面却先闪一下「移动端」布局
+  matches.value = mql.matches
+
+  //! 为什么用 change 而不是 resize：窗口拖动一秒能发几十次 resize，
+  //! 但「是否 ≥768」这个结论最多翻转一次；change 只在这个翻转时触发
+  const handleChange = (event: MediaQueryListEvent): void => {
+    matches.value = event.matches
+    onFlip?.(event.matches)
+  }
+  mql.addEventListener('change', handleChange)
+
+  //! 为什么用 onScopeDispose 而不是 onUnmounted：
+  //! 组件卸载会走到，effectScope.stop() 也会走到，
+  //! 把「注册了就一定解绑」写进封装里，调用方不用记
+  onScopeDispose(() => {
+    mql.removeEventListener('change', handleChange)
+  })
+
+  return matches
+}

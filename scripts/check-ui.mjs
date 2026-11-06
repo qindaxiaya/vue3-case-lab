@@ -2534,6 +2534,99 @@ const SCENARIOS = [
     },
   },
   {
+    name: '媒体查询只在跨断点时回调',
+    route: '/cases/composables/use-media-query',
+    facts: async ({ evaluate, send }) => {
+      // 固定起始宽度，避免默认窗口大小影响断点判定
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1400,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await evaluate(`document.querySelector('.demo-card')?.scrollIntoView({ block: 'center' })`)
+      await sleep(400)
+
+      /** 读两边的计数与断点（都从面板 DOM 读，不碰内部状态） */
+      const read = () => evaluate(`(() => {
+        const num = (key) => Number(document.querySelector('[data-stat="' + key + '"]')?.textContent?.trim() ?? -1)
+        return {
+          manualCalls: num('manual-calls'),
+          manualChecks: num('manual-checks'),
+          queryCalls: num('query-calls'),
+          bp: document.querySelector('[data-stat="bp"]')?.textContent?.trim() ?? '',
+          inner: num('inner'),
+          client: num('client'),
+          mismatch: document.querySelector('[data-stat="mismatch"]')?.textContent?.trim() ?? '',
+        }
+      })()`)
+
+      /** 按文案点按钮（Naive 按钮渲染成 <button class="n-button">） */
+      const clickButton = (text) => evaluate(`[...document.querySelectorAll('.umq-demo .actions .n-button')]
+        .find((el) => el.textContent.includes('${text}'))?.click()`)
+
+      await clickButton('重置')
+      await sleep(160)
+      const base = await read()
+
+      // 1) 模拟拖窗：连发 30 个真实 resize，宽度不变 → 手写版白算，封装版不该被叫醒
+      await clickButton('模拟')
+      await sleep(220)
+      const afterDrag = await read()
+
+      // 2) 真实缩到 700（同时跨过 1024 与 768）：两条查询各翻转一次
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 700,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await sleep(380)
+      const narrow = await read()
+
+      // 3) 回到 1400：再翻转回来
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1400,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await sleep(380)
+      const wide = await read()
+
+      return {
+        manualPerDrag: afterDrag.manualCalls - base.manualCalls,
+        checksPerDrag: afterDrag.manualChecks - base.manualChecks,
+        queryPerDrag: afterDrag.queryCalls - base.queryCalls,
+        toNarrow: narrow.queryCalls - afterDrag.queryCalls,
+        backToWide: wide.queryCalls - narrow.queryCalls,
+        bpNarrow: narrow.bp,
+        bpWide: wide.bp,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (r.manualPerDrag !== 30) {
+        failures.push(`模拟拖窗 30 次后手写版回调增加了 ${r.manualPerDrag}（应为 30）`)
+      }
+      if (r.checksPerDrag !== 60) {
+        failures.push(`模拟拖窗 30 次后断点比较增加了 ${r.checksPerDrag}（应为 60）`)
+      }
+      if (r.queryPerDrag !== 0) {
+        failures.push(`没跨断点却收到了 ${r.queryPerDrag} 次 change 回调`)
+      }
+      if (r.toNarrow < 1 || r.toNarrow > 2) {
+        failures.push(`跨两档断点收到 ${r.toNarrow} 次 change 回调（应为 1~2）`)
+      }
+      if (r.bpNarrow !== '移动') failures.push(`700px 时断点显示「${r.bpNarrow}」`)
+      if (r.bpWide !== '桌面') failures.push(`1400px 时断点显示「${r.bpWide}」`)
+      if (r.backToWide < 1 || r.backToWide > 2) {
+        failures.push(`回到 1400px 收到 ${r.backToWide} 次 change 回调（应为 1~2）`)
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
