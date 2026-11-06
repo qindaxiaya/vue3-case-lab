@@ -1,0 +1,61 @@
+// ============================================================
+// 在组件里怎么用：一张键位表注册全部快捷键
+// 对照：手写版每个快捷键各挂一个监听器，还得自己判断焦点在哪
+// ============================================================
+import { ref } from 'vue'
+import { useKeyboardShortcuts } from './useKeyboardShortcuts'
+
+const paletteOpen = ref(false)
+const searchRef = ref<{ focus: () => void } | null>(null)
+
+const shortcuts = useKeyboardShortcuts(
+  {
+    'alt+k': () => {
+      paletteOpen.value = true
+    },
+    '/': () => {
+      searchRef.value?.focus()
+    },
+    escape: () => {
+      paletteOpen.value = false
+    },
+  },
+  {
+    // 日志 / 埋点用：命中与被忽略都能拿到具体键位
+    onHit: (binding) => console.log('命中', binding),
+    onIgnored: (binding) => console.log('正在输入，跳过', binding),
+  },
+)
+
+// 需要临时停用时调 stop()，再启用调 start()；组件卸载会自动解绑
+shortcuts.stop()
+
+// ---------- 对照：手写版 ----------
+
+function bindManual(): () => void {
+  //! 一个功能一个监听器，窗口上很快就挂满
+  const onCommand = (event: KeyboardEvent): void => {
+    //! 只判了 altKey：Alt+Shift+K 也会被当成 Alt+K
+    if (event.altKey && event.key.toLowerCase() === 'k') {
+      event.preventDefault()
+      paletteOpen.value = true
+    }
+  }
+
+  const onSlash = (event: KeyboardEvent): void => {
+    //! 没判断焦点：在输入框里打 / 会被吞掉，还记成一次命中
+    if (event.key === '/') {
+      event.preventDefault()
+      searchRef.value?.focus()
+    }
+  }
+
+  window.addEventListener('keydown', onCommand)
+  window.addEventListener('keydown', onSlash)
+
+  //! 解绑要自己记住挂了哪几个、用了哪个函数引用，漏一个就泄漏
+  return () => {
+    window.removeEventListener('keydown', onCommand)
+    window.removeEventListener('keydown', onSlash)
+  }
+}

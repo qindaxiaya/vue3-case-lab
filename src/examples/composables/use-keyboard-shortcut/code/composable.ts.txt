@@ -1,0 +1,113 @@
+// ============================================================
+// useKeyboardShortcuts：一张键位表 → 一个 window 监听器
+// 关键点：修饰键全等比对 + 输入框里让路 + 作用域结束自动解绑
+// ============================================================
+import { onScopeDispose, ref } from 'vue'
+
+/** 键位声明：'alt+k' / '/' / 'escape'，修饰键用 ctrl / meta / alt / shift */
+type ShortcutMap = Record<string, (event: KeyboardEvent) => void>
+
+type ShortcutOptions = {
+  /** 允许在输入框里触发（默认：没有修饰键的组合在输入框里让路） */
+  enableOnInput?: boolean
+  /** 命中时回调 */
+  onHit?: (binding: string) => void
+  /** 在输入框里被跳过时回调 */
+  onIgnored?: (binding: string) => void
+}
+
+type ParsedBinding = {
+  key: string
+  ctrl: boolean
+  meta: boolean
+  alt: boolean
+  shift: boolean
+}
+
+/** 'alt+k' → { key: 'k', alt: true, ctrl: false, … } */
+function parseBinding(binding: string): ParsedBinding {
+  const parts = binding.toLowerCase().split('+')
+  const rawKey = parts.pop() ?? ''
+  return {
+    key: rawKey === 'esc' ? 'escape' : rawKey, // Escape 兼容 'esc' 简写
+    ctrl: parts.includes('ctrl'),
+    meta: parts.includes('meta'),
+    alt: parts.includes('alt'),
+    shift: parts.includes('shift'),
+  }
+}
+
+/** 焦点是否在可编辑元素里：输入框 / 多行文本 / 下拉 / 富文本 */
+function isEditable(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'
+}
+
+export function useKeyboardShortcuts(map: ShortcutMap, options: ShortcutOptions = {}) {
+  // 键位先解析好，按键时只做比对，不再拆字符串
+  const entries = Object.entries(map).map(([binding, handler]) => ({
+    binding,
+    parsed: parseBinding(binding),
+    handler,
+  }))
+
+  const attached = ref(false)
+  const hits = ref(0)
+  const ignored = ref(0)
+
+  function onKeydown(event: KeyboardEvent): void {
+    const typing = isEditable(event.target)
+    const pressed: ParsedBinding = {
+      key: event.key.toLowerCase(),
+      ctrl: event.ctrlKey,
+      meta: event.metaKey,
+      alt: event.altKey,
+      shift: event.shiftKey,
+    }
+
+    for (const { binding, parsed, handler } of entries) {
+      if (pressed.key !== parsed.key) continue
+      //! 修饰键必须完全一致：只判 altKey 的话，Alt+Shift+K 也会被当成 Alt+K
+      if (pressed.ctrl !== parsed.ctrl || pressed.meta !== parsed.meta) continue
+      if (pressed.alt !== parsed.alt || pressed.shift !== parsed.shift) continue
+
+      const hasModifier = parsed.ctrl || parsed.meta || parsed.alt
+      //! 光按 / 在输入框里是「打字」，必须让路；
+      //! Esc 不产生字符、是「退出」语义，所以照样生效
+      const bypassTyping = hasModifier || parsed.key === 'escape'
+      //! 这里用 return 而不是 preventDefault：让路时字符要能正常打进输入框
+      if (typing && !bypassTyping && !options.enableOnInput) {
+        ignored.value++
+        options.onIgnored?.(binding)
+        return
+      }
+
+      event.preventDefault()
+      hits.value++
+      options.onHit?.(binding)
+      handler(event)
+      return
+    }
+  }
+
+  /** 挂上监听器（重复调用无副作用） */
+  function start(): void {
+    if (attached.value) return
+    window.addEventListener('keydown', onKeydown)
+    attached.value = true
+  }
+
+  /** 摘掉监听器：组件卸载走这里，也可以手动调用来临时停用 */
+  function stop(): void {
+    if (!attached.value) return
+    window.removeEventListener('keydown', onKeydown)
+    attached.value = false
+  }
+
+  start()
+  //! 用 onScopeDispose：组件卸载与 effectScope.stop() 都会走到解绑
+  onScopeDispose(stop)
+
+  return { attached, hits, ignored, start, stop }
+}
