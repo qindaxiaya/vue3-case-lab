@@ -315,7 +315,13 @@
   - 首轮扫描 84 案例：155 处疑似缺失、0 处越界；把实现范围扩到 `code/*.txt` 后降到 71 处；逐条判定后确认**无真实漂移**（`prevIndex` 是反面示例、`rowHeight` 是公式通用变量、`timing` 是 `performance.timing` API），其余全部为 API / 术语 / 通用词
   - 负向验证：临时在 `css/fluid-clamp` 的 notes 注入 `ghostIdentifier`，红灯输出「案例 css/fluid-clamp · 标识符 ghostIdentifier 在 Demo.vue / code/*.txt 中不存在（notes.md 第 92 行引用）」，随后还原
   - 验收：`npx vitest run` 60/60、`npm run type-check`、`npx eslint tests/notes-source.spec.ts tests/notes-source.allow.ts --max-warnings 0` 通过
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`
+- ✅ 2026-11-07 源码重点行点击定位演示元素（遗留任务 Task 4）：
+  - `CodeWorkbench` 新增 `//! @demo <选择器>` 约定：该行渲染成「定位演示」按钮（原生 `button`，键盘 Enter / Space 免费），点击 `emit('locate', selector)`；复制时整行剔除，教学代码行号保持原样
+  - `CasePage` 在 `.demo-card` 内 `querySelector` → `scrollIntoView({ block: 'center' })` + 加 `.locate-flash`（1.6s 主色脉冲后移除）；选择器写错或元素依赖未打开的面板时提示「该行对应的元素不在当前演示状态」；切案例 / 卸载清理闪烁类与 message 容器
+  - 试点：`composables/use-keyboard-shortcut`（输入框 + 快速跳转面板，后者顺便演示「元素还没出现」的失败路径）、`performance/pull-refresh`（列表区）
+  - `check:ui` 新增 2 个常驻场景：「代码定位行闪烁演示元素」（2 个按钮、普通行无反应、面板关闭时提示、Alt+K 后闪烁并滚进视口、1.6s 后移除）与「代码定位行定位下拉列表」
+  - 验收（L2）：`npx vitest run` 60/60、`type-check`、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 108.0 KB）、全量 `check:ui`、`--sweep` 84/84、两个新场景在 preview 通过
+- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/performance/pull-refresh`
 
 ## 决策记录
 
@@ -420,3 +426,4 @@
 | 2026-11-06 | **验证「按键能不能打出字符」必须用 CDP 真实按键** | 页面内 `dispatchEvent(new KeyboardEvent('keydown'))` 只会触发监听器，不会走浏览器默认行为，`preventDefault` 有没有生效完全测不出来（输入框照样是空的，看起来像「字符被吞了」）。`check:ui` 的快捷键场景改用 `Input.dispatchKeyEvent` 的 `rawKeyDown` + `char` + `keyUp`，修饰键用位掩码（`Alt` = 1、`Shift` = 8），才能验证「手写版吞掉 `/`、封装版正常输入」这条核心差异 |
 | 2026-11-07 | **`CASES.md` 由脚本从真实 registry 生成，禁止手写** | 清单只存在于运行时（`import.meta.glob`），84 条手写必然过期。生成器用 Vite `ssrLoadModule` 读 `allCases` / `categories`（正则解析多行 `meta.ts` 不可靠），并设 `configFile: false` 避免组件自动导入插件启动时改写 `src/components.d.ts`。一致性交给 `tests/cases-doc.spec.ts`（链接集合 / 标题 / 总数 / 顺序），新增案例忘了重新生成时 CI 直接红灯；`--check` 给本地与将来的脚本复用，打印首个差异行 |
 | 2026-11-07 | **notes 同源校验查「Demo.vue + code/*.txt」，白名单只收真实扫描结果** | 计划原写「断言 Demo.vue includes」，但 notes 第 3 段常引用教学代码片段，而 Demo 为了演示会简化命名（`virtual-list` 的 `rowH` vs 公式 `rowHeight`、`snap-carousel` 的 `nextIndex`），只查 Demo 会把「与教学代码一致」误报成漂移。因此实现取「Demo.vue + 全部 `code/*.txt`」为案例实现，行号仍只对 Demo 校验（notes 的 `第 N 行` 指向 Demo）。白名单 61 条全部来自首轮 155 处扫描结果逐条判定（扩到 code 后 71 处），每条写原因，禁止预防性加词；真实漂移为 0，说明存量 notes 与实现命名基本一致。负向验证用临时往 notes 注入 `ghostIdentifier`，红灯信息含案例、名字与 notes 行号，验证后还原 |
+| 2026-11-07 | **代码定位用 `//! @demo <选择器>` + 原生 button + createDiscreteApi** | `CodeWorkbench` 只负责识别标记并 emit，定位逻辑收在 `CasePage`（查询范围限定 `.demo-card`，不会误命中站点自身元素）。按钮用原生 `<button>` 而不是 `role="button" + tabindex`：语义等价且 Enter / Space 行为免费；标记行复制时整行剔除，否则粘出去的是不能运行的伪代码。CasePage 在 `DemoNaive` 的 provider 之外，`useMessage()` 拿不到上下文，又不想在页面外层再包 `NMessageProvider`（把 naive 作用域扩到整页），所以用 `createDiscreteApi(['message'])` 拿独立容器，卸载时 `unmount()`；主题取创建时的浅 / 暗值，失败提示是低频路径，接受主题切换后不实时跟。试点的 `use-keyboard-shortcut` 特意保留一个「面板未打开」的选择器，用来验证失败提示，而不是只测成功路径 |

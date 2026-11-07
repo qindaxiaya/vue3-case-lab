@@ -2926,6 +2926,266 @@ const SCENARIOS = [
     },
   },
   {
+    name: '代码定位行闪烁演示元素',
+    route: '/cases/composables/use-keyboard-shortcut',
+    facts: async ({ evaluate, send }) => {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await sleep(300)
+
+      /** 轮询一个布尔表达式，避免源码按需加载 / 动画时序造成假红灯 */
+      const waitFor = async (expression, timeoutMs = 4000) => {
+        const start = Date.now()
+        while (Date.now() - start < timeoutMs) {
+          if (await evaluate(`Boolean(${expression})`)) return true
+          await sleep(150)
+        }
+        return false
+      }
+
+      // ① 打开「源码」tab，切到带 @demo 标记的 usage 片段
+      await evaluate(`document.querySelector('#tab-code')?.click()`)
+      await waitFor(`document.querySelectorAll('.locate-btn').length > 0`)
+      await evaluate(
+        `[...document.querySelectorAll('.tab-btn')]
+          .find((el) => el.textContent.includes('usage'))?.click()`,
+      )
+      await waitFor(`document.querySelectorAll('.locate-btn').length > 0`)
+
+      const info = await evaluate(`(() => {
+        const buttons = [...document.querySelectorAll('.locate-btn')]
+        return {
+          count: buttons.length,
+          labels: buttons.map((el) => el.textContent.replace(/\\s+/g, ' ').trim()),
+        }
+      })()`)
+
+      const clickMarker = (selector) =>
+        evaluate(
+          `[...document.querySelectorAll('.locate-btn')]
+            .find((el) => el.textContent.includes(${JSON.stringify(selector)}))?.click()`,
+        )
+
+      // ② 没有 @demo 标记的普通代码行：点击不应触发闪烁或提示
+      await evaluate(`document.querySelector('.line-code:not(:has(.locate-btn))')?.click()`)
+      await sleep(200)
+      const unmarked = await evaluate(`({
+        flashes: document.querySelectorAll('.locate-flash').length,
+        messages: document.querySelectorAll('.n-message').length,
+      })`)
+
+      // ③ 快速跳转面板还没打开：点击对应标记应给出提示，而不是静默失败
+      await clickMarker('[data-stat="palette"]')
+      await sleep(300)
+      const failure = await evaluate(`({
+        messages: [...document.querySelectorAll('.n-message')].map((el) => el.textContent.trim()),
+        palette: Boolean(document.querySelector('.demo-card [data-stat="palette"]')),
+      })`)
+
+      // ④ 用真实按键打开面板（Alt+K），再点同一个标记：应闪烁并滚进视口
+      await send('Input.dispatchKeyEvent', {
+        type: 'rawKeyDown',
+        key: 'k',
+        code: 'KeyK',
+        windowsVirtualKeyCode: 75,
+        modifiers: 1,
+      })
+      await send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key: 'k',
+        code: 'KeyK',
+        windowsVirtualKeyCode: 75,
+        modifiers: 1,
+      })
+      await sleep(200)
+      await clickMarker('[data-stat="palette"]')
+      await sleep(350)
+      const palette = await evaluate(`(() => {
+        const el = document.querySelector('.demo-card [data-stat="palette"]')
+        const rect = el?.getBoundingClientRect()
+        return {
+          flashed: Boolean(el?.classList.contains('locate-flash')),
+          top: rect ? Math.round(rect.top) : -9999,
+          bottom: rect ? Math.round(rect.bottom) : -9999,
+          viewport: window.innerHeight,
+        }
+      })()`)
+
+      // ⑤ 1.6s 后闪烁类必须被移除，不能永久留在演示元素上
+      await sleep(1700)
+      const paletteFlashAfter = await evaluate(
+        `document.querySelector('.demo-card [data-stat="palette"]')?.classList.contains('locate-flash') ?? false`,
+      )
+
+      // ⑥ 另一个一直存在的元素（输入框）同样能定位
+      await clickMarker('[data-stat="typing"] input')
+      await sleep(350)
+      const input = await evaluate(`(() => {
+        const el = document.querySelector('.demo-card [data-stat="typing"] input')
+        const rect = el?.getBoundingClientRect()
+        return {
+          flashed: Boolean(el?.classList.contains('locate-flash')),
+          top: rect ? Math.round(rect.top) : -9999,
+          bottom: rect ? Math.round(rect.bottom) : -9999,
+        }
+      })()`)
+
+      // ⑦ 375px：代码区按钮仍可点，页面不能出现横向溢出
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 375,
+        height: 800,
+        deviceScaleFactor: 1,
+        mobile: true,
+      })
+      await sleep(300)
+      const narrowBeforeClick = await evaluate(`({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+        buttons: [...document.querySelectorAll('.locate-btn')].filter((el) => {
+          const rect = el.getBoundingClientRect()
+          return rect.width > 0 && rect.height > 0
+        }).length,
+      })`)
+      await clickMarker('[data-stat="palette"]')
+      await sleep(350)
+      const narrowFlashed = await evaluate(
+        `document.querySelector('.demo-card [data-stat="palette"]')?.classList.contains('locate-flash') ?? false`,
+      )
+
+      return {
+        locateCount: info.count,
+        locateLabels: info.labels,
+        unmarkedFlashes: unmarked.flashes,
+        unmarkedMessages: unmarked.messages,
+        failureMessages: failure.messages,
+        paletteOpenAtFailure: failure.palette,
+        paletteFlashed: palette.flashed,
+        paletteTop: palette.top,
+        paletteBottom: palette.bottom,
+        viewportHeight: palette.viewport,
+        paletteFlashAfter,
+        inputFlashed: input.flashed,
+        inputTop: input.top,
+        inputBottom: input.bottom,
+        narrowScrollWidth: narrowBeforeClick.scrollWidth,
+        narrowInnerWidth: narrowBeforeClick.innerWidth,
+        narrowButtons: narrowBeforeClick.buttons,
+        narrowFlashed,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (r.locateCount !== 2) {
+        failures.push(`usage 片段应有 2 个定位按钮，实际 ${r.locateCount}：${r.locateLabels}`)
+      }
+      if (r.unmarkedFlashes !== 0 || r.unmarkedMessages !== 0) {
+        failures.push(
+          `点普通代码行不应有反应：闪烁 ${r.unmarkedFlashes} / 提示 ${r.unmarkedMessages}`,
+        )
+      }
+      if (r.paletteOpenAtFailure) failures.push('未按 Alt+K 时不该出现快速跳转面板')
+      if (!r.failureMessages.some((text) => text.includes('不在当前演示状态'))) {
+        failures.push(`面板未打开时没有提示：${r.failureMessages.join(' / ')}`)
+      }
+      if (!r.paletteFlashed) failures.push('打开面板后点击标记没有闪烁')
+      if (r.paletteTop < 0 || r.paletteBottom > r.viewportHeight) {
+        failures.push(
+          `快速跳转面板没有滚进视口：top ${r.paletteTop} / bottom ${r.paletteBottom} / ${r.viewportHeight}`,
+        )
+      }
+      if (r.paletteFlashAfter) failures.push('闪烁类 1.6s 后没有移除')
+      if (!r.inputFlashed) failures.push('点击输入框标记没有闪烁')
+      if (r.inputTop < 0 || r.inputBottom > r.viewportHeight) {
+        failures.push(
+          `输入框没有滚进视口：top ${r.inputTop} / bottom ${r.inputBottom} / ${r.viewportHeight}`,
+        )
+      }
+      if (r.narrowScrollWidth > r.narrowInnerWidth) {
+        failures.push(
+          `375px 页面横向溢出：scrollWidth ${r.narrowScrollWidth} > ${r.narrowInnerWidth}`,
+        )
+      }
+      if (r.narrowButtons !== 2) {
+        failures.push(`375px 下定位按钮不可见：${r.narrowButtons} / 2`)
+      }
+      if (!r.narrowFlashed) failures.push('375px 下点击定位按钮没有闪烁')
+      return failures
+    },
+  },
+  {
+    name: '代码定位行定位下拉列表',
+    route: '/cases/performance/pull-refresh',
+    facts: async ({ evaluate, send }) => {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+      await sleep(300)
+
+      const waitFor = async (expression, timeoutMs = 4000) => {
+        const start = Date.now()
+        while (Date.now() - start < timeoutMs) {
+          if (await evaluate(`Boolean(${expression})`)) return true
+          await sleep(150)
+        }
+        return false
+      }
+
+      await evaluate(`document.querySelector('#tab-code')?.click()`)
+      await waitFor(`document.querySelectorAll('.locate-btn').length > 0`)
+
+      const clicked = await evaluate(`(() => {
+        const btn = [...document.querySelectorAll('.locate-btn')]
+          .find((el) => el.textContent.includes('.pr-scroller'))
+        if (!btn) return false
+        btn.click()
+        return true
+      })()`)
+      await sleep(350)
+
+      const placed = await evaluate(`(() => {
+        const el = document.querySelector('.demo-card .pr-scroller')
+        const rect = el?.getBoundingClientRect()
+        return {
+          flashed: Boolean(el?.classList.contains('locate-flash')),
+          top: rect ? Math.round(rect.top) : -9999,
+          bottom: rect ? Math.round(rect.bottom) : -9999,
+          viewport: window.innerHeight,
+        }
+      })()`)
+
+      await sleep(1700)
+      const flashAfter = await evaluate(
+        `document.querySelector('.demo-card .pr-scroller')?.classList.contains('locate-flash') ?? false`,
+      )
+
+      return {
+        clicked,
+        flashed: placed.flashed,
+        top: placed.top,
+        bottom: placed.bottom,
+        viewportHeight: placed.viewport,
+        flashAfter,
+      }
+    },
+    assert: (r) => {
+      const failures = []
+      if (!r.clicked) failures.push('下拉刷新片段里没有 .pr-scroller 定位按钮')
+      if (!r.flashed) failures.push('点击标记后列表没有闪烁')
+      if (r.top < 0 || r.bottom > r.viewportHeight) {
+        failures.push(`列表没有滚进视口：top ${r.top} / bottom ${r.bottom} / ${r.viewportHeight}`)
+      }
+      if (r.flashAfter) failures.push('闪烁类 1.6s 后没有移除')
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

@@ -4,9 +4,12 @@
 //             「demo源码」（Demo.vue 全文，复制即用）
 // - 重点行标记：code/*.txt 中行首 `//! ` 前缀的行会被高亮展示
 //   （渲染时去掉前缀，整行加主色浅背景 + 左侧色条——参照 VitePress line highlighting）
+// - 定位标记：行首 `//! @demo 后跟 CSS 选择器` 的行渲染成「定位演示」按钮，
+//   点击后把选择器 emit 给 CasePage，由它滚动到演示区对应元素并闪烁高亮；
+//   该行不参与复制（复制出去的不是可运行代码）
 // - vue 文件逐行高亮按段选语言（template→xml / script→ts / style→css），
 //   否则 script 内 TS 代码会被当 xml 处理而丢失全部着色
-// - 复制：去掉 //! 标记，输出可直接粘贴使用的代码
+// - 复制：去掉 //! 标记与 @demo 定位行，输出可直接粘贴使用的代码
 // ============================================================
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -20,6 +23,11 @@ const props = defineProps<{
   demoSource: string
   /** 演示 tab key（Demo emit 上报）：变化时核心代码联动到同前缀的片段 */
   demoKey?: string
+}>()
+
+const emit = defineEmits<{
+  /** 点击 @demo 定位行：把 CSS 选择器交给 CasePage 去演示区定位 */
+  locate: [selector: string]
 }>()
 
 // ---------- tab 状态 ----------
@@ -103,7 +111,12 @@ interface CodeLine {
   html: string
   /** 是否重点行（//! 标记） */
   highlight: boolean
+  /** @demo 定位行对应的 CSS 选择器（普通行为 null） */
+  locate: string | null
 }
+
+/** 定位标记：行首 `//! @demo <选择器>` */
+const LOCATE_MARKER = /^\s*\/\/!\s*@demo\s+(\S.*?)\s*$/
 
 /**
  * 为 vue 单文件的每一行选择高亮语言
@@ -160,6 +173,17 @@ const renderedLines = computed<CodeLine[]>(() => {
       : rawLines.map(() => (tab.lang === 'html' ? 'xml' : tab.lang))
 
   return rawLines.map((rawLine, i) => {
+    // 定位行先于普通重点行判断：它不展示注释文本，而是渲染成按钮
+    const locateMatch = rawLine.match(LOCATE_MARKER)
+    if (locateMatch) {
+      return {
+        no: i + 1,
+        html: '',
+        highlight: true,
+        locate: locateMatch[1].trim(),
+      }
+    }
+
     // 重点行标记：行首 //! + 空格（渲染时去掉标记符号，保留注释文字）
     const isHighlight = /^\s*\/\/!\s?/.test(rawLine)
     const line = isHighlight ? rawLine.replace(/^(\s*)\/\/!\s?/, '$1') : rawLine
@@ -179,7 +203,7 @@ const renderedLines = computed<CodeLine[]>(() => {
         .replace(/>/g, '&gt;')
     }
 
-    return { no: i + 1, html, highlight: isHighlight }
+    return { no: i + 1, html, highlight: isHighlight, locate: null }
   })
 })
 
@@ -189,9 +213,10 @@ let copiedTimer: ReturnType<typeof setTimeout> | null = null
 
 async function copyCode(): Promise<void> {
   if (!activeTab.value) return
-  // 复制时去掉 //! 前缀（给用户的应该是可直接使用的代码）
+  // 复制时去掉 //! 前缀与 @demo 定位行（给用户的应该是可直接使用的代码）
   const cleaned = activeTab.value.content
     .split('\n')
+    .filter((line) => !LOCATE_MARKER.test(line))
     .map((l) => l.replace(/^(\s*)\/\/!\s?/, '$1'))
     .join('\n')
   await navigator.clipboard.writeText(cleaned)
@@ -253,10 +278,27 @@ async function copyCode(): Promise<void> {
             >
               {{ line.no }}
             </td>
-            <!-- 代码列（逐行高亮 HTML） -->
+            <!-- 代码列（逐行高亮 HTML；@demo 行渲染成定位按钮） -->
             <td class="line-code">
+              <button
+                v-if="line.locate"
+                class="locate-btn"
+                type="button"
+                :title="`在演示区定位 ${line.locate}`"
+                @click="line.locate && emit('locate', line.locate)"
+              >
+                <span
+                  class="locate-icon"
+                  aria-hidden="true"
+                >◎</span>
+                定位演示
+                <code>{{ line.locate }}</code>
+              </button>
               <!-- eslint-disable-next-line vue/no-v-html —— hljs 输出为转义后的安全 HTML -->
-              <code v-html="line.html || '&nbsp;'" />
+              <code
+                v-else
+                v-html="line.html || '&nbsp;'"
+              />
             </td>
           </tr>
         </tbody>
@@ -363,6 +405,53 @@ async function copyCode(): Promise<void> {
   border: none;
   padding: 0;
   font-size: inherit;
+}
+
+/* @demo 定位行：按钮而不是代码文本，点击把选择器交给演示区 */
+.locate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.8rem;
+  padding: 0.1rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--primary);
+  background-color: var(--surface);
+  border: 1px dashed color-mix(in srgb, var(--primary) 55%, var(--border));
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.locate-btn code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.locate-btn:hover {
+  color: #fff;
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.locate-btn:hover code {
+  color: #fff;
+}
+
+.locate-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.locate-icon {
+  font-size: 0.9em;
+  line-height: 1;
 }
 
 /* 重点行：主色浅背景 + 左侧色条（VitePress line highlighting 惯例） */

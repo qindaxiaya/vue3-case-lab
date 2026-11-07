@@ -6,7 +6,9 @@ import { ref } from 'vue'
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 
 const paletteOpen = ref(false)
+//! @demo [data-stat="palette"]
 const searchRef = ref<{ focus: () => void } | null>(null)
+//! @demo [data-stat="typing"] input
 
 const shortcuts = useKeyboardShortcuts(
   {
