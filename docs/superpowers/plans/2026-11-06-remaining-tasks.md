@@ -99,11 +99,11 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 
 **步骤**
 
-- [ ] 新增 `scripts/new-case.mjs`（模板用模板字符串，中文注释；`--dry-run` 输出文件树）
-- [ ] `package.json` 增加 `"new:case": "node scripts/new-case.mjs"`
-- [ ] 用 `--dry-run` 走一遍分类校验 / id 校验 / 重复目录三条错误分支
-- [ ] 在临时 worktree 真实生成一个 `css/scaffold-smoke`，跑 `npx vitest run` 与 `npm run type-check` 确认模板零报错，然后删掉（不入库）
-- [ ] `AGENTS.md` 补「新增案例用 `npm run new:case`」一行
+- [x] 新增 `scripts/new-case.mjs`（模板用模板字符串，中文注释；`--dry-run` 输出文件树）
+- [x] `package.json` 增加 `"new:case": "node scripts/new-case.mjs"`
+- [x] 用 `--dry-run` 走一遍分类校验 / id 校验 / 重复目录三条错误分支
+- [x] 真实生成一个 `css/scaffold-smoke`，跑 `npx vitest run` 与 `npm run type-check` 确认模板零报错，然后删掉（不入库）
+- [x] `AGENTS.md` 补「新增案例用 `npm run new:case`」一行
 
 **验收**
 
