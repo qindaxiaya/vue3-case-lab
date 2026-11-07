@@ -1,0 +1,149 @@
+// ============================================================
+// usePolling：上一次跑完再排下一次
+// 关键点：setTimeout 链避免并发、后台暂停、停止时中止在途请求
+// ============================================================
+import { onScopeDispose, ref } from 'vue'
+
+/** 轮询选项 */
+interface PollingOptions {
+  /** 是否立即执行第一次（默认 true） */
+  immediate?: boolean
+  /** 页面隐藏时是否暂停（默认 false） */
+  pauseOnHidden?: boolean
+  /** 自定义「是否隐藏」，默认读 document.hidden */
+  isHidden?: () => boolean
+}
+
+/**
+ * 轮询：上一次任务结束后才安排下一次
+ * @param task     每次轮询要做的事，收到取消信号
+ * @param interval 两次任务之间的间隔
+ * @param options  立即执行 / 后台暂停 / 自定义隐藏判断
+ */
+export function usePolling(
+  task: (signal: AbortSignal) => Promise<void>,
+  interval: number,
+  options: PollingOptions = {},
+) {
+  const running = ref(false)
+  const paused = ref(false)
+  const count = ref(0)
+  const errors = ref(0)
+  const active = ref(0)
+
+  let timer: number | null = null
+  let controller: AbortController | null = null
+  let generation = 0
+
+  /** 当前是否处于后台：默认看 document.hidden */
+  function hidden(): boolean {
+    return options.isHidden?.() ?? (typeof document !== 'undefined' && document.hidden)
+  }
+
+  function clearTimer(): void {
+    if (timer !== null) {
+      window.clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  /** 排下一次：只排一次，不递归堆定时器 */
+  function schedule(): void {
+    clearTimer()
+    if (!running.value) return
+    timer = window.setTimeout(() => {
+      void tick()
+    }, interval)
+  }
+
+  /** 执行一次轮询，结束后再排下一次 */
+  async function tick(): Promise<void> {
+    if (!running.value) return
+    if (options.pauseOnHidden && hidden()) {
+      paused.value = true
+      return
+    }
+    paused.value = false
+
+    //! 同一时刻只允许一个在途请求：新 tick 先中止旧的
+    controller?.abort()
+    const current = new AbortController()
+    controller = current
+    const id = ++generation
+    count.value++
+    active.value++
+
+    try {
+      await task(current.signal)
+    } catch {
+      //! 取消不是错误：只有「这一轮仍然有效且不是主动取消」才计错误
+      if (id === generation && !current.signal.aborted) {
+        errors.value++
+      }
+    } finally {
+      active.value = Math.max(0, active.value - 1)
+    }
+
+    //! 停止 / 重新开始后，旧任务不要再排下一次
+    if (!running.value || id !== generation) return
+    if (options.pauseOnHidden && hidden()) {
+      paused.value = true
+      return
+    }
+    schedule()
+  }
+
+  /** 开始轮询：默认立即执行第一次 */
+  function start(): void {
+    if (running.value) return
+    running.value = true
+    paused.value = false
+    if (options.immediate === false) schedule()
+    else void tick()
+  }
+
+  /** 停止轮询：清掉下一次定时器，并中止在途请求 */
+  function stop(): void {
+    running.value = false
+    paused.value = false
+    generation++
+    clearTimer()
+    controller?.abort()
+    controller = null
+  }
+
+  /** 后台 / 前台切换时同步一次 */
+  function sync(): void {
+    if (!running.value || !options.pauseOnHidden) return
+    if (hidden()) {
+      paused.value = true
+      clearTimer()
+      return
+    }
+    if (paused.value) {
+      paused.value = false
+      void tick()
+    }
+  }
+
+  /** 停止并把计数清零 */
+  function reset(): void {
+    stop()
+    count.value = 0
+    errors.value = 0
+  }
+
+  //! 真实项目靠这个监听自动暂停 / 恢复；演示里同时暴露 sync 给模拟开关用
+  if (typeof document !== 'undefined' && options.pauseOnHidden) {
+    document.addEventListener('visibilitychange', sync)
+  }
+
+  onScopeDispose(() => {
+    stop()
+    if (typeof document !== 'undefined' && options.pauseOnHidden) {
+      document.removeEventListener('visibilitychange', sync)
+    }
+  })
+
+  return { running, paused, count, errors, active, start, stop, sync, reset }
+}

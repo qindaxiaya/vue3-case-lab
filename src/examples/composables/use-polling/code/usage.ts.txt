@@ -1,0 +1,50 @@
+// ============================================================
+// 在页面里怎么用：把「拉一次进度」交给 usePolling
+// 对照：手写版用 setInterval 固定节拍，慢接口会叠并发
+// ============================================================
+import { usePolling } from './usePolling'
+
+/** 模拟一次请求：延迟 350ms 或 1300ms，取消时抛 AbortError */
+function fakePoll(slow: boolean, signal: AbortSignal): Promise<number> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('已取消', 'AbortError'))
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', handleAbort)
+      resolve(Date.now())
+    }, slow ? 1300 : 350)
+
+    function handleAbort(): void {
+      window.clearTimeout(timer)
+      reject(new DOMException('已取消', 'AbortError'))
+    }
+
+    signal.addEventListener('abort', handleAbort, { once: true })
+  })
+}
+
+const slow = false
+
+const { running, count, errors, start, stop, reset } = usePolling(
+  async (signal) => {
+    await fakePoll(slow, signal)
+  },
+  800,
+  {
+    immediate: true,
+    pauseOnHidden: true,
+  },
+)
+
+// 开始 / 停止 / 清零
+start()
+stop()
+reset()
+
+// 页面隐藏时自动暂停，回到前台继续；停止时 abort 在途请求
+void running
+void count
+void errors
