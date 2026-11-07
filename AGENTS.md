@@ -329,6 +329,12 @@
   - 新增 `docs/screenshots/README.md`：新案例 / 明显视觉改动提交浅 + 暗 2 张 375px，存量 84 案例不补，截图不入 CI、不参与断言
   - 示例留档 `composables/use-keyboard-shortcut`（2 张，约 127 KB）
   - 验收（L1）：`npx eslint scripts/check-ui.mjs --max-warnings 0`、`type-check`、浅 / 暗两次 `--shot --out` 实跑（各 1 张）、默认宽度实跑（1280 + 375 两张）
+- ✅ 2026-11-07 遗留任务 1~5 合并 + `v0.2` 发布（Task 6）：
+  - PR #34（`chore/remaining-tasks`）rebase 合并到 main，提交 `229c662`；CI `Type check, lint, test, build` 1m14s 通过
+  - 打 annotated tag `v0.2`（指向 `229c662`），GitHub Release：https://github.com/qindaxiaya/vue3-case-lab/releases/tag/v0.2
+  - Release 说明按「新增分类与案例 / 体验 / 工程 / 验证」四组，从 `AGENTS.md` 当前进度提炼
+  - 发布前 main 验证：vitest 60/60、type-check、lint、build、check:bundle（首屏 gzip 108.0 KB）、audit 0 P0/P1/P2、gen:cases --check 一致、check:ui 46/46、--sweep 84/84
+  - 备注：`github.com:443` 当时连接不稳定，tag 通过 GitHub Git Data API 创建（tag 对象 `05a4a1d` → 提交 `229c662`），Release 用 `gh release create` 创建
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/performance/pull-refresh`
 
 ## 决策记录
@@ -436,3 +442,4 @@
 | 2026-11-07 | **notes 同源校验查「Demo.vue + code/*.txt」，白名单只收真实扫描结果** | 计划原写「断言 Demo.vue includes」，但 notes 第 3 段常引用教学代码片段，而 Demo 为了演示会简化命名（`virtual-list` 的 `rowH` vs 公式 `rowHeight`、`snap-carousel` 的 `nextIndex`），只查 Demo 会把「与教学代码一致」误报成漂移。因此实现取「Demo.vue + 全部 `code/*.txt`」为案例实现，行号仍只对 Demo 校验（notes 的 `第 N 行` 指向 Demo）。白名单 61 条全部来自首轮 155 处扫描结果逐条判定（扩到 code 后 71 处），每条写原因，禁止预防性加词；真实漂移为 0，说明存量 notes 与实现命名基本一致。负向验证用临时往 notes 注入 `ghostIdentifier`，红灯信息含案例、名字与 notes 行号，验证后还原 |
 | 2026-11-07 | **代码定位用 `//! @demo <选择器>` + 原生 button + createDiscreteApi** | `CodeWorkbench` 只负责识别标记并 emit，定位逻辑收在 `CasePage`（查询范围限定 `.demo-card`，不会误命中站点自身元素）。按钮用原生 `<button>` 而不是 `role="button" + tabindex`：语义等价且 Enter / Space 行为免费；标记行复制时整行剔除，否则粘出去的是不能运行的伪代码。CasePage 在 `DemoNaive` 的 provider 之外，`useMessage()` 拿不到上下文，又不想在页面外层再包 `NMessageProvider`（把 naive 作用域扩到整页），所以用 `createDiscreteApi(['message'])` 拿独立容器，卸载时 `unmount()`；主题取创建时的浅 / 暗值，失败提示是低频路径，接受主题切换后不实时跟。试点的 `use-keyboard-shortcut` 特意保留一个「面板未打开」的选择器，用来验证失败提示，而不是只测成功路径 |
 | 2026-11-07 | **截图留档选方案 B，并修掉 `--shot --dark` 的 Naive 主题不切换** | 全量归档 84 案例会让仓库膨胀 8~15 MB，而截图只对新增案例的 review 有价值，所以只给新案例 / 明显视觉改动留浅 + 暗两张 375px。实现加 `--width 375`，避免默认同时出 1280；`--out` 相对路径按 cwd 解析。暗色截图原先是直接给 `<html>` 加 `.dark`，而 `useTheme` 的 `isDark` 与 Naive 主题都是模块级响应式状态，class 变了它们不变，截图里输入框仍是白的；改为先写 `localStorage` 再 `Page.navigate` 刷新，让 `useTheme` 初始化时读到目标主题。截图仍不参与断言，跑完退出码 0 |
+| 2026-11-07 | **遗留任务 1~5 合并为单个 PR，`v0.2` 指向合并后的 main** | 任务 1~4 本来就是依次堆叠的分支（Task 2 基于 Task 1、Task 3 基于 Task 2、Task 4 基于 Task 3），再拆 5 个 PR 需要逐个改 base 并反复解决 AGENTS / 计划文档冲突；用户明确「一口气干完」，所以用 `chore/remaining-tasks` 一次 PR 收口 5 个提交，rebase 合并保留每个任务独立 commit。tag 在 PR 合并后打，确保 Release 指向真正的 main 提交；当时 `github.com:443` 连接超时，tag 改用 Git Data API 创建（annotated tag 对象 `05a4a1d` → `229c662`），效果与 `git push origin v0.2` 一致 |
