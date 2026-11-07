@@ -308,6 +308,13 @@
   - `npm run new:case -- <分类> <案例id>` 生成四件套骨架：Demo 默认停在「旧做法」侧 + 卸载清理提醒 + `data-stat` / `n-radio-group` 示例，meta 四段 TODO 与字数上限注释，notes 按五段模板（第 4 段留表格与「禁止编数字」提醒），code 带 `//!` 重点行
   - 校验：分类必须在 `categories.ts`（正则扫描，不引 TS 运行时）、id 只允许小写 kebab-case、目录已存在直接拒绝；`--dry-run` 只打印将创建的文件
   - 实测：三条错误分支均退出码 1 且提示可读；真实生成 `css/scaffold-smoke` 后 `npx vitest run` 58/58、`type-check`、`audit:cases` 0 P0/P1/P2，随后删除并恢复 `CASES.md`
+- ✅ 2026-11-07 notes ↔ Demo 同源校验（遗留任务 Task 3）：
+  - 新增 `tests/notes-source.spec.ts`：扫描 notes 正文（跳过围栏代码块）反引号里的自造名（camelCase / kebab-case，长度 ≥6），断言能在案例实现里找到；另查 `第 N 行` / `L12` 不超出 `Demo.vue` 行数
+  - 标识符校验范围定为「`Demo.vue` + `code/*.txt`」而不是只查 Demo：notes 第 3 段常引用教学代码片段，同一逻辑在 code 里命名更完整、Demo 为演示做了简化（如 `ROW_HEIGHT` / `rowH`）。报错同时给出案例、名字、notes 行号
+  - 白名单 `tests/notes-source.allow.ts` 共 61 条，按浏览器 / Vue API、CSS·HTML·ARIA 术语、其他案例 / 库名、通用词四类分组，每条一行原因；白名单只收真实扫描结果，禁止预防性堆词
+  - 首轮扫描 84 案例：155 处疑似缺失、0 处越界；把实现范围扩到 `code/*.txt` 后降到 71 处；逐条判定后确认**无真实漂移**（`prevIndex` 是反面示例、`rowHeight` 是公式通用变量、`timing` 是 `performance.timing` API），其余全部为 API / 术语 / 通用词
+  - 负向验证：临时在 `css/fluid-clamp` 的 notes 注入 `ghostIdentifier`，红灯输出「案例 css/fluid-clamp · 标识符 ghostIdentifier 在 Demo.vue / code/*.txt 中不存在（notes.md 第 92 行引用）」，随后还原
+  - 验收：`npx vitest run` 60/60、`npm run type-check`、`npx eslint tests/notes-source.spec.ts tests/notes-source.allow.ts --max-warnings 0` 通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`
 
 ## 决策记录
@@ -412,3 +419,4 @@
 | 2026-11-06 | **快捷键案例的让路规则：无修饰键才让路，`Esc` 例外** | 「输入框里的按键算打字」这条规则不能一刀切：`Ctrl+K` / `Alt+K` 在输入框里仍然有意义（打开搜索、打开面板），所以只有「没有 `ctrl/meta/alt`」的组合才让路，且让路时必须直接 `return`、不能 `preventDefault`（调了字符就进不去）。`Esc` 不产生字符、是退出语义，在输入框里也该能关浮层，所以列入旁路，否则用户打完字想关面板却毫无反应。演示里这条规则被 CDP 真实按键锁住：手写版输入框打不出 `/`，封装版能打出来且计数为「已忽略」 |
 | 2026-11-06 | **验证「按键能不能打出字符」必须用 CDP 真实按键** | 页面内 `dispatchEvent(new KeyboardEvent('keydown'))` 只会触发监听器，不会走浏览器默认行为，`preventDefault` 有没有生效完全测不出来（输入框照样是空的，看起来像「字符被吞了」）。`check:ui` 的快捷键场景改用 `Input.dispatchKeyEvent` 的 `rawKeyDown` + `char` + `keyUp`，修饰键用位掩码（`Alt` = 1、`Shift` = 8），才能验证「手写版吞掉 `/`、封装版正常输入」这条核心差异 |
 | 2026-11-07 | **`CASES.md` 由脚本从真实 registry 生成，禁止手写** | 清单只存在于运行时（`import.meta.glob`），84 条手写必然过期。生成器用 Vite `ssrLoadModule` 读 `allCases` / `categories`（正则解析多行 `meta.ts` 不可靠），并设 `configFile: false` 避免组件自动导入插件启动时改写 `src/components.d.ts`。一致性交给 `tests/cases-doc.spec.ts`（链接集合 / 标题 / 总数 / 顺序），新增案例忘了重新生成时 CI 直接红灯；`--check` 给本地与将来的脚本复用，打印首个差异行 |
+| 2026-11-07 | **notes 同源校验查「Demo.vue + code/*.txt」，白名单只收真实扫描结果** | 计划原写「断言 Demo.vue includes」，但 notes 第 3 段常引用教学代码片段，而 Demo 为了演示会简化命名（`virtual-list` 的 `rowH` vs 公式 `rowHeight`、`snap-carousel` 的 `nextIndex`），只查 Demo 会把「与教学代码一致」误报成漂移。因此实现取「Demo.vue + 全部 `code/*.txt`」为案例实现，行号仍只对 Demo 校验（notes 的 `第 N 行` 指向 Demo）。白名单 61 条全部来自首轮 155 处扫描结果逐条判定（扩到 code 后 71 处），每条写原因，禁止预防性加词；真实漂移为 0，说明存量 notes 与实现命名基本一致。负向验证用临时往 notes 注入 `ghostIdentifier`，红灯信息含案例、名字与 notes 行号，验证后还原 |
