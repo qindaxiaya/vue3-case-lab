@@ -14,6 +14,7 @@
   - `npx vitest run` — 运行测试
   - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
   - `npm run check:ui -- --only 抽屉` — 只验一个场景（名字或路由命中，5~10 秒）；改单个案例默认用它，`--base http://localhost:5173` 可直接验 dev
+  - `npm run check:ui -- --shot <分类>/<案例> --width 375 --out <目录>` — 只截演示区（加 `--dark` 出暗色），用于 375px 截图留档，不断言
   - `npm run gen:cases` — 从真实 registry 重新生成根目录 `CASES.md` 案例清单；`-- --check` 只比对不写（文件过期退出码 1）
   - `npm run new:case -- <分类> <案例id>` — 生成案例四件套骨架（`--dry-run` 只打印将创建的文件）
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
@@ -39,6 +40,7 @@
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
 - **新增案例用脚手架（2026-11-07）**：`npm run new:case -- <分类> <案例id>` 生成四件套骨架（`--dry-run` 先看将创建的文件）；分类 / id / 重复目录在校验阶段拒绝。生成后仍要按 DoD 补全 TODO，再跑 `npm run gen:cases` 更新清单。
+- **375px 截图留档（2026-11-07，方案 B）**：新案例 / 明显视觉改动提交 2 张演示区截图到 `docs/screenshots/<分类>/<案例>/`（浅色 + 暗色，`--width 375`，命令见 `docs/screenshots/README.md`）；存量 84 案例不要求补。截图只作 PR 证据，不入 CI、不参与断言。
 - **案例完成标准（2026-10-20 用户拍板）**：`docs/case-definition-of-done.md` 为唯一验收源，覆盖 Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程。新案例严格执行，存量按批次渐进补齐；豁免必须写进 notes.md 第 5 段。
 - **框架与案例抽离（2026-10-19 用户拍板）**：
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
@@ -321,6 +323,12 @@
   - 试点：`composables/use-keyboard-shortcut`（输入框 + 快速跳转面板，后者顺便演示「元素还没出现」的失败路径）、`performance/pull-refresh`（列表区）
   - `check:ui` 新增 2 个常驻场景：「代码定位行闪烁演示元素」（2 个按钮、普通行无反应、面板关闭时提示、Alt+K 后闪烁并滚进视口、1.6s 后移除）与「代码定位行定位下拉列表」
   - 验收（L2）：`npx vitest run` 60/60、`type-check`、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 108.0 KB）、全量 `check:ui`、`--sweep` 84/84、两个新场景在 preview 通过
+- ✅ 2026-11-07 375px 截图留档（遗留任务 Task 5，方案 B）：
+  - `check:ui --shot` 新增 `--out`（相对路径按 cwd 解析，默认仍是 `node_modules/.tmp/shots`）与 `--width 375`（只出窄屏，避免默认多存一张 1280）；输出目录自动创建
+  - 修 `--shot --dark`：原先只给 `<html>` 加 `.dark` 类，而 `useTheme` / Naive 主题是模块级响应式状态，截图里 Naive 输入框仍是浅色；改为先写 `moyu-theme` 再刷新页面，让主题在初始化时生效
+  - 新增 `docs/screenshots/README.md`：新案例 / 明显视觉改动提交浅 + 暗 2 张 375px，存量 84 案例不补，截图不入 CI、不参与断言
+  - 示例留档 `composables/use-keyboard-shortcut`（2 张，约 127 KB）
+  - 验收（L1）：`npx eslint scripts/check-ui.mjs --max-warnings 0`、`type-check`、浅 / 暗两次 `--shot --out` 实跑（各 1 张）、默认宽度实跑（1280 + 375 两张）
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/performance/pull-refresh`
 
 ## 决策记录
@@ -427,3 +435,4 @@
 | 2026-11-07 | **`CASES.md` 由脚本从真实 registry 生成，禁止手写** | 清单只存在于运行时（`import.meta.glob`），84 条手写必然过期。生成器用 Vite `ssrLoadModule` 读 `allCases` / `categories`（正则解析多行 `meta.ts` 不可靠），并设 `configFile: false` 避免组件自动导入插件启动时改写 `src/components.d.ts`。一致性交给 `tests/cases-doc.spec.ts`（链接集合 / 标题 / 总数 / 顺序），新增案例忘了重新生成时 CI 直接红灯；`--check` 给本地与将来的脚本复用，打印首个差异行 |
 | 2026-11-07 | **notes 同源校验查「Demo.vue + code/*.txt」，白名单只收真实扫描结果** | 计划原写「断言 Demo.vue includes」，但 notes 第 3 段常引用教学代码片段，而 Demo 为了演示会简化命名（`virtual-list` 的 `rowH` vs 公式 `rowHeight`、`snap-carousel` 的 `nextIndex`），只查 Demo 会把「与教学代码一致」误报成漂移。因此实现取「Demo.vue + 全部 `code/*.txt`」为案例实现，行号仍只对 Demo 校验（notes 的 `第 N 行` 指向 Demo）。白名单 61 条全部来自首轮 155 处扫描结果逐条判定（扩到 code 后 71 处），每条写原因，禁止预防性加词；真实漂移为 0，说明存量 notes 与实现命名基本一致。负向验证用临时往 notes 注入 `ghostIdentifier`，红灯信息含案例、名字与 notes 行号，验证后还原 |
 | 2026-11-07 | **代码定位用 `//! @demo <选择器>` + 原生 button + createDiscreteApi** | `CodeWorkbench` 只负责识别标记并 emit，定位逻辑收在 `CasePage`（查询范围限定 `.demo-card`，不会误命中站点自身元素）。按钮用原生 `<button>` 而不是 `role="button" + tabindex`：语义等价且 Enter / Space 行为免费；标记行复制时整行剔除，否则粘出去的是不能运行的伪代码。CasePage 在 `DemoNaive` 的 provider 之外，`useMessage()` 拿不到上下文，又不想在页面外层再包 `NMessageProvider`（把 naive 作用域扩到整页），所以用 `createDiscreteApi(['message'])` 拿独立容器，卸载时 `unmount()`；主题取创建时的浅 / 暗值，失败提示是低频路径，接受主题切换后不实时跟。试点的 `use-keyboard-shortcut` 特意保留一个「面板未打开」的选择器，用来验证失败提示，而不是只测成功路径 |
+| 2026-11-07 | **截图留档选方案 B，并修掉 `--shot --dark` 的 Naive 主题不切换** | 全量归档 84 案例会让仓库膨胀 8~15 MB，而截图只对新增案例的 review 有价值，所以只给新案例 / 明显视觉改动留浅 + 暗两张 375px。实现加 `--width 375`，避免默认同时出 1280；`--out` 相对路径按 cwd 解析。暗色截图原先是直接给 `<html>` 加 `.dark`，而 `useTheme` 的 `isDark` 与 Naive 主题都是模块级响应式状态，class 变了它们不变，截图里输入框仍是白的；改为先写 `localStorage` 再 `Page.navigate` 刷新，让 `useTheme` 初始化时读到目标主题。截图仍不参与断言，跑完退出码 0 |
