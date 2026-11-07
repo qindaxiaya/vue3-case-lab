@@ -1,0 +1,50 @@
+// ============================================================
+// 在页面里怎么用：一个可取消的模拟接口 + 两个按钮
+// 对照：手写版要自己维护 loading / error / data 和过期 token
+// ============================================================
+import { useAsyncTask } from './useAsyncTask'
+
+interface RunOptions {
+  delay: number
+  fail: boolean
+}
+
+/** 模拟接口：成功返回文字，失败抛错，取消时抛 AbortError */
+function fakeRequest(options: RunOptions, signal: AbortSignal): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('已取消', 'AbortError'))
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', handleAbort)
+      if (options.fail) {
+        reject(new Error('服务端返回 500：这次请求失败了'))
+        return
+      }
+      resolve(`请求成功，耗时 ${options.delay}ms`)
+    }, options.delay)
+
+    function handleAbort(): void {
+      window.clearTimeout(timer)
+      reject(new DOMException('已取消', 'AbortError'))
+    }
+
+    signal.addEventListener('abort', handleAbort, { once: true })
+  })
+}
+
+const { status, data, error, execute, abort, retry, reset } = useAsyncTask(fakeRequest)
+
+// 发起一次正常请求
+void execute({ delay: 700, fail: false })
+
+// 用户点取消：真正中止请求，状态变成 aborted
+abort()
+
+// 用户点重试：用上一次参数再发一次
+void retry()
+
+// 离开页面或切案例：重置状态（onScopeDispose 里还会再 abort 一次）
+reset()

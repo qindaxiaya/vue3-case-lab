@@ -3205,6 +3205,82 @@ const SCENARIOS = [
     },
   },
   {
+    name: '异步请求状态机',
+    route: '/cases/composables/use-async-task',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.at-demo')
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim().includes(text))
+        const stat = (name) =>
+          Number(root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? -1)
+        const badge = (index) =>
+          root.querySelectorAll('.col .status .badge')[index]?.textContent.trim() ?? ''
+
+        button('慢请求后立刻再发').click()
+        await wait(1800)
+        const afterRace = {
+          manualRuns: stat('manual-runs'),
+          manualStale: stat('manual-stale'),
+          autoRuns: stat('auto-runs'),
+          autoAborts: stat('auto-aborts'),
+        }
+
+        button('慢请求（1600ms）').click()
+        await wait(250)
+        button('取消').click()
+        await wait(300)
+        const afterCancel = {
+          manualBadge: badge(0),
+          manualActive: stat('manual-active'),
+          autoBadge: badge(1),
+          autoAborts: stat('auto-aborts'),
+        }
+
+        button('失败请求').click()
+        await wait(700)
+        return {
+          afterRace,
+          afterCancel,
+          afterFail: { manualBadge: badge(0), autoBadge: badge(1) },
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.afterRace.manualRuns !== 2) {
+        failures.push(`手写版请求次数不对（${result.afterRace.manualRuns}）`)
+      }
+      if (result.afterRace.manualStale !== 1) {
+        failures.push(`手写版没有丢掉过期响应（${result.afterRace.manualStale}）`)
+      }
+      if (result.afterRace.autoRuns !== 2) {
+        failures.push(`封装版请求次数不对（${result.afterRace.autoRuns}）`)
+      }
+      if (result.afterRace.autoAborts !== 1) {
+        failures.push(`封装版没有取消旧请求（${result.afterRace.autoAborts}）`)
+      }
+      if (result.afterCancel.manualBadge !== '已取消') {
+        failures.push(`手写版取消后状态不对（${result.afterCancel.manualBadge}）`)
+      }
+      if (result.afterCancel.manualActive !== 1) {
+        failures.push(`手写版取消后定时器没有继续跑（${result.afterCancel.manualActive}）`)
+      }
+      if (result.afterCancel.autoBadge !== '已取消') {
+        failures.push(`封装版取消后状态不对（${result.afterCancel.autoBadge}）`)
+      }
+      if (result.afterCancel.autoAborts !== 2) {
+        failures.push(`封装版取消次数不对（${result.afterCancel.autoAborts}）`)
+      }
+      if (result.afterFail.manualBadge !== '失败' || result.afterFail.autoBadge !== '失败') {
+        failures.push(
+          `失败请求状态不对（手写：${result.afterFail.manualBadge} / 封装：${result.afterFail.autoBadge}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

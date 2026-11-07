@@ -1,0 +1,94 @@
+// ============================================================
+// useAsyncTask：把一次异步任务封装成状态机
+// 关键点：新请求先取消旧请求、AbortError 单独归类、卸载时中止在途请求
+// ============================================================
+import { onScopeDispose, ref } from 'vue'
+
+/** 任务状态：idle 初始、pending 进行中、success / error / aborted 是三种结束方式 */
+type TaskStatus = 'idle' | 'pending' | 'success' | 'error' | 'aborted'
+
+/**
+ * 把一次异步任务封装成「状态 + 结果 + 取消 + 重试」
+ * @param task 真正干活的函数，第二个参数是取消信号
+ */
+export function useAsyncTask<T, P>(task: (payload: P, signal: AbortSignal) => Promise<T>) {
+  const status = ref<TaskStatus>('idle')
+  const data = ref<T | null>(null)
+  const error = ref('')
+  const runs = ref(0)
+  const aborts = ref(0)
+
+  let controller: AbortController | null = null
+  let lastPayload: P | null = null
+  let hasLast = false
+  let runId = 0
+
+  async function execute(payload: P): Promise<void> {
+    //! 新请求先取消旧请求：否则旧响应晚回来会覆盖新结果
+    if (controller) {
+      aborts.value++
+      controller.abort()
+    }
+
+    //! runId 是第二道保险：AbortController 负责中止，runId 负责让过期结果作废
+    const id = ++runId
+    const current = new AbortController()
+    controller = current
+    lastPayload = payload
+    hasLast = true
+    runs.value++
+    status.value = 'pending'
+    data.value = null
+    error.value = ''
+
+    try {
+      const result = await task(payload, current.signal)
+      if (id !== runId) return
+      data.value = result
+      status.value = 'success'
+    } catch (err) {
+      if (id !== runId) return
+      //! 取消是用户主动行为，不是业务失败：单独映射成 aborted
+      if (current.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        aborts.value++
+        status.value = 'aborted'
+        return
+      }
+      error.value = err instanceof Error ? err.message : String(err)
+      status.value = 'error'
+    } finally {
+      if (controller === current) controller = null
+    }
+  }
+
+  /** 取消当前请求（没有请求时什么也不做） */
+  function abort(): void {
+    controller?.abort()
+  }
+
+  /** 用上一次的参数再发一次 */
+  function retry(): Promise<void> {
+    if (!hasLast || lastPayload === null) return Promise.resolve()
+    return execute(lastPayload)
+  }
+
+  /** 回到初始状态，并让仍在路上的结果失效 */
+  function reset(): void {
+    runId++
+    controller?.abort()
+    controller = null
+    lastPayload = null
+    hasLast = false
+    status.value = 'idle'
+    data.value = null
+    error.value = ''
+  }
+
+  //! 组件卸载 / effectScope.stop 时中止在途请求，
+  //! 否则请求回来后回调还会去改已经没人看的状态
+  onScopeDispose(() => {
+    controller?.abort()
+  })
+
+  return { status, data, error, runs, aborts, execute, abort, retry, reset }
+}
