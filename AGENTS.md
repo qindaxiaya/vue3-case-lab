@@ -40,7 +40,7 @@
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
 - **新增案例用脚手架（2026-11-07）**：`npm run new:case -- <分类> <案例id>` 生成四件套骨架（`--dry-run` 先看将创建的文件）；分类 / id / 重复目录在校验阶段拒绝。生成后仍要按 DoD 补全 TODO，再跑 `npm run gen:cases` 更新清单。
-- **375px 截图留档（2026-11-07，方案 B）**：新案例 / 明显视觉改动提交 2 张演示区截图到 `docs/screenshots/<分类>/<案例>/`（浅色 + 暗色，`--width 375`，命令见 `docs/screenshots/README.md`）；存量 84 案例不要求补。截图只作 PR 证据，不入 CI、不参与断言。
+- **375px 截图留档（2026-11-07，方案 B）**：新案例 / 明显视觉改动提交 2 张演示区截图到 `docs/screenshots/<分类>/<案例>/`（浅色 + 暗色，`--width 375`，命令见 `docs/screenshots/README.md`）；存量案例不要求补。截图只作 PR 证据，不入 CI、不参与断言。
 - **案例完成标准（2026-10-20 用户拍板）**：`docs/case-definition-of-done.md` 为唯一验收源，覆盖 Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程。新案例严格执行，存量按批次渐进补齐；豁免必须写进 notes.md 第 5 段。
 - **框架与案例抽离（2026-10-19 用户拍板）**：
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
@@ -75,7 +75,7 @@
 
 ## 当前进度
 
-- **阶段**：共 84 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 4 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 88 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务，已完成，保留为历史记录）
 - 遗留任务计划：`docs/superpowers/plans/2026-11-06-remaining-tasks.md`（Task 1~6 已完成，`v0.2` 已发布；保留为历史记录）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
@@ -335,7 +335,14 @@
   - Release 说明按「新增分类与案例 / 体验 / 工程 / 验证」四组，从 `AGENTS.md` 当前进度提炼
   - 发布前 main 验证：vitest 60/60、type-check、lint、build、check:bundle（首屏 gzip 108.0 KB）、audit 0 P0/P1/P2、gen:cases --check 一致、check:ui 46/46、--sweep 84/84
   - 备注：`github.com:443` 当时连接不稳定，tag 通过 GitHub Git Data API 创建（tag 对象 `05a4a1d` → 提交 `229c662`），Release 用 `gh release create` 创建
-- dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/performance/pull-refresh`
+- ✅ 2026-11-07 扩充 `composables` 分类（第 4~7 个案例，共 88 案例）：
+  - `composables/use-async-task`：请求状态机，对比「只用一个 loading 布尔」与「idle / loading / success / error + 请求序号」；覆盖旧响应覆盖、取消后旧结果回写、失败重试，场景「异步请求状态机」
+  - `composables/use-polling`：轮询节奏，对比 `setInterval` 固定节拍与 `setTimeout` 链；慢接口下左边并发 2、右边并发 1，页面隐藏时右边暂停，停止时中止在途请求；场景「轮询节奏与后台暂停」
+  - `composables/use-network-status`：网络状态，对比只监听 `online` / `offline` 与同时订阅 `connection.change`；切换制式后左边信息过期、右边同步更新；数据源可注入，场景「网络状态订阅范围」
+  - `composables/use-autosave`：自动保存，对比每次输入直接写与防抖合并；连续输入 8 个字符左边写 8 次、右边保存 1 次，`pagehide` 补存、失败可重试；场景「自动保存防抖与离开补存」
+  - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 由 `npm run gen:cases` 更新到 88
+  - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 110.5 KB）、`audit:cases` 88 案例 0 P0/P1/P2、全量 `check:ui` 50/50、`--sweep` 88/88
+- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/performance/pull-refresh`
 
 ## 决策记录
 
@@ -443,3 +450,4 @@
 | 2026-11-07 | **代码定位用 `//! @demo <选择器>` + 原生 button + createDiscreteApi** | `CodeWorkbench` 只负责识别标记并 emit，定位逻辑收在 `CasePage`（查询范围限定 `.demo-card`，不会误命中站点自身元素）。按钮用原生 `<button>` 而不是 `role="button" + tabindex`：语义等价且 Enter / Space 行为免费；标记行复制时整行剔除，否则粘出去的是不能运行的伪代码。CasePage 在 `DemoNaive` 的 provider 之外，`useMessage()` 拿不到上下文，又不想在页面外层再包 `NMessageProvider`（把 naive 作用域扩到整页），所以用 `createDiscreteApi(['message'])` 拿独立容器，卸载时 `unmount()`；主题取创建时的浅 / 暗值，失败提示是低频路径，接受主题切换后不实时跟。试点的 `use-keyboard-shortcut` 特意保留一个「面板未打开」的选择器，用来验证失败提示，而不是只测成功路径 |
 | 2026-11-07 | **截图留档选方案 B，并修掉 `--shot --dark` 的 Naive 主题不切换** | 全量归档 84 案例会让仓库膨胀 8~15 MB，而截图只对新增案例的 review 有价值，所以只给新案例 / 明显视觉改动留浅 + 暗两张 375px。实现加 `--width 375`，避免默认同时出 1280；`--out` 相对路径按 cwd 解析。暗色截图原先是直接给 `<html>` 加 `.dark`，而 `useTheme` 的 `isDark` 与 Naive 主题都是模块级响应式状态，class 变了它们不变，截图里输入框仍是白的；改为先写 `localStorage` 再 `Page.navigate` 刷新，让 `useTheme` 初始化时读到目标主题。截图仍不参与断言，跑完退出码 0 |
 | 2026-11-07 | **遗留任务 1~5 合并为单个 PR，`v0.2` 指向合并后的 main** | 任务 1~4 本来就是依次堆叠的分支（Task 2 基于 Task 1、Task 3 基于 Task 2、Task 4 基于 Task 3），再拆 5 个 PR 需要逐个改 base 并反复解决 AGENTS / 计划文档冲突；用户明确「一口气干完」，所以用 `chore/remaining-tasks` 一次 PR 收口 5 个提交，rebase 合并保留每个任务独立 commit。tag 在 PR 合并后打，确保 Release 指向真正的 main 提交；当时 `github.com:443` 连接超时，tag 改用 Git Data API 创建（annotated tag 对象 `05a4a1d` → `229c662`），效果与 `git push origin v0.2` 一致 |
+| 2026-11-07 | **composables 扩到 8 个案例：每个案例只讲一个「生命周期问题」** | 已有 `use-event-listener`（清理）、`use-media-query`（初始值 + 断点）、`use-storage`（脏数据）、`use-keyboard-shortcut`（让路）后，继续加案例必须避开这些维度。新增四个各覆盖一类问题：`use-async-task` 管请求状态与旧响应、`use-polling` 管定时器链与后台暂停、`use-network-status` 管事件订阅范围与清理、`use-autosave` 管防抖 / 串行 / 离开页面兜底。每个案例都用「手写 vs 封装」同屏对照，计数来自真实事件或 `data-stat`，不写毫秒估算；网络与自动保存把数据源 / 保存函数做成可注入，测试和演示才能稳定复现。`check:ui` 同步新增 4 个常驻场景，`--sweep` 覆盖 88 个案例 |
