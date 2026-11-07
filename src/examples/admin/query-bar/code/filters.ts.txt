@@ -1,0 +1,42 @@
+interface Filters {
+  keyword: string
+  status: Status | 'all'
+  owner: Owner | 'all'
+}
+
+/** 条件标签只从 applied 生成：输入框改了但没点查询时，标签不会跟着乱跳 */
+const activeChips = computed(() => {
+  const chips: { key: keyof Filters; label: string }[] = []
+  if (applied.value.keyword) {
+    chips.push({ key: 'keyword', label: `关键词：${applied.value.keyword}` })
+  }
+  if (applied.value.status !== 'all') {
+    chips.push({
+      key: 'status',
+      label: `状态：${applied.value.status === 'enabled' ? '启用' : '停用'}`,
+    })
+  }
+  if (applied.value.owner !== 'all') {
+    chips.push({ key: 'owner', label: `负责人：${applied.value.owner}` })
+  }
+  return chips
+})
+
+/** 表格数据只按已生效条件过滤 */
+const filteredRows = computed(() =>
+  rows.filter((row) => {
+    if (applied.value.status !== 'all' && row.status !== applied.value.status) return false
+    if (applied.value.owner !== 'all' && row.owner !== applied.value.owner) return false
+    if (applied.value.keyword && !row.name.includes(applied.value.keyword)) return false
+    return true
+  }),
+)
+
+/** 点标签 ×：清掉对应字段后立即生效，不用再点一次查询 */
+function removeFilter(key: keyof Filters): void {
+  if (key === 'keyword') keyword.value = ''
+  if (key === 'status') status.value = 'all'
+  if (key === 'owner') owner.value = 'all'
+  applied.value = currentFilters()
+  queryCount.value++
+}

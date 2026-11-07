@@ -3622,6 +3622,561 @@ const SCENARIOS = [
     },
   },
   {
+    name: '分页边界与每页条数切换',
+    route: '/cases/admin/pagination',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.pg-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const pageItem = (text) =>
+          [...root.querySelectorAll('.n-pagination-item')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const pickSelect = async (selector, optionText) => {
+          const trigger = root.querySelector(selector + ' .n-base-selection')
+          if (!trigger) return false
+          trigger.click()
+          for (let i = 0; i < 24; i++) {
+            const option = [...document.querySelectorAll('.n-base-select-option')]
+              .find((item) => (item.textContent ?? '').trim() === optionText)
+            if (option) {
+              option.click()
+              await wait(150)
+              return true
+            }
+            await wait(50)
+          }
+          return false
+        }
+        const read = () => ({
+          total: num('total'),
+          page: num('page'),
+          pageCount: num('page-count'),
+          rowCount: num('row-count'),
+          deleteCount: num('delete-count'),
+          range: stat('range'),
+          firstLast: stat('first-last'),
+        })
+
+        const initial = read()
+        pageItem('3').click()
+        await wait(150)
+        const third = read()
+
+        const sizePicked = await pickSelect('.pg-size', '20 条/页')
+        await wait(200)
+        const resized = read()
+
+        pageItem('3').click()
+        await wait(150)
+        const lastPage = read()
+
+        for (let i = 0; i < 7; i++) {
+          button('删除当前页最后一条').click()
+          await wait(60)
+        }
+        const deleted = read()
+
+        button('重置数据').click()
+        await wait(200)
+        const reset = read()
+
+        return { initial, third, sizePicked, resized, lastPage, deleted, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, third, resized, lastPage, deleted, reset } = result
+      if (initial.total !== 47 || initial.page !== 1 || initial.pageCount !== 5 || initial.rowCount !== 10) {
+        failures.push(
+          `初始分页不对（${initial.total} 条 / 第 ${initial.page} 页 / ${initial.pageCount} 页 / ${initial.rowCount} 行）`,
+        )
+      }
+      if (third.page !== 3 || third.rowCount !== 10 || !third.range.includes('21-30')) {
+        failures.push(`第 3 页不对（${third.page} / ${third.rowCount} / ${third.range}）`)
+      }
+      if (!result.sizePicked) failures.push('每页条数下拉没有选中')
+      if (resized.page !== 1 || resized.pageCount !== 3 || resized.rowCount !== 20) {
+        failures.push(
+          `切到 20 条/页后没有回第 1 页（${resized.page} / ${resized.pageCount} 页 / ${resized.rowCount} 行）`,
+        )
+      }
+      if (lastPage.page !== 3 || lastPage.rowCount !== 7 || !lastPage.range.includes('41-47')) {
+        failures.push(`最后一页不对（${lastPage.page} / ${lastPage.rowCount} / ${lastPage.range}）`)
+      }
+      if (deleted.total !== 40 || deleted.page !== 2 || deleted.pageCount !== 2 || deleted.rowCount !== 20) {
+        failures.push(
+          `删到空页后没有回退（${deleted.total} 条 / 第 ${deleted.page} 页 / ${deleted.pageCount} 页 / ${deleted.rowCount} 行）`,
+        )
+      }
+      if (!deleted.range.includes('21-40')) {
+        failures.push(`回退后的区间不对（${deleted.range}）`)
+      }
+      if (reset.total !== 47 || reset.page !== 1 || reset.pageCount !== 5 || reset.rowCount !== 10) {
+        failures.push(
+          `重置没有恢复（${reset.total} 条 / 第 ${reset.page} 页 / ${reset.pageCount} 页 / ${reset.rowCount} 行）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
+    name: '表单抽屉校验与脏数据保护',
+    route: '/cases/admin/form-drawer',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.fd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...document.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const drawer = () => document.querySelector('.fd-drawer')
+        const title = () => drawer()?.querySelector('.fd-title')?.textContent.trim() ?? ''
+        const errorText = (selector) =>
+          document.querySelector(selector)?.textContent.trim() ?? ''
+        const pickSelect = async (selector, optionText) => {
+          const trigger = document.querySelector(selector + ' .n-base-selection')
+          if (!trigger) return false
+          trigger.click()
+          for (let i = 0; i < 24; i++) {
+            const option = [...document.querySelectorAll('.n-base-select-option')]
+              .find((item) => (item.textContent ?? '').trim() === optionText)
+            if (option) {
+              option.click()
+              await wait(150)
+              return true
+            }
+            await wait(50)
+          }
+          return false
+        }
+        const setInput = (selector, value) => {
+          const input = document.querySelector(selector + ' input')
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          drawer: Boolean(drawer()),
+          title: title(),
+          userCount: num('user-count'),
+          saveCount: num('save-count'),
+          discardCount: num('discard-count'),
+          failCount: num('fail-count'),
+          guard: Boolean(document.querySelector('.fd-guard')),
+          nameError: errorText('.fd-name-error'),
+          ownerError: errorText('.fd-owner-error'),
+          submitError: errorText('.fd-submit-error'),
+          firstRow: root.querySelector('tbody tr')?.textContent.replace(/\\s+/g, ' ').trim() ?? '',
+        })
+
+        const initial = read()
+        button('新增用户').click()
+        await wait(200)
+        const opened = read()
+
+        button('保存').click()
+        await wait(120)
+        const invalid = read()
+
+        setInput('.fd-name', '测试用户')
+        await pickSelect('.fd-owner', '张三')
+        await pickSelect('.fd-status', '停用')
+        button('保存').click()
+        await wait(1000)
+        const added = read()
+
+        document.querySelector('.fd-edit[data-id="1"]').click()
+        await wait(200)
+        setInput('.fd-name', '月度报表-改')
+        button('取消').click()
+        await wait(120)
+        const guarded = read()
+        button('继续编辑').click()
+        await wait(100)
+        const continued = read()
+        button('取消').click()
+        await wait(100)
+        button('放弃并关闭').click()
+        await wait(300)
+        const discarded = read()
+
+        root.querySelector('.fd-fail [role="switch"]').click()
+        await wait(100)
+        document.querySelector('.fd-edit[data-id="1"]').click()
+        await wait(200)
+        setInput('.fd-name', '月度报表-改')
+        button('保存').click()
+        await wait(700)
+        const failed = read()
+
+        root.querySelector('.fd-fail [role="switch"]').click()
+        await wait(100)
+        button('保存').click()
+        await wait(1000)
+        const retried = read()
+
+        return { initial, opened, invalid, added, guarded, continued, discarded, failed, retried }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, opened, invalid, added, guarded, continued, discarded, failed, retried } = result
+      if (initial.drawer || initial.userCount !== 3) {
+        failures.push(`初始状态不对（抽屉 ${initial.drawer} / 用户 ${initial.userCount}）`)
+      }
+      if (!opened.drawer || opened.title !== '新增用户') {
+        failures.push(`新增抽屉没有打开（${opened.drawer} / ${opened.title}）`)
+      }
+      if (
+        !invalid.drawer ||
+        invalid.nameError !== '请输入名称' ||
+        invalid.ownerError !== '请选择负责人' ||
+        invalid.saveCount !== 0
+      ) {
+        failures.push(
+          `空表单校验不对（${invalid.nameError} / ${invalid.ownerError} / 保存 ${invalid.saveCount}）`,
+        )
+      }
+      if (added.drawer || added.userCount !== 4 || added.saveCount !== 1) {
+        failures.push(`新增没有成功（抽屉 ${added.drawer} / 用户 ${added.userCount} / 保存 ${added.saveCount}）`)
+      }
+      if (!guarded.drawer || !guarded.guard || guarded.discardCount !== 0) {
+        failures.push(`脏数据保护条没有出现（${guarded.guard} / 放弃 ${guarded.discardCount}）`)
+      }
+      if (continued.guard || !continued.drawer) {
+        failures.push(`继续编辑后保护条没收起或抽屉关了（${continued.drawer} / ${continued.guard}）`)
+      }
+      if (discarded.drawer || discarded.discardCount !== 1 || !discarded.firstRow.includes('月度报表')) {
+        failures.push(
+          `放弃修改结果不对（抽屉 ${discarded.drawer} / 放弃 ${discarded.discardCount} / 首行 ${discarded.firstRow}）`,
+        )
+      }
+      if (!failed.drawer || failed.submitError !== '保存失败：网络超时' || failed.failCount !== 1) {
+        failures.push(
+          `保存失败后抽屉关闭或没有错误（${failed.drawer} / ${failed.submitError} / 失败 ${failed.failCount}）`,
+        )
+      }
+      if (retried.drawer || retried.saveCount !== 2 || !retried.firstRow.includes('月度报表-改')) {
+        failures.push(
+          `重试保存没有成功（抽屉 ${retried.drawer} / 保存 ${retried.saveCount} / 首行 ${retried.firstRow}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
+    name: '确认框异步失败不关闭',
+    route: '/cases/admin/confirm-action',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.ca-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...document.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const dialog = () => document.querySelector('.ca-dialog')
+        const errorText = () =>
+          document.querySelector('[data-stat="dialog-error"]')?.textContent.trim() ?? ''
+        const read = () => ({
+          open: Boolean(dialog()),
+          confirmCount: num('confirm-count'),
+          cancelCount: num('cancel-count'),
+          successCount: num('success-count'),
+          failCount: num('fail-count'),
+          ignoredCount: num('ignored-count'),
+          lastResult: stat('last-result'),
+        })
+
+        const initial = read()
+        button('删除草稿').click()
+        await wait(120)
+        const opened = { ...read(), title: dialog()?.querySelector('.ca-title')?.textContent.trim() ?? '' }
+        button('取消').click()
+        await wait(120)
+        const cancelled = read()
+
+        button('删除草稿').click()
+        await wait(120)
+        button('删除').click()
+        await wait(150)
+        const submitting = { ...read(), okText: button('提交中…')?.textContent.trim() ?? '' }
+        await wait(600)
+        const succeeded = read()
+
+        root.querySelector('.ca-fail [role="switch"]').click()
+        await wait(100)
+        button('发布文章').click()
+        await wait(120)
+        button('发布').click()
+        await wait(750)
+        const failed = { ...read(), error: errorText() }
+
+        root.querySelector('.ca-fail [role="switch"]').click()
+        await wait(100)
+        button('发布').click()
+        await wait(750)
+        const retried = read()
+
+        return { initial, opened, cancelled, submitting, succeeded, failed, retried }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, opened, cancelled, submitting, succeeded, failed, retried } = result
+      if (initial.open || initial.confirmCount !== 0) {
+        failures.push(`初始状态不对（打开 ${initial.open} / 计数 ${initial.confirmCount}）`)
+      }
+      if (!opened.open || opened.title !== '删除草稿' || opened.confirmCount !== 1) {
+        failures.push(`确认框没有打开（${opened.open} / ${opened.title} / ${opened.confirmCount}）`)
+      }
+      if (cancelled.open || cancelled.cancelCount !== 1 || cancelled.lastResult !== '取消') {
+        failures.push(`取消没有关闭（${cancelled.open} / ${cancelled.cancelCount} / ${cancelled.lastResult}）`)
+      }
+      if (!submitting.open || submitting.okText !== '提交中…') {
+        failures.push(`提交中没有保持打开或按钮没有 loading（${submitting.open} / ${submitting.okText}）`)
+      }
+      if (succeeded.open || succeeded.successCount !== 1 || succeeded.lastResult !== '成功') {
+        failures.push(`成功后没有关闭（${succeeded.open} / ${succeeded.successCount} / ${succeeded.lastResult}）`)
+      }
+      if (!failed.open || failed.error !== '发布失败：网络超时') {
+        failures.push(`失败后确认框关闭或没有错误信息（${failed.open} / ${failed.error}）`)
+      }
+      if (failed.failCount !== 1 || failed.successCount !== 1 || failed.lastResult !== '失败') {
+        failures.push(
+          `失败计数不对（成功 ${failed.successCount} / 失败 ${failed.failCount} / ${failed.lastResult}）`,
+        )
+      }
+      if (retried.open || retried.successCount !== 2 || retried.failCount !== 1) {
+        failures.push(
+          `重试没有成功（${retried.open} / 成功 ${retried.successCount} / 失败 ${retried.failCount}）`,
+        )
+      }
+      if (retried.lastResult !== '成功') {
+        failures.push(`重试后最近结果不对（${retried.lastResult}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '表格批量操作三态与执行锁',
+    route: '/cases/admin/batch-actions',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.ba-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const rowCheck = (id) => root.querySelector('.row-check[data-row="' + id + '"]')
+        const allCheck = root.querySelector('.all-check')
+        const read = () => ({
+          selected: num('selected-count'),
+          enabled: num('enabled-count'),
+          disabled: num('disabled-count'),
+          batch: num('batch-count'),
+          lastAction: stat('last-action'),
+          header: allCheck?.getAttribute('aria-checked') ?? '',
+        })
+
+        const initial = read()
+        rowCheck(1).click()
+        rowCheck(2).click()
+        await wait(120)
+        const partial = read()
+
+        allCheck.click()
+        await wait(120)
+        const all = read()
+
+        button('批量停用').click()
+        await wait(650)
+        const afterDisable = read()
+
+        allCheck.click()
+        await wait(120)
+        const reSelected = read()
+        button('清空选择').click()
+        await wait(120)
+        const cleared = read()
+
+        rowCheck(1).click()
+        rowCheck(2).click()
+        rowCheck(3).click()
+        await wait(120)
+        button('批量启用').click()
+        await wait(650)
+        const afterEnable = read()
+
+        return { initial, partial, all, afterDisable, reSelected, cleared, afterEnable }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, partial, all, afterDisable, reSelected, cleared, afterEnable } = result
+      if (initial.selected !== 0 || initial.enabled !== 4 || initial.disabled !== 4) {
+        failures.push(`初始状态不对（${initial.selected} 选中 / ${initial.enabled} 启用 / ${initial.disabled} 停用）`)
+      }
+      if (partial.selected !== 2 || partial.header !== 'mixed') {
+        failures.push(`半选状态不对（${partial.selected} 选中 / 表头 ${partial.header}）`)
+      }
+      if (all.selected !== 8 || all.header !== 'true') {
+        failures.push(`全选状态不对（${all.selected} 选中 / 表头 ${all.header}）`)
+      }
+      if (afterDisable.selected !== 0 || afterDisable.enabled !== 0 || afterDisable.disabled !== 8) {
+        failures.push(
+          `批量停用结果不对（${afterDisable.selected} 选中 / ${afterDisable.enabled} 启用 / ${afterDisable.disabled} 停用）`,
+        )
+      }
+      if (afterDisable.batch !== 1 || afterDisable.lastAction !== '批量停用 8 项') {
+        failures.push(`批量停用没有记录（${afterDisable.batch} / ${afterDisable.lastAction}）`)
+      }
+      if (reSelected.selected !== 8 || cleared.selected !== 0) {
+        failures.push(`清空选择没有生效（全选 ${reSelected.selected} / 清空后 ${cleared.selected}）`)
+      }
+      if (afterEnable.enabled !== 3 || afterEnable.disabled !== 5 || afterEnable.selected !== 0) {
+        failures.push(
+          `批量启用结果不对（${afterEnable.enabled} 启用 / ${afterEnable.disabled} 停用 / ${afterEnable.selected} 选中）`,
+        )
+      }
+      if (afterEnable.batch !== 2 || afterEnable.lastAction !== '批量启用 3 项') {
+        failures.push(`批量启用没有记录（${afterEnable.batch} / ${afterEnable.lastAction}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '查询栏条件回显与防重复提交',
+    route: '/cases/admin/query-bar',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.qb-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const pickSelect = async (selector, optionText) => {
+          const trigger = root.querySelector(selector + ' .n-base-selection')
+          if (!trigger) return false
+          trigger.click()
+          for (let i = 0; i < 24; i++) {
+            const option = [...document.querySelectorAll('.n-base-select-option')]
+              .find((item) => (item.textContent ?? '').trim() === optionText)
+            if (option) {
+              option.click()
+              await wait(150)
+              return true
+            }
+            await wait(50)
+          }
+          return false
+        }
+        const read = () => ({
+          resultCount: num('result-count'),
+          queryCount: num('query-count'),
+          resetCount: num('reset-count'),
+          activeCount: num('active-count'),
+          statusText: stat('status-text'),
+          resultNames: stat('result-names'),
+          expanded: stat('expanded'),
+        })
+
+        const initial = read()
+        const input = root.querySelector('.qb-keyword input')
+        input.value = '报表'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(80)
+        const beforeQuery = read()
+
+        const statusPicked = await pickSelect('.qb-status', '启用')
+        const ownerPicked = await pickSelect('.qb-owner', '张三')
+        button('查询').click()
+        button('查询').click()
+        await wait(700)
+        const queried = read()
+
+        const ownerChip = [...root.querySelectorAll('.n-tag')]
+          .find((el) => (el.textContent ?? '').includes('负责人'))
+        ownerChip?.querySelector('.n-tag__close')?.click()
+        await wait(150)
+        const afterRemoveChip = read()
+
+        button('收起').click()
+        await wait(80)
+        const collapsed = { ...read(), fieldsVisible: root.querySelector('.fields')?.offsetParent !== null }
+        button('展开').click()
+        await wait(80)
+        const expanded = { ...read(), fieldsVisible: root.querySelector('.fields')?.offsetParent !== null }
+
+        button('重置').click()
+        await wait(150)
+        const reset = read()
+
+        return {
+          initial,
+          beforeQuery,
+          statusPicked,
+          ownerPicked,
+          queried,
+          afterRemoveChip,
+          collapsed,
+          expanded,
+          reset,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, beforeQuery, queried, afterRemoveChip, collapsed, expanded, reset } = result
+      if (initial.resultCount !== 12 || initial.activeCount !== 0) {
+        failures.push(`初始结果不对（${initial.resultCount} 条 / ${initial.activeCount} 项条件）`)
+      }
+      if (beforeQuery.resultCount !== 12 || beforeQuery.activeCount !== 0) {
+        failures.push(`只改输入框就过滤了（${beforeQuery.resultCount} 条 / ${beforeQuery.activeCount} 项条件）`)
+      }
+      if (beforeQuery.statusText !== '条件已修改，点查询生效') {
+        failures.push(`没有提示条件未生效（${beforeQuery.statusText}）`)
+      }
+      if (!result.statusPicked || !result.ownerPicked) {
+        failures.push('状态或负责人下拉没有选中')
+      }
+      if (queried.resultCount !== 1 || queried.resultNames !== '月度报表') {
+        failures.push(`组合条件结果不对（${queried.resultCount} / ${queried.resultNames}）`)
+      }
+      if (queried.queryCount !== 1) {
+        failures.push(`连点查询产生了重复请求（${queried.queryCount}）`)
+      }
+      if (queried.activeCount !== 3) {
+        failures.push(`条件标签数量不对（${queried.activeCount}）`)
+      }
+      if (queried.statusText !== '已生效') {
+        failures.push(`查询完成后状态文案不对（${queried.statusText}）`)
+      }
+      if (afterRemoveChip.resultCount !== 2 || afterRemoveChip.activeCount !== 2) {
+        failures.push(`点标签 × 没有移除条件（${afterRemoveChip.resultCount} 条 / ${afterRemoveChip.activeCount} 项）`)
+      }
+      if (collapsed.expanded !== '收起' || collapsed.fieldsVisible) {
+        failures.push(`收起后字段仍可见（${collapsed.expanded} / ${collapsed.fieldsVisible}）`)
+      }
+      if (expanded.expanded !== '展开' || !expanded.fieldsVisible) {
+        failures.push(`展开后字段没有回来（${expanded.expanded} / ${expanded.fieldsVisible}）`)
+      }
+      if (reset.resultCount !== 12 || reset.activeCount !== 0 || reset.resetCount !== 1) {
+        failures.push(
+          `重置没有清干净（${reset.resultCount} 条 / ${reset.activeCount} 项 / 重置 ${reset.resetCount} 次）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

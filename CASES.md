@@ -1,7 +1,7 @@
 # 案例清单
 
 > 本文件由 `npm run gen:cases` 根据 `src/examples/registry.ts` 自动生成，请勿手动修改。
-> 共 88 个案例 / 9 个分类。
+> 共 93 个案例 / 10 个分类。
 
 ## CSS 技巧（css）
 
@@ -135,3 +135,13 @@
 | [tracking-sdk](/cases/practice/tracking-sdk) | 埋点 SDK（点击 + 曝光） | 高级 | `埋点` `事件委托` `IntersectionObserver` `sendBeacon` | 用事件委托收点击、观察器收曝光并去重，满五条或两秒批量上报，减少请求 |
 | [vite-split](/cases/practice/vite-split) | Vite 代码分割 | 进阶 | `Vite` `代码分割` `懒加载` `构建优化` | 勾选懒加载、第三方拆分、按需引入等策略，实时估算首屏体积，附配置要点 |
 | [vitest-gate](/cases/practice/vitest-gate) | 测试门禁（CI） | 进阶 | `Vitest` `CI` `类型检查` `体积门禁` | 模拟持续集成依次执行类型检查、代码检查、单测、构建与体积门禁，失败即中断 |
+
+## 后台组件（admin）
+
+| 案例 | 标题 | 难度 | 标签 | 摘要 |
+| --- | --- | --- | --- | --- |
+| [batch-actions](/cases/admin/batch-actions) | BatchActions：表格批量操作别漏掉半选 | 入门 | `后台` `表格` `批量操作` `选择` | 全选、半选、批量执行后清空选择 |
+| [confirm-action](/cases/admin/confirm-action) | ConfirmAction：确认框要能等异步结果 | 进阶 | `后台` `确认框` `Promise` `异步` | 确认、loading、失败不关闭，一个 Promise 搞定 |
+| [form-drawer](/cases/admin/form-drawer) | FormDrawer：新增编辑共用一个抽屉 | 进阶 | `后台` `抽屉` `表单` `校验` | 新增编辑共用抽屉，校验、loading、脏数据保护 |
+| [pagination](/cases/admin/pagination) | Pagination：分页别把边界留给用户 | 入门 | `后台` `分页` `表格` `边界` | 页码、每页条数、删到空页自动回退 |
+| [query-bar](/cases/admin/query-bar) | QueryBar：后台查询栏别堆成一排 | 入门 | `后台` `查询栏` `筛选` `表单` | 收起多余条件，重置干净，查询中不重复提交 |

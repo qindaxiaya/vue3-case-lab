@@ -1,0 +1,50 @@
+//! 当前表单值和已生效条件分开存：表格只认 applied
+const keyword = ref('')
+const status = ref<Status | 'all'>('all')
+const owner = ref<Owner | 'all'>('all')
+const applied = ref<Filters>({ keyword: '', status: 'all', owner: 'all' })
+
+const loading = ref(false)
+let queryTimer: number | null = null
+
+/** 把正在编辑的条件收成快照，查询过程中继续输入不会污染结果 */
+function currentFilters(): Filters {
+  return {
+    keyword: keyword.value.trim(),
+    status: status.value,
+    owner: owner.value,
+  }
+}
+
+/** 查询：加载中直接 return，避免用户连点产生重复请求 */
+function runQuery(): void {
+  if (loading.value) return
+  const snapshot = currentFilters()
+  loading.value = true
+
+  queryTimer = window.setTimeout(() => {
+    applied.value = snapshot
+    loading.value = false
+    queryCount.value++
+    queryTimer = null
+  }, 450)
+}
+
+/** 重置：表单和已生效条件一起清空，并取消在途查询 */
+function reset(): void {
+  if (queryTimer !== null) {
+    window.clearTimeout(queryTimer)
+    queryTimer = null
+  }
+  loading.value = false
+  keyword.value = ''
+  status.value = 'all'
+  owner.value = 'all'
+  applied.value = { keyword: '', status: 'all', owner: 'all' }
+  resetCount.value++
+}
+
+onUnmounted(() => {
+  //! 组件卸载时清掉在途请求，避免回调再改已经销毁的组件状态
+  if (queryTimer !== null) window.clearTimeout(queryTimer)
+})

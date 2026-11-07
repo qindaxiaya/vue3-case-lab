@@ -69,6 +69,8 @@ export const ALLOW_IDENTIFIERS: Record<string, string> = {
 
   // ---------- 其他案例 / 分类 / 第三方库名 ----------
   practice: '站点分类 id，不是案例变量',
+  basics: '站点分类 id，不是案例变量',
+  'url-search-params': '其他案例 id',
   'container-query': '其他案例 id',
   'drag-sort': '其他案例 id',
   'slider-captcha': '其他案例 id',

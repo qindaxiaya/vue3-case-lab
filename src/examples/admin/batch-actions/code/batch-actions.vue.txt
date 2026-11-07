@@ -1,0 +1,46 @@
+//! 选择用 id 集合存：行数据刷新后对象引用会变，id 不会
+const selectedIds = ref<number[]>([])
+const busy = ref(false)
+
+/** 全选只处理当前页；跨页选择要另存一份跨页 id 集合 */
+function toggleAll(checked: boolean): void {
+  selectedIds.value = checked ? rows.value.map((row) => row.id) : []
+}
+
+/** 单行勾选：勾上加进去，取消就过滤掉 */
+function toggleRow(id: number, checked: boolean): void {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
+  } else {
+    selectedIds.value = selectedIds.value.filter((item) => item !== id)
+  }
+}
+
+/** 表头三态：全选 / 半选 / 未选 */
+const allChecked = computed(
+  () => rows.value.length > 0 && selectedIds.value.length === rows.value.length,
+)
+const indeterminate = computed(
+  () => selectedIds.value.length > 0 && selectedIds.value.length < rows.value.length,
+)
+
+/** 批量操作：执行中直接 return，成功后清空选择 */
+function runBatch(action: Status): void {
+  if (busy.value || selectedIds.value.length === 0) return
+  const ids = [...selectedIds.value]
+  busy.value = true
+
+  actionTimer = window.setTimeout(() => {
+    rows.value = rows.value.map((row) =>
+      ids.includes(row.id) ? { ...row, status: action } : row,
+    )
+    selectedIds.value = []
+    busy.value = false
+    actionTimer = null
+  }, 450)
+}
+
+onUnmounted(() => {
+  //! 卸载时清定时器，避免回调去改已经销毁的列表
+  if (actionTimer !== null) window.clearTimeout(actionTimer)
+})

@@ -1,0 +1,36 @@
+const page = ref(1)
+const pageSize = ref(10)
+
+const total = computed(() => users.value.length)
+const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+const pagedRows = computed(() =>
+  users.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value),
+)
+
+//! 每页条数变化：回到第一页，避免停在越界页
+watch(pageSize, () => {
+  page.value = 1
+})
+
+//! 总条数变化：当前页超过总页数时自动回退
+watch(total, () => {
+  if (page.value > pageCount.value) page.value = pageCount.value
+})
+
+/** 删除当前页最后一条：删到空页后页码立即回退 */
+function deleteLast(): void {
+  const current = pagedRows.value
+  if (current.length === 0) return
+  const last = current[current.length - 1]]
+  users.value = users.value.filter((user) => user.id !== last.id)
+  deleteCount.value++
+  if (page.value > pageCount.value) page.value = pageCount.value
+}
+
+/** 重置数据时把页码和每页条数一起复位 */
+function resetData(): void {
+  users.value = createRows()
+  page.value = 1
+  pageSize.value = 10
+  deleteCount.value = 0
+}
