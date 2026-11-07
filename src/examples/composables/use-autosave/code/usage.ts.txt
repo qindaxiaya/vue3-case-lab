@@ -1,0 +1,27 @@
+// ============================================================
+// 在页面里怎么用：草稿自动保存到 localStorage
+// ============================================================
+import { ref } from 'vue'
+import { useAutosave } from './useAutosave'
+
+const draft = ref(localStorage.getItem('draft') ?? '')
+
+const autosave = useAutosave(draft, {
+  delay: 600,
+  save: async (value) => {
+    // 真实项目换成接口请求；这里用 localStorage 演示
+    await new Promise((resolve) => window.setTimeout(resolve, 250))
+    localStorage.setItem('draft', value)
+  },
+})
+
+// 失焦、点「发布」、关闭弹窗前手动补一次
+async function submit(): Promise<void> {
+  await autosave.flushNow()
+}
+
+// 状态可以直接绑到界面
+void autosave.status
+void autosave.saves
+void autosave.lastSavedAt
+void submit

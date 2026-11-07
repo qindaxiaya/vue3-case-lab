@@ -33,6 +33,7 @@ export const ALLOW_IDENTIFIERS: Record<string, string> = {
   mousemove: '浏览器事件名（mousemove）',
   touchmove: '浏览器事件名（touchmove）',
   rawKeyDown: 'Chrome DevTools Protocol 的按键事件名',
+  beforeunload: '浏览器事件名（beforeunload）',
 
   // ---------- Vue / 框架 API ----------
   onMounted: 'Vue 生命周期 API（本案例可能用其他钩子）',

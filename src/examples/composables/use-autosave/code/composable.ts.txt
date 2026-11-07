@@ -1,0 +1,117 @@
+// ============================================================
+// useAutosave：防抖自动保存
+// 关键点：停止输入后合并保存、保存期间防串台、pagehide 兜底
+// ============================================================
+import { onScopeDispose, ref, watch, type Ref } from 'vue'
+
+export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+
+export interface AutosaveOptions {
+  /** 停止输入后多久保存（默认 600ms） */
+  delay?: number
+  /** 真正落盘的函数，可以是 localStorage，也可以是接口 */
+  save: (value: string) => Promise<void>
+}
+
+/**
+ * 自动保存：停止输入后合并成一次，离开页面时补一次
+ * @param source  被观察的内容
+ * @param options 防抖间隔与保存函数
+ */
+export function useAutosave(source: Ref<string>, options: AutosaveOptions) {
+  const delay = options.delay ?? 600
+  const status = ref<SaveStatus>('idle')
+  const saves = ref(0)
+  const lastSavedAt = ref<Date | null>(null)
+
+  let timer: number | null = null
+  let pending: string | null = null
+  let saving = false
+  let generation = 0
+  let first = true
+
+  function clearTimer(): void {
+    if (timer !== null) {
+      window.clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  function schedule(): void {
+    clearTimer()
+    timer = window.setTimeout(() => {
+      void flush()
+    }, delay)
+  }
+
+  /** 把待保存的值真正写下去 */
+  async function flush(): Promise<void> {
+    clearTimer()
+    if (pending === null || saving) return
+
+    const value = pending
+    pending = null
+    saving = true
+    const id = ++generation
+    status.value = 'saving'
+
+    try {
+      await options.save(value)
+      //! 保存期间又输入了，旧结果不能把新状态改成「已保存」
+      if (id !== generation) return
+      saves.value++
+      lastSavedAt.value = new Date()
+      status.value = pending === null ? 'saved' : 'dirty'
+    } catch {
+      if (id !== generation) return
+      //! 失败时把值放回去，重试还能保存同一份内容
+      if (pending === null) pending = value
+      status.value = 'error'
+    } finally {
+      saving = false
+      if (pending !== null && status.value !== 'error') schedule()
+    }
+  }
+
+  /** 立即保存：失焦、点按钮、离开页面前调用 */
+  function flushNow(): Promise<void> {
+    return flush()
+  }
+
+  /** 清空计时器与状态（演示重置用） */
+  function reset(): void {
+    clearTimer()
+    generation++
+    pending = null
+    saving = false
+    status.value = 'idle'
+    saves.value = 0
+    lastSavedAt.value = null
+  }
+
+  //! 第一次 watch 是初始值 / 恢复出来的草稿，不该再存一遍
+  watch(source, (value) => {
+    if (first) {
+      first = false
+      return
+    }
+    pending = value
+    status.value = 'dirty'
+    schedule()
+  })
+
+  //! 离开页面时把还没落盘的内容补一次；SPA 卸载也要清掉
+  function handlePageHide(): void {
+    void flush()
+  }
+
+  window.addEventListener('pagehide', handlePageHide)
+
+  onScopeDispose(() => {
+    window.removeEventListener('pagehide', handlePageHide)
+    clearTimer()
+    if (pending !== null) void flush()
+  })
+
+  return { status, saves, lastSavedAt, flushNow, reset }
+}

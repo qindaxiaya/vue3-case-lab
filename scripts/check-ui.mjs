@@ -3205,6 +3205,136 @@ const SCENARIOS = [
     },
   },
   {
+    name: '自动保存防抖与离开补存',
+    route: '/cases/composables/use-autosave',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.as-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(stat(name))
+        const textarea = root.querySelector('textarea')
+        const toggle = (text) =>
+          [...root.querySelectorAll('.toggle')]
+            .find((el) => el.textContent.includes(text))
+            ?.querySelector('[role="switch"]')
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const type = (value) => {
+          textarea.value = value
+          textarea.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+
+        button('重置').click()
+        await wait(250)
+
+        for (let i = 1; i <= 8; i++) {
+          type('a'.repeat(i))
+          await wait(60)
+        }
+        const typed = {
+          leftWrites: num('left-writes'),
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+        }
+
+        await wait(1000)
+        const debounced = {
+          leftWrites: num('left-writes'),
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+          leftValue: stat('left-value'),
+          autoValue: stat('auto-value'),
+        }
+
+        type('abcdefghi')
+        await wait(50)
+        window.dispatchEvent(new Event('pagehide'))
+        await wait(400)
+        const afterHide = {
+          leftWrites: num('left-writes'),
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+        }
+
+        toggle('模拟保存失败').click()
+        await wait(100)
+        type('abcdefghij')
+        await wait(1000)
+        const failed = {
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+        }
+
+        toggle('模拟保存失败').click()
+        await wait(100)
+        button('立即保存').click()
+        await wait(400)
+        const retried = {
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+        }
+
+        const stored = {
+          left: localStorage.getItem('autosave-demo-naive'),
+          right: localStorage.getItem('autosave-demo-auto'),
+        }
+
+        button('重置').click()
+        await wait(250)
+        const reset = {
+          leftWrites: num('left-writes'),
+          autoSaves: num('auto-saves'),
+          autoStatus: stat('auto-status'),
+          left: localStorage.getItem('autosave-demo-naive'),
+          right: localStorage.getItem('autosave-demo-auto'),
+        }
+
+        return { typed, debounced, afterHide, failed, retried, stored, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { typed, debounced, afterHide, failed, retried, stored, reset } = result
+      if (typed.leftWrites !== 8) {
+        failures.push(`手写版没有每次输入都写（${typed.leftWrites}）`)
+      }
+      if (typed.autoSaves !== 0 || typed.autoStatus !== '有未保存修改') {
+        failures.push(`防抖窗口内封装版不该保存（${typed.autoSaves} / ${typed.autoStatus}）`)
+      }
+      if (debounced.autoSaves !== 1 || debounced.autoStatus !== '已保存') {
+        failures.push(`防抖结束后封装版没有合并成一次保存（${debounced.autoSaves} / ${debounced.autoStatus}）`)
+      }
+      if (debounced.leftValue !== 'aaaaaaaa' || debounced.autoValue !== 'aaaaaaaa') {
+        failures.push(`两边内容不一致（手写：${debounced.leftValue} / 封装：${debounced.autoValue}）`)
+      }
+      if (afterHide.autoSaves !== 2) {
+        failures.push(`pagehide 没有补保存（${afterHide.autoSaves}）`)
+      }
+      if (failed.autoStatus !== '保存失败' || failed.autoSaves !== 2) {
+        failures.push(`保存失败状态不对（${failed.autoStatus} / ${failed.autoSaves}）`)
+      }
+      if (retried.autoStatus !== '已保存' || retried.autoSaves !== 3) {
+        failures.push(`重试没有成功（${retried.autoStatus} / ${retried.autoSaves}）`)
+      }
+      if (stored.left !== 'abcdefghij' || stored.right !== 'abcdefghij') {
+        failures.push(`落盘内容不对（手写：${stored.left} / 封装：${stored.right}）`)
+      }
+      if (
+        reset.leftWrites !== 0 ||
+        reset.autoSaves !== 0 ||
+        reset.autoStatus !== '等待输入' ||
+        reset.left !== null ||
+        reset.right !== null
+      ) {
+        failures.push(
+          `重置没有清干净（${reset.leftWrites} / ${reset.autoSaves} / ${reset.autoStatus}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '网络状态订阅范围',
     route: '/cases/composables/use-network-status',
     facts: async ({ evaluate }) =>
