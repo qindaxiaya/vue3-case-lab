@@ -15,6 +15,7 @@ import {
   type Component,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { createDiscreteApi } from 'naive-ui'
 import { categories } from '../examples/categories'
 import { loadCaseNotes } from '../examples/notes'
 import {
@@ -30,6 +31,7 @@ import CodeWorkbench from '../components/CodeWorkbench.vue'
 import DemoNaive from '../components/demo/DemoNaive.vue'
 import NotesPanel from '../components/NotesPanel.vue'
 import { caseKey, useCaseHistory } from '../composables/useCaseHistory'
+import { useNaiveTheme } from '../composables/useNaiveTheme'
 import { smoothScrollTo, stopSmoothScroll } from '../utils/scroll'
 
 const route = useRoute()
@@ -39,6 +41,73 @@ const router = useRouter()
 const item = computed(() =>
   getCase(String(route.params.categoryId), String(route.params.caseId)),
 )
+
+// ============================================================
+// 代码行 → 演示区定位
+// - code/*.txt 里的 `//! @demo <选择器>` 由 CodeWorkbench 渲染成按钮
+// - 点击后在本页演示卡内查找元素：滚动到视口中间 + 1.6s 闪烁描边
+// - 找不到（例如面板还没打开）时用 Naive message 提示，避免「点了没反应」
+// - 这里在 CasePage，不在 DemoNaive 的 provider 内，所以用离散 API 拿 message
+// ============================================================
+
+/** 演示卡根节点：定位查询范围限定在演示区内 */
+const demoCardEl = ref<HTMLElement | null>(null)
+/** 当前正在闪烁的元素与定时器（连续点击 / 切案例时要清理） */
+let flashEl: HTMLElement | null = null
+let flashTimer = 0
+
+const { theme, themeOverrides } = useNaiveTheme()
+const { message: locateMessage, unmount: unmountLocateMessage } = createDiscreteApi(
+  ['message'],
+  {
+    configProviderProps: {
+      theme: theme.value,
+      themeOverrides: themeOverrides.value,
+    },
+  },
+)
+
+/** 清掉上一个元素的闪烁状态（不触碰 DOM 时也安全） */
+function clearLocateFlash(): void {
+  if (flashTimer) {
+    window.clearTimeout(flashTimer)
+    flashTimer = 0
+  }
+  flashEl?.classList.remove('locate-flash')
+  flashEl = null
+}
+
+/** 点击 @demo 行：滚动到演示元素并闪烁；找不到时给出提示 */
+function locateDemo(selector: string): void {
+  const root = demoCardEl.value
+  if (!root) return
+
+  let target: Element | null = null
+  try {
+    target = root.querySelector(selector)
+  } catch {
+    locateMessage.warning('这行代码的定位选择器写错了，请检查 @demo 标记')
+    return
+  }
+
+  if (!(target instanceof HTMLElement)) {
+    locateMessage.warning('该行对应的元素不在当前演示状态')
+    return
+  }
+
+  clearLocateFlash()
+  target.scrollIntoView({ block: 'center', inline: 'nearest' })
+  // 连续点同一行时先移除再强制布局，保证闪烁动画从头播放
+  void target.offsetWidth
+  target.classList.add('locate-flash')
+  flashEl = target
+
+  flashTimer = window.setTimeout(() => {
+    target.classList.remove('locate-flash')
+    if (flashEl === target) flashEl = null
+    flashTimer = 0
+  }, 1600)
+}
 
 // ============================================================
 // 按需加载：演示组件 + 源码文本
@@ -132,6 +201,9 @@ watch(
   () => route.fullPath,
   () => {
     activeTab.value = 'explain'
+    // 新案例的演示元素还没挂载，清掉上一个案例的定位闪烁与提示
+    clearLocateFlash()
+    locateMessage.destroyAll()
     // 新案例的 notes 还没加载，清掉上一个案例的等待状态
     tabSwitchSeq++
     notesRendered.value = false
@@ -311,6 +383,8 @@ const keyPoints = computed<string[]>(() => {
       if (!match) continue
 
       const text = match[1].trim()
+      // @demo 定位行是给代码区按钮用的标记，不是「代码要点」
+      if (text.startsWith('@demo')) continue
       // 过滤过短/过长的行，避免把零散标记当要点
       if (text.length < 8 || text.length > 120) continue
       if (seen.has(text)) continue
@@ -556,6 +630,10 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(tabIndicatorRaf)
   tabIndicatorObserver?.disconnect()
 
+  // 清掉定位闪烁与离散 message 容器（后者会挂在 body 上，不卸载会残留）
+  clearLocateFlash()
+  unmountLocateMessage()
+
   // 解除可能仍在等待 notes 的切换，避免 Promise 悬挂
   tabSwitchSeq++
   notesRenderedResolve?.()
@@ -673,7 +751,10 @@ const explainBlocks = computed(() => {
       </header>
       <!-- ① 演示区：演示组件按需加载，加载期间显示占位 -->
       <section aria-label="可交互演示">
-        <div class="card demo-card">
+        <div
+          ref="demoCardEl"
+          class="card demo-card"
+        >
           <!-- 演示区统一包一层 Naive 主题 + message provider：
                案例里的 n-button / n-radio-group / useMessage() 都从这里拿上下文 -->
           <DemoNaive v-if="demoComponent">
@@ -874,6 +955,7 @@ const explainBlocks = computed(() => {
               v-if="sourceStatus === 'ready'"
               :tabs="codeTabs"
               :demo-source="demoSource"
+              @locate="locateDemo"
             />
             <div
               v-else-if="sourceStatus === 'error'"
@@ -1212,6 +1294,25 @@ const explainBlocks = computed(() => {
   /* 演示区正文统一到 15px，内部细节再用 --demo-text-* 收敛 */
   font-size: var(--demo-text-lg);
   line-height: 1.65;
+}
+
+/* 代码行定位到演示元素：1.6s 主色脉冲（类由 CasePage 动态加在 Demo 元素上，
+   元素属于 Demo 的 scoped 作用域，所以这里必须用 :global） */
+:global(.locate-flash) {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  animation: locate-flash 0.8s var(--ease-out) 2;
+}
+
+@keyframes locate-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
 }
 
 /* 异步资源占位：演示 / 源码加载中或失败时显示，固定最小高度避免布局跳动 */

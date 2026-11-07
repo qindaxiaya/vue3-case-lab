@@ -42,6 +42,7 @@ async function onPointerUp(): Promise<void> {
 
 function onScroll(): void {
   const el = scroller.value!
+  //! @demo .pr-scroller
   //! scrollHeight - scrollTop - clientHeight 才是距底距离（不要用 scrollTop 直接比）
   const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48
   if (nearBottom && !loading.value && !finished.value) loadMore()

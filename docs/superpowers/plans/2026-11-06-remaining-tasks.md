@@ -161,17 +161,17 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 **设计（低侵入、可选约定）**
 
 - 代码片段里允许写 `//! @demo <CSS 选择器>`（例：`//! @demo [data-stat="typing"]`）；
-- `CodeWorkbench` 渲染时把带 `@demo` 的行变成可点击（`role="button"` + `tabindex` + 键盘 Enter），点击 `emit('locate', selector)`；
-- `CasePage` 收到后：在 Demo 根节点内 `querySelector(selector)` → `scrollIntoView({ block: 'center' })` + 加 `.locate-flash` 类（1.6s 主色描边脉冲，之后移除）；找不到时用 Naive message 提示「该行对应的元素不在当前演示状态」。
-- 只给 2~3 个案例加 `@demo` 标记作为试点（如 `composables/use-keyboard-shortcut` 的输入框、`performance/pull-refresh` 的列表区），其余案例不动。
+- `CodeWorkbench` 渲染时把带 `@demo` 的行渲染成原生 `<button>`（`role` / `tabindex` / Enter 由浏览器免费提供），点击 `emit('locate', selector)`；该行不参与复制，避免把标记粘进真实代码；
+- `CasePage` 收到后：在 Demo 根节点内 `querySelector(selector)` → `scrollIntoView({ block: 'center' })` + 加 `.locate-flash` 类（1.6s 主色描边脉冲，之后移除）；找不到（选择器写错 / 元素依赖未打开的面板）时用 Naive message 提示。CasePage 不在 `DemoNaive` 的 provider 内，message 通过 `createDiscreteApi` 取得；
+- 只给 2~3 个案例加 `@demo` 标记作为试点（如 `composables/use-keyboard-shortcut` 的输入框与快速跳转面板、`performance/pull-refresh` 的列表区），其余案例不动。
 
 **步骤**
 
-- [ ] **先问**：是否值得为「点击代码行 → 高亮元素」改框架（影响 `CodeWorkbench` / `CasePage` / 案例代码片段三处）
-- [ ] 加 `@demo` 解析 + emit + `locate-flash` 样式（遵守 `--ease-out`、不跟随系统 reduce 的全站约定）
-- [ ] 试点 2 个案例的 `code/*.txt` 加标记
-- [ ] `check:ui` 新增场景：点击带标记的行 → 演示区元素出现 `.locate-flash` 且已滚入视口；无标记的行点击无反应
-- [ ] 375px 下可点、不溢出；教学代码与 Demo 一致
+- [x] **先问**：是否值得为「点击代码行 → 高亮元素」改框架（影响 `CodeWorkbench` / `CasePage` / 案例代码片段三处）
+- [x] 加 `@demo` 解析 + emit + `locate-flash` 样式（遵守 `--ease-out`、不跟随系统 reduce 的全站约定）
+- [x] 试点 2 个案例的 `code/*.txt` 加标记
+- [x] `check:ui` 新增场景：点击带标记的行 → 演示区元素出现 `.locate-flash` 且已滚入视口；无标记的行点击无反应
+- [x] 375px 下可点、不溢出；教学代码与 Demo 一致
 
 **验收（L2）：** DoD 全条 + `npx vitest run`、`type-check`、`npm run lint`、`npm run build`、`check:bundle`、`check:ui` 全量 + `--sweep`、新场景通过、1280/375 零 console 错误。
 
