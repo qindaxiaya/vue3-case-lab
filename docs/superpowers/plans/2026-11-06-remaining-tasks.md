@@ -210,21 +210,21 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 
 ---
 
-### Task 6：`v0.2` tag + Release 说明
+### Task 6：`v0.2` tag + Release 说明（已完成）
 
 **现状证据**
 
 - 只有 `v0.1`（56 案例时打的）；现在 84 案例 / 9 分类，期间经历 Naive UI 换挡、composables 分类扩充、打包优化、动效策略变更。
-- 用户 2026-11-06 明确「这轮不打」，所以列在这里等拍板。
+- 用户 2026-11-07 授权「后面直接一口气干完」，不再等拍板。
 
 **步骤**
 
-- [ ] 确认 Task 1~5 收口，`main` 全绿（`vitest` / `type-check` / `lint` / `build` / `check:bundle` / `check:ui` / `--sweep`）
-- [ ] 从 `AGENTS.md`「当前进度」提炼 Release 说明（分组：新分类 / 新案例 / 体验 / 工程）
-- [ ] `git tag -a v0.2 -m "..."` + `git push origin v0.2`；GitHub Release 用同一份说明
-- [ ] `AGENTS.md` 记一条
+- [x] 确认 Task 1~5 收口，`main` 全绿（`vitest` / `type-check` / `lint` / `build` / `check:bundle` / `check:ui` / `--sweep`）
+- [x] 从 `AGENTS.md`「当前进度」提炼 Release 说明（分组：新分类 / 新案例 / 体验 / 工程）
+- [x] 打 annotated tag `v0.2` 指向 `229c662`；GitHub Release 用同一份说明（因 `github.com:443` 超时，tag 改由 Git Data API 创建）
+- [x] `AGENTS.md` 记一条
 
-**验收：** tag 指向 `main` 提交；Release 页面可访问；CI 在 tag 上不重复跑（`on.push.branches` 只匹配 main，tag 不会触发，符合预期）。
+**验收：** tag 指向 `main` 提交（`229c662`）；Release 页面可访问（https://github.com/qindaxiaya/vue3-case-lab/releases/tag/v0.2）；CI 在 tag 上不重复跑（`on.push.branches` 只匹配 main，tag 不会触发，符合预期）。
 
 ---
 
