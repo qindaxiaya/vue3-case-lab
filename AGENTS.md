@@ -15,6 +15,7 @@
   - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
   - `npm run check:ui -- --only 抽屉` — 只验一个场景（名字或路由命中，5~10 秒）；改单个案例默认用它，`--base http://localhost:5173` 可直接验 dev
   - `npm run gen:cases` — 从真实 registry 重新生成根目录 `CASES.md` 案例清单；`-- --check` 只比对不写（文件过期退出码 1）
+  - `npm run new:case -- <分类> <案例id>` — 生成案例四件套骨架（`--dry-run` 只打印将创建的文件）
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
@@ -37,6 +38,7 @@
   ├── notes.md        # 五段式案例资料（详情页「深入」tab 懒加载；模板见 docs/templates/notes.md）
   └── code/*.txt      # 带逐行中文注释的教学代码；多演示时按 <演示key>.*.txt 命名
   ```
+- **新增案例用脚手架（2026-11-07）**：`npm run new:case -- <分类> <案例id>` 生成四件套骨架（`--dry-run` 先看将创建的文件）；分类 / id / 重复目录在校验阶段拒绝。生成后仍要按 DoD 补全 TODO，再跑 `npm run gen:cases` 更新清单。
 - **案例完成标准（2026-10-20 用户拍板）**：`docs/case-definition-of-done.md` 为唯一验收源，覆盖 Demo 稳定性、错误/正确对比、真实测量、notes 五段、meta.sell、375px、类型与工程。新案例严格执行，存量按批次渐进补齐；豁免必须写进 notes.md 第 5 段。
 - **框架与案例抽离（2026-10-19 用户拍板）**：
   1. 站点框架（CasePage/CodeWorkbench/registry/router 等）保持通用稳定，**不得为单个案例特化框架代码**
@@ -302,6 +304,10 @@
   - `tests/cases-doc.spec.ts` 四条断言：链接集合完全一致（多 / 少 / 重复都报错并列出名字）、每行标题等于 `meta.title`、文首「共 N 个案例 / M 个分类」与真实数量一致、分类与案例顺序等于 `categories` / `registry`
   - 负向验证：删掉一行后 spec 报「CASES.md 缺少案例：css/fluid-clamp」，`--check` 返回 1 并定位行号
   - 验收：`npx vitest run` 58/58、`npm run type-check`、`npx eslint`（改动文件 + 脚本）通过
+- ✅ 2026-11-07 新增案例脚手架 `scripts/new-case.mjs`（遗留任务 Task 2）：
+  - `npm run new:case -- <分类> <案例id>` 生成四件套骨架：Demo 默认停在「旧做法」侧 + 卸载清理提醒 + `data-stat` / `n-radio-group` 示例，meta 四段 TODO 与字数上限注释，notes 按五段模板（第 4 段留表格与「禁止编数字」提醒），code 带 `//!` 重点行
+  - 校验：分类必须在 `categories.ts`（正则扫描，不引 TS 运行时）、id 只允许小写 kebab-case、目录已存在直接拒绝；`--dry-run` 只打印将创建的文件
+  - 实测：三条错误分支均退出码 1 且提示可读；真实生成 `css/scaffold-smoke` 后 `npx vitest run` 58/58、`type-check`、`audit:cases` 0 P0/P1/P2，随后删除并恢复 `CASES.md`
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`
 
 ## 决策记录
