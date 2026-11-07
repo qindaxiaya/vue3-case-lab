@@ -61,11 +61,11 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 
 **步骤**
 
-- [ ] 新增 `scripts/gen-cases.mjs`（中文注释：为什么用 Vite SSR 读 registry、为什么不用正则）
-- [ ] `package.json` 增加 `"gen:cases": "node scripts/gen-cases.mjs"`（默认写文件；`--check` 只比对不写，退出码 1 表示过期）
-- [ ] 生成首版 `CASES.md`：标题 + 更新说明 + 分类分组表格（分类 / 案例链接 / 标题 / 难度 / 标签 / 一句话摘要）+ 总数
-- [ ] 新增 `tests/cases-doc.spec.ts` 四条断言（见上）
-- [ ] 更新 `AGENTS.md`：约定段加「新增案例要跑 `npm run gen:cases`」，进度段记一条
+- [x] 新增 `scripts/gen-cases.mjs`（中文注释：为什么用 Vite SSR 读 registry、为什么不用正则）
+- [x] `package.json` 增加 `"gen:cases": "node scripts/gen-cases.mjs"`（默认写文件；`--check` 只比对不写，退出码 1 表示过期）
+- [x] 生成首版 `CASES.md`：标题 + 更新说明 + 分类分组表格（分类 / 案例链接 / 标题 / 难度 / 标签 / 一句话摘要）+ 总数
+- [x] 新增 `tests/cases-doc.spec.ts` 四条断言（见上）
+- [x] 更新 `AGENTS.md`：约定段加「新增案例要跑 `npm run gen:cases`」，进度段记一条
 
 **验收**
 
