@@ -1,0 +1,36 @@
+// ============================================================
+// 在页面里怎么用：默认读浏览器，也可以注入模拟源
+// ============================================================
+import { browserNetworkSource, useNetworkStatus } from './useNetworkStatus'
+
+// 真实环境：不传参，内部使用 browserNetworkSource()
+const network = useNetworkStatus()
+
+// 弱网 / 离线时做降级
+if (!network.state.online) {
+  // 显示离线缓存
+}
+
+if (network.state.effectiveType === '2g' || network.state.saveData) {
+  // 少加载图片、关闭自动播放
+}
+
+// 测试 / 演示：注入可控数据源
+const fakeSource = {
+  read: () => ({
+    online: true,
+    effectiveType: '3g',
+    downlink: 1.5,
+    rtt: 300,
+    saveData: false,
+    supported: true,
+  }),
+  subscribe: () => () => {},
+}
+
+const fake = useNetworkStatus(fakeSource)
+
+// 组件卸载时自动解绑；也可以在需要时手动刷新
+network.refresh()
+void fake
+void browserNetworkSource

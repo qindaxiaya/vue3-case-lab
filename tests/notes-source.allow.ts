@@ -24,6 +24,7 @@ export const ALLOW_IDENTIFIERS: Record<string, string> = {
   scrollHeight: 'DOM 属性：滚动内容高度',
   clientHeight: 'DOM 属性：可视区高度',
   rootMargin: 'IntersectionObserver 选项名',
+  'slow-2g': 'Network Information API 的 effectiveType 取值',
   performance: '浏览器全局对象（Performance API）',
   timing: 'performance.timing 的字段名',
   window: '浏览器全局对象',

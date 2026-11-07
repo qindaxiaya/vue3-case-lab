@@ -3205,6 +3205,109 @@ const SCENARIOS = [
     },
   },
   {
+    name: '网络状态订阅范围',
+    route: '/cases/composables/use-network-status',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.ns-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const toggle = (text) =>
+          [...root.querySelectorAll('.toggle')]
+            .find((el) => el.textContent.includes(text))
+            ?.querySelector('[role="switch"]')
+        const radio = (text) =>
+          [...root.querySelectorAll('.n-radio-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+
+        const read = () => ({
+          manualOnline: stat('manual-online'),
+          manualType: stat('manual-type'),
+          manualSave: stat('manual-save'),
+          manualUpdates: Number(stat('manual-updates')),
+          manualStale: stat('manual-stale'),
+          autoOnline: stat('auto-online'),
+          autoType: stat('auto-type'),
+          autoSpeed: stat('auto-speed'),
+          autoSave: stat('auto-save'),
+          autoChanges: Number(stat('auto-changes')),
+        })
+
+        const initial = read()
+        radio('3G').click()
+        await wait(150)
+        const afterType = read()
+
+        toggle('在线').click()
+        await wait(150)
+        const afterOffline = read()
+
+        toggle('省流模式').click()
+        await wait(150)
+        const afterSave = read()
+
+        button('重置').click()
+        await wait(200)
+        const reset = read()
+
+        return { initial, afterType, afterOffline, afterSave, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      const { initial, afterType, afterOffline, afterSave, reset } = result
+      if (initial.manualType !== '4g' || initial.autoType !== '4g') {
+        failures.push(`初始制式不是 4G（手写：${initial.manualType} / 封装：${initial.autoType}）`)
+      }
+      if (afterType.manualType !== '4g') {
+        failures.push(`手写版连接信息不该更新（${afterType.manualType}）`)
+      }
+      if (afterType.autoType !== '3g') {
+        failures.push(`封装版没有跟上制式变化（${afterType.autoType}）`)
+      }
+      if (!afterType.autoSpeed.includes('1.5 Mbps') || !afterType.autoSpeed.includes('300 ms')) {
+        failures.push(`封装版下行 / 延迟没有更新（${afterType.autoSpeed}）`)
+      }
+      if (afterType.manualStale !== '连接信息已过期') {
+        failures.push(`手写版没有标出连接信息过期（${afterType.manualStale}）`)
+      }
+      if (afterType.autoChanges < 1) {
+        failures.push(`封装版没有记录状态同步（${afterType.autoChanges}）`)
+      }
+      if (afterOffline.manualOnline !== '离线' || afterOffline.autoOnline !== '离线') {
+        failures.push(
+          `离线事件没有同时更新两边（手写：${afterOffline.manualOnline} / 封装：${afterOffline.autoOnline}）`,
+        )
+      }
+      if (afterOffline.manualUpdates !== 1) {
+        failures.push(`手写版在线状态更新次数不对（${afterOffline.manualUpdates}）`)
+      }
+      if (afterSave.manualSave !== '关' || afterSave.autoSave !== '开') {
+        failures.push(
+          `省流模式没有只更新封装版（手写：${afterSave.manualSave} / 封装：${afterSave.autoSave}）`,
+        )
+      }
+      if (reset.manualType !== '4g' || reset.autoType !== '4g') {
+        failures.push(`重置后制式不是 4G（手写：${reset.manualType} / 封装：${reset.autoType}）`)
+      }
+      if (reset.manualOnline !== '在线' || reset.autoOnline !== '在线') {
+        failures.push(`重置后没有回到在线（手写：${reset.manualOnline} / 封装：${reset.autoOnline}）`)
+      }
+      if (reset.manualSave !== '关' || reset.autoSave !== '关') {
+        failures.push(`重置后省流模式没有关闭（手写：${reset.manualSave} / 封装：${reset.autoSave}）`)
+      }
+      if (reset.manualUpdates !== 0 || reset.autoChanges !== 0) {
+        failures.push(
+          `重置后计数没有归零（手写：${reset.manualUpdates} / 封装：${reset.autoChanges}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '轮询节奏与后台暂停',
     route: '/cases/composables/use-polling',
     facts: async ({ evaluate }) =>

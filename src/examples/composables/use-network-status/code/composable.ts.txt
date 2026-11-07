@@ -1,0 +1,91 @@
+// ============================================================
+// useNetworkStatus：在线状态 + 连接信息
+// 关键点：初始值同步、订阅两类事件、作用域销毁时统一解绑
+// ============================================================
+import { onScopeDispose, reactive, ref } from 'vue'
+
+/** 一次网络快照 */
+export interface NetworkSnapshot {
+  online: boolean
+  effectiveType: string
+  downlink: number
+  rtt: number
+  saveData: boolean
+  supported: boolean
+}
+
+/** 可替换的数据源：真实环境读 navigator，测试 / 演示可注入 */
+export interface NetworkSource {
+  read: () => NetworkSnapshot
+  subscribe: (onChange: () => void) => () => void
+}
+
+/** Network Information API 的最小类型（TS 的 DOM lib 还没收） */
+interface NetworkConnection extends EventTarget {
+  effectiveType?: string
+  downlink?: number
+  rtt?: number
+  saveData?: boolean
+}
+
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkConnection
+}
+
+/** 真实浏览器数据源：navigator + online/offline + connection.change */
+export function browserNetworkSource(): NetworkSource {
+  const nav = navigator as NavigatorWithConnection
+  const connection = nav.connection
+
+  return {
+    read: () => ({
+      online: nav.onLine,
+      effectiveType: connection?.effectiveType ?? 'unknown',
+      downlink: connection?.downlink ?? 0,
+      rtt: connection?.rtt ?? 0,
+      saveData: connection?.saveData ?? false,
+      supported: Boolean(connection),
+    }),
+    subscribe(onChange) {
+      //! online/offline 只说明「有没有网」，连接类型变化要靠 connection.change
+      window.addEventListener('online', onChange)
+      window.addEventListener('offline', onChange)
+      connection?.addEventListener('change', onChange)
+
+      return () => {
+        window.removeEventListener('online', onChange)
+        window.removeEventListener('offline', onChange)
+        connection?.removeEventListener('change', onChange)
+      }
+    },
+  }
+}
+
+/**
+ * 网络状态：初始值同步 + 订阅所有变化 + 作用域销毁时解绑
+ * @param source 数据源，默认浏览器；测试 / 演示可注入
+ */
+export function useNetworkStatus(source: NetworkSource = browserNetworkSource()) {
+  const state = reactive<NetworkSnapshot>(source.read())
+  const changes = ref(0)
+
+  /** 重新读一次并覆盖状态 */
+  function refresh(): void {
+    Object.assign(state, source.read())
+    changes.value++
+  }
+
+  /** 清零计数并同步一次（不额外计一次变化） */
+  function reset(): void {
+    Object.assign(state, source.read())
+    changes.value = 0
+  }
+
+  //! 订阅在 setup 同步注册，避免首帧之后才补上监听
+  const stop = source.subscribe(refresh)
+
+  //! 组件卸载 / effectScope.stop() 都会走到这里
+  onScopeDispose(stop)
+
+  return { state, changes, refresh, reset }
+}
