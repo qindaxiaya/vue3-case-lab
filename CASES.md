@@ -1,7 +1,7 @@
 # 案例清单
 
 > 本文件由 `npm run gen:cases` 根据 `src/examples/registry.ts` 自动生成，请勿手动修改。
-> 共 87 个案例 / 9 个分类。
+> 共 88 个案例 / 9 个分类。
 
 ## CSS 技巧（css）
 
@@ -97,6 +97,7 @@
 | 案例 | 标题 | 难度 | 标签 | 摘要 |
 | --- | --- | --- | --- | --- |
 | [use-async-task](/cases/composables/use-async-task) | useAsyncTask：异步请求的状态机 | 进阶 | `组合式函数` `异步请求` `AbortController` `状态机` | loading、error、取消、重试，一个组合式函数全收好 |
+| [use-autosave](/cases/composables/use-autosave) | useAutosave：自动保存别每次按键都写 | 进阶 | `组合式函数` `自动保存` `防抖` `localStorage` | 每次输入都写会卡；防抖合并 + 离开页面补一次 |
 | [use-event-listener](/cases/composables/use-event-listener) | useEventListener / useRafFn 封装范式 | 进阶 | `组合式函数` `自动清理` `useRafFn` | 把事件监听与逐帧回调封装成函数，挂载时注册、卸载时自动清理，不用每处手写收尾 |
 | [use-keyboard-shortcut](/cases/composables/use-keyboard-shortcut) | useKeyboardShortcuts：把快捷键表交给一个监听器 | 进阶 | `组合式函数` `键盘事件` `快捷键` `事件清理` | 按键一张表注册，输入框里自动让路，修饰键必须完全一致 |
 | [use-media-query](/cases/composables/use-media-query) | useMediaQuery：断点判断交给浏览器 | 进阶 | `组合式函数` `matchMedia` `断点` `自动清理` | 窗口一拖就重算断点；改用媒体查询的 change 事件，只在跨断点时更新 |
