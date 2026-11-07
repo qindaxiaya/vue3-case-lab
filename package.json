@@ -9,6 +9,7 @@
     "audit:cases": "node scripts/audit-cases.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "check:ui": "node scripts/check-ui.mjs",
+    "gen:cases": "node scripts/gen-cases.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "type-check": "vue-tsc -b",

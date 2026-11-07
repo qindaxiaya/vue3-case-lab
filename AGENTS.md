@@ -14,6 +14,7 @@
   - `npx vitest run` — 运行测试
   - `npm run check:ui` — 浏览器端验收（headless Chrome，需先 `npm run build` + `npm run preview`）；页面交互只能用它，不要临时写 Chrome 脚本
   - `npm run check:ui -- --only 抽屉` — 只验一个场景（名字或路由命中，5~10 秒）；改单个案例默认用它，`--base http://localhost:5173` 可直接验 dev
+  - `npm run gen:cases` — 从真实 registry 重新生成根目录 `CASES.md` 案例清单；`-- --check` 只比对不写（文件过期退出码 1）
 - **远程仓库**：https://github.com/qindaxiaya/vue3-case-lab（公开，2026-10-20 为启用 ruleset 由私有转公开），单 `main` 分支；合并必须走 PR + 必需检查
 
 ## 约定
@@ -27,6 +28,7 @@
   - 例外 1（2026-11-04）：**演示区共享控件** `src/components/demo/*.vue` —— 目前只有 `demo-resize-handle.vue`（可拖拽把手，`width` 改宽 / `split` 分栏两种模式），供 `css/fluid-clamp`、`css/grid-auto-fit`、`css/container-query` 三个案例引用。判定标准：**它是测量装置而不是教学内容**，且至少两个案例共用；拖动实现（指针捕获、键盘、ARIA）本身在 `practice/drag-sort` / `slider-captcha` 里讲。其余案例仍须自包含，新抽共享控件要先问
   - 例外 2（2026-10-28 换挡）：**Naive UI** 允许用于演示区控件（按钮 / 单选组 / 输入框 / 下拉 / 提示 message），必须按需引入（unplugin-vue-components + NaiveUiResolver），禁止整包 `app.use(naive-ui)`；主题映射收敛在 `src/composables/useNaiveTheme.ts`（浅/暗 token 镜像），演示区由**详情页 `CasePage` 统一包一层共享组件 `src/components/demo/DemoNaive.vue`**（abstract，不渲染 wrapper）——不要在站点壳（App.vue 等）包 provider，barrel import 会把整个 naive-ui 拉进首屏；Demo 是 provider 的子组件，案例里直接 `const message = useMessage()` 用 Naive 提示（顶部居中、max 3、2.4s），不要自建 toast；演示区一律优先用 Naive 组件（按钮 `n-button`、互斥组 `n-radio-group`）而不是自写样式；站点壳与教学型组件（Toast 教学案例 toast-queue / Teleport / 弹窗 / 可编辑表格 / 自定义指令等）仍自建；Pinia 仍禁止
 - 暗色模式：`.dark` class 策略（`<html class="dark">`，index.html 内联脚本防闪白）+ `localStorage` 键 `moyu-theme` 持久化
+- **`CASES.md` 由脚本生成（2026-11-06）**：根目录案例清单从 `registry.ts` 生成，禁止手改；新增/删除案例后跑 `npm run gen:cases`。`tests/cases-doc.spec.ts` 会校验清单与注册表一致（链接集合 / 标题 / 总数 / 顺序），忘了重新生成 CI 直接红灯
 - 案例目录结构（新增案例零注册成本）：
   ```
   src/examples/<category>/<case-id>/
@@ -295,6 +297,11 @@
   - 让路规则：焦点在输入框且该组合没有 `ctrl/meta/alt` 时直接 `return`（不 `preventDefault`，字符照常输入）；`Esc` 不产生字符、是退出语义，所以照样生效，否则用户会被困在输入框里
   - `check:ui` 新增常驻场景「快捷键在输入框里让路」：用 CDP 真实按键（`rawKeyDown` + `char` + `keyUp`）验证手写版吞掉 `/`、`Alt+Shift+K` 误触发、3 个监听器；封装版 1 个监听器、字符正常输入、修饰键精确、`Alt+K` 命中且 `Esc` 关闭
   - 验收（L2）：`eslint`（案例 + 脚本）、`type-check`、`npx vitest run` 53/53、`npm run lint`、`npm run build`、`check:bundle`（首屏 gzip 108.0 KB）、`audit:cases` 84 案例 0 P0/P1/P2、全量 `check:ui` 44/44（preview）、`--sweep` 84/84、`--case composables/use-keyboard-shortcut`（1280 / 375 无横向溢出、零 console 错误）、截图（浅 / 暗、1280 / 375）
+- ✅ 2026-11-07 新增 `CASES.md` 案例清单 + 一致性门禁（遗留任务 Task 1）：
+  - `scripts/gen-cases.mjs` 用 Vite `ssrLoadModule` 读真实 `registry.ts` / `categories.ts` 生成清单；`configFile: false` 避开组件自动导入插件改写 `src/components.d.ts`；`--check` 只比对不写，过期时打印首个差异行并以 1 退出
+  - `tests/cases-doc.spec.ts` 四条断言：链接集合完全一致（多 / 少 / 重复都报错并列出名字）、每行标题等于 `meta.title`、文首「共 N 个案例 / M 个分类」与真实数量一致、分类与案例顺序等于 `categories` / `registry`
+  - 负向验证：删掉一行后 spec 报「CASES.md 缺少案例：css/fluid-clamp」，`--check` 返回 1 并定位行号
+  - 验收：`npx vitest run` 58/58、`npm run type-check`、`npx eslint`（改动文件 + 脚本）通过
 - dev 地址：当前主工作区 `http://localhost:5173/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`
 
 ## 决策记录
@@ -398,3 +405,4 @@
 | 2026-11-06 | **演示里的脏数据只能喂给原生控件或字符串值，不能喂 `n-input` 数字** | `check:ui` 把 `console.warn` 也算失败，而 Naive `n-input` 的 `value` prop 只接受 `String \| Array`，塞 `123` 会打出 `Invalid prop` 警告，把「旧做法的后果」变成脚本红灯。做法是把坏类型放在 `size`（字符串联合类型，单选组接受任意值）与 `dark`（`"yes"`，开关只认 `=== true`）上，坏类型照样能看出差异，且不触发组件库告警 |
 | 2026-11-06 | **快捷键案例的让路规则：无修饰键才让路，`Esc` 例外** | 「输入框里的按键算打字」这条规则不能一刀切：`Ctrl+K` / `Alt+K` 在输入框里仍然有意义（打开搜索、打开面板），所以只有「没有 `ctrl/meta/alt`」的组合才让路，且让路时必须直接 `return`、不能 `preventDefault`（调了字符就进不去）。`Esc` 不产生字符、是退出语义，在输入框里也该能关浮层，所以列入旁路，否则用户打完字想关面板却毫无反应。演示里这条规则被 CDP 真实按键锁住：手写版输入框打不出 `/`，封装版能打出来且计数为「已忽略」 |
 | 2026-11-06 | **验证「按键能不能打出字符」必须用 CDP 真实按键** | 页面内 `dispatchEvent(new KeyboardEvent('keydown'))` 只会触发监听器，不会走浏览器默认行为，`preventDefault` 有没有生效完全测不出来（输入框照样是空的，看起来像「字符被吞了」）。`check:ui` 的快捷键场景改用 `Input.dispatchKeyEvent` 的 `rawKeyDown` + `char` + `keyUp`，修饰键用位掩码（`Alt` = 1、`Shift` = 8），才能验证「手写版吞掉 `/`、封装版正常输入」这条核心差异 |
+| 2026-11-07 | **`CASES.md` 由脚本从真实 registry 生成，禁止手写** | 清单只存在于运行时（`import.meta.glob`），84 条手写必然过期。生成器用 Vite `ssrLoadModule` 读 `allCases` / `categories`（正则解析多行 `meta.ts` 不可靠），并设 `configFile: false` 避免组件自动导入插件启动时改写 `src/components.d.ts`。一致性交给 `tests/cases-doc.spec.ts`（链接集合 / 标题 / 总数 / 顺序），新增案例忘了重新生成时 CI 直接红灯；`--check` 给本地与将来的脚本复用，打印首个差异行 |
