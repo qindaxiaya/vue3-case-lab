@@ -1,6 +1,6 @@
 # 遗留任务计划（2026-11-06）
 
-> **状态：** 待执行。本文件是「盘点后剩下的活」，按 Task 1 → Task 6 顺序做，每个 Task 单独分支 + PR。
+> **状态：** 已完成（2026-11-07，`v0.2` 已发布）。本文件保留为历史记录。
 > **盘点基线：** `main` = `c878318`，84 案例 / 9 分类，`npx vitest run` 53 项、`check:ui` 44 个场景 + `--sweep` 84/84 全绿，`audit:cases` 0 P0/P1/P2。
 > **盘点范围：** `AGENTS.md` 进度与决策、`docs/`（计划 / 设计 / DoD / 技能手册）、原始 spec（`E:\MyProject\myProject\vue3-case-library-spec.md`）、GitHub issue / PR、远端分支、worktree、工作区、`TODO|FIXME` 扫描。
 > **结论：** 没有 open issue / open PR，远端已合并分支已 prune，实施计划 59 项全部勾选，工作区干净。剩下的是「原始 spec 规划过、但从未做也从未记录放弃」的 4 项，加上 2 项需要拍板的收尾。
@@ -257,4 +257,4 @@ npm run audit:cases                    # 84 案例 0 P0/P1/P2
 npm run check:ui -- --base http://localhost:5173 --only 列表   # 冒烟
 ```
 
-先做 Task 1（成本最低、收益最直接），做完停下等确认。
+本计划已全部完成（Task 1~6），后续新增任务请另开计划文件。
