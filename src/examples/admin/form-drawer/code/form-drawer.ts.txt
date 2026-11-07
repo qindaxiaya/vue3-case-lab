@@ -1,0 +1,61 @@
+const open = ref(false)
+const editingId = ref<number | null>(null)
+const form = reactive({ name: '', owner: '', status: 'enabled' as Status })
+//! 打开时复制一份原值，用来判断「有没有改过」
+const original = ref({ name: '', owner: '', status: 'enabled' as Status })
+
+const dirty = computed(
+  () =>
+    form.name !== original.value.name ||
+    form.owner !== original.value.owner ||
+    form.status !== original.value.status,
+)
+
+/** 新增和编辑共用一个抽屉，只改初始值和提交目标 */
+function openEdit(user: User): void {
+  editingId.value = user.id
+  form.name = user.name
+  form.owner = user.owner
+  form.status = user.status
+  original.value = { name: user.name, owner: user.owner, status: user.status }
+  open.value = true
+}
+
+//! 有未保存修改时先显示保护条，不要直接关
+function requestClose(): void {
+  if (submitting.value) return
+  if (dirty.value) {
+    showDiscard.value = true
+    return
+  }
+  closeDrawer()
+}
+
+//! 保存失败不关抽屉：保留表单和错误，让用户原地点重试
+async function submit(): Promise<void> {
+  if (submitting.value) return
+  if (!validate()) return
+
+  submitting.value = true
+  submitError.value = ''
+  await wait(500)
+
+  if (failNext.value) {
+    failCount.value++
+    submitError.value = '保存失败：网络超时'
+    submitting.value = false
+    return
+  }
+
+  if (editingId.value === null) {
+    users.value.push({ id: nextId(), name: form.name.trim(), owner: form.owner, status: form.status })
+  } else {
+    users.value = users.value.map((user) =>
+      user.id === editingId.value
+        ? { ...user, name: form.name.trim(), owner: form.owner, status: form.status }
+        : user,
+    )
+  }
+  saveCount.value++
+  closeDrawer()
+}

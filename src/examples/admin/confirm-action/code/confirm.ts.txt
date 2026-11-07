@@ -1,0 +1,61 @@
+/** 确认框配置：task 是点确认后真正执行的动作 */
+interface ConfirmOptions {
+  title: string
+  content: string
+  okText: string
+  danger?: boolean
+  task: () => Promise<void>
+}
+
+const open = ref(false)
+const options = ref<ConfirmOptions | null>(null)
+const loading = ref(false)
+const error = ref('')
+let resolver: ((ok: boolean) => void) | null = null
+
+//! 打开时返回 Promise，调用方 await 后拿结果
+function confirm(next: ConfirmOptions): Promise<boolean> {
+  if (open.value) return Promise.resolve(false)
+
+  options.value = next
+  error.value = ''
+  loading.value = false
+  open.value = true
+
+  return new Promise<boolean>((resolve) => {
+    resolver = resolve
+  })
+}
+
+/** 关闭并结算 Promise；只结算一次 */
+function close(result: boolean): void {
+  open.value = false
+  loading.value = false
+  error.value = ''
+  options.value = null
+
+  const resolve = resolver
+  resolver = null
+  resolve?.(result)
+}
+
+//! 确认后先 loading；成功才关，失败留在框里显示原因
+async function handleOk(): Promise<void> {
+  if (!options.value || loading.value) return
+  loading.value = true
+  error.value = ''
+
+  try {
+    await options.value.task()
+    close(true)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '操作失败'
+    loading.value = false
+  }
+}
+
+//! 取消 / 遮罩 / Esc 都走同一个出口
+function handleCancel(): void {
+  if (loading.value) return
+  close(false)
+}

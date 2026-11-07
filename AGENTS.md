@@ -75,7 +75,7 @@
 
 ## 当前进度
 
-- **阶段**：共 88 案例 / 9 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 93 案例 / 10 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26 · admin 5）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务，已完成，保留为历史记录）
 - 遗留任务计划：`docs/superpowers/plans/2026-11-06-remaining-tasks.md`（Task 1~6 已完成，`v0.2` 已发布；保留为历史记录）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
@@ -342,7 +342,15 @@
   - `composables/use-autosave`：自动保存，对比每次输入直接写与防抖合并；连续输入 8 个字符左边写 8 次、右边保存 1 次，`pagehide` 补存、失败可重试；场景「自动保存防抖与离开补存」
   - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 由 `npm run gen:cases` 更新到 88
   - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 110.5 KB）、`audit:cases` 88 案例 0 P0/P1/P2、全量 `check:ui` 50/50、`--sweep` 88/88
-- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/performance/pull-refresh`
+- ✅ 2026-11-08 新增 `admin`（后台组件）分类 5 个案例（共 93 案例 / 10 分类）：按「不复杂、只解决一个后台交互」选型，全部自包含、不引新依赖
+  - `admin/query-bar`：查询条件栏，表单值和已生效条件分开，收起 / 重置 / 条件标签 ×、查询中防重复提交；场景「查询栏条件回显与防重复提交」
+  - `admin/batch-actions`：表格批量操作，全选 / 半选 / 单行勾选、执行锁、成功后清空选择；场景「表格批量操作三态与执行锁」
+  - `admin/confirm-action`：Promise 式确认框，取消 / 成功 / 失败三种出口都结算 Promise，失败留在框里可重试；场景「确认框异步失败不关闭」
+  - `admin/form-drawer`：新增 / 编辑共用抽屉，校验、提交 loading、未保存修改保护、保存失败不关闭；场景「表单抽屉校验与脏数据保护」
+  - `admin/pagination`：分页边界，每页条数变化回第 1 页、删到空页自动回退、重置数据；场景「分页边界与每页条数切换」
+  - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 更新到 93
+  - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 113.4 KB）、`audit:cases` 93 案例 0 P0/P1/P2、全量 `check:ui` 55/55、`--sweep` 93/93
+- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/admin/query-bar`、`/cases/admin/batch-actions`、`/cases/admin/confirm-action`、`/cases/admin/form-drawer`、`/cases/admin/pagination`、`/cases/performance/pull-refresh`
 
 ## 决策记录
 
@@ -451,3 +459,4 @@
 | 2026-11-07 | **截图留档选方案 B，并修掉 `--shot --dark` 的 Naive 主题不切换** | 全量归档 84 案例会让仓库膨胀 8~15 MB，而截图只对新增案例的 review 有价值，所以只给新案例 / 明显视觉改动留浅 + 暗两张 375px。实现加 `--width 375`，避免默认同时出 1280；`--out` 相对路径按 cwd 解析。暗色截图原先是直接给 `<html>` 加 `.dark`，而 `useTheme` 的 `isDark` 与 Naive 主题都是模块级响应式状态，class 变了它们不变，截图里输入框仍是白的；改为先写 `localStorage` 再 `Page.navigate` 刷新，让 `useTheme` 初始化时读到目标主题。截图仍不参与断言，跑完退出码 0 |
 | 2026-11-07 | **遗留任务 1~5 合并为单个 PR，`v0.2` 指向合并后的 main** | 任务 1~4 本来就是依次堆叠的分支（Task 2 基于 Task 1、Task 3 基于 Task 2、Task 4 基于 Task 3），再拆 5 个 PR 需要逐个改 base 并反复解决 AGENTS / 计划文档冲突；用户明确「一口气干完」，所以用 `chore/remaining-tasks` 一次 PR 收口 5 个提交，rebase 合并保留每个任务独立 commit。tag 在 PR 合并后打，确保 Release 指向真正的 main 提交；当时 `github.com:443` 连接超时，tag 改用 Git Data API 创建（annotated tag 对象 `05a4a1d` → `229c662`），效果与 `git push origin v0.2` 一致 |
 | 2026-11-07 | **composables 扩到 8 个案例：每个案例只讲一个「生命周期问题」** | 已有 `use-event-listener`（清理）、`use-media-query`（初始值 + 断点）、`use-storage`（脏数据）、`use-keyboard-shortcut`（让路）后，继续加案例必须避开这些维度。新增四个各覆盖一类问题：`use-async-task` 管请求状态与旧响应、`use-polling` 管定时器链与后台暂停、`use-network-status` 管事件订阅范围与清理、`use-autosave` 管防抖 / 串行 / 离开页面兜底。每个案例都用「手写 vs 封装」同屏对照，计数来自真实事件或 `data-stat`，不写毫秒估算；网络与自动保存把数据源 / 保存函数做成可注入，测试和演示才能稳定复现。`check:ui` 同步新增 4 个常驻场景，`--sweep` 覆盖 88 个案例 |
+| 2026-11-08 | **新增 `admin` 分类：后台组件只做「小而完整」的单点交互** | 用户要「好用但不复杂」的后台组件，所以没有做组件库，也没有把表格、表单、权限一次性铺全；先选 5 个高频单点：查询栏、批量操作、Promise 确认框、表单抽屉、分页。每个案例只解决一个交互，并保留一个真实边界：查询中防重复提交、半选三态、失败不关框、脏数据保护、删到空页自动回退。演示仍用 Naive 控件，数据与计数来自页面自身；`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 93 个案例 |
