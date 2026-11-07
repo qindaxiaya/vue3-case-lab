@@ -70,6 +70,7 @@ export const ALLOW_IDENTIFIERS: Record<string, string> = {
   'container-query': '其他案例 id',
   'drag-sort': '其他案例 id',
   'slider-captcha': '其他案例 id',
+  'sse-chat': '其他案例 id',
   'paths-ignore': 'GitHub Actions 配置键',
   keepalive: 'fetch 选项名',
 

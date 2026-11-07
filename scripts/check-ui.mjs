@@ -3205,6 +3205,114 @@ const SCENARIOS = [
     },
   },
   {
+    name: '轮询节奏与后台暂停',
+    route: '/cases/composables/use-polling',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.up-demo')
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim().includes(text))
+        const toggle = (text) =>
+          [...root.querySelectorAll('.toggle')]
+            .find((el) => el.textContent.includes(text))
+            ?.querySelector('[role="switch"]')
+        const stat = (name) =>
+          Number(root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? -1)
+
+        toggle('慢接口').click()
+        await wait(100)
+        button('开始轮询').click()
+        await wait(2700)
+        const running = {
+          manualCount: stat('manual-count'),
+          manualActive: stat('manual-active'),
+          manualOverlaps: stat('manual-overlaps'),
+          autoCount: stat('auto-count'),
+          autoActive: stat('auto-active'),
+          autoErrors: stat('auto-errors'),
+        }
+
+        toggle('模拟切到后台').click()
+        await wait(200)
+        const manualAtHide = stat('manual-count')
+        const autoAtHide = stat('auto-count')
+        await wait(1800)
+        const hidden = {
+          manualCount: stat('manual-count'),
+          manualHidden: stat('manual-hidden'),
+          autoCount: stat('auto-count'),
+          autoHidden: stat('auto-hidden'),
+        }
+
+        button('停止').click()
+        const manualAtStop = stat('manual-count')
+        const autoAtStop = stat('auto-count')
+        await wait(1000)
+        const stopped = {
+          manualCount: stat('manual-count'),
+          autoCount: stat('auto-count'),
+        }
+
+        button('重置').click()
+        await wait(150)
+        return {
+          running,
+          manualAtHide,
+          autoAtHide,
+          hidden,
+          manualAtStop,
+          autoAtStop,
+          stopped,
+          reset: {
+            manualCount: stat('manual-count'),
+            manualOverlaps: stat('manual-overlaps'),
+            autoCount: stat('auto-count'),
+            autoHidden: stat('auto-hidden'),
+          },
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.running.manualOverlaps < 1) {
+        failures.push(`手写版没有叠出并发（${result.running.manualOverlaps}）`)
+      }
+      if (result.running.manualActive < 2) {
+        failures.push(`手写版并发数没有超过 1（${result.running.manualActive}）`)
+      }
+      if (result.running.autoErrors !== 0) {
+        failures.push(`封装版把取消算成了错误（${result.running.autoErrors}）`)
+      }
+      if (result.running.autoActive > 1) {
+        failures.push(`封装版出现了并发（${result.running.autoActive}）`)
+      }
+      if (result.hidden.manualCount <= result.manualAtHide) {
+        failures.push('切到后台后手写版没有继续轮询')
+      }
+      if (result.hidden.manualHidden < 1) {
+        failures.push(`手写版后台轮询计数没有增加（${result.hidden.manualHidden}）`)
+      }
+      if (result.hidden.autoCount !== result.autoAtHide) {
+        failures.push(`切到后台后封装版仍在轮询（${result.autoAtHide} → ${result.hidden.autoCount}）`)
+      }
+      if (result.hidden.autoHidden !== 0) {
+        failures.push(`封装版后台轮询计数不是 0（${result.hidden.autoHidden}）`)
+      }
+      if (result.stopped.manualCount !== result.manualAtStop) {
+        failures.push(`停止后手写版仍在计数（${result.manualAtStop} → ${result.stopped.manualCount}）`)
+      }
+      if (result.stopped.autoCount !== result.autoAtStop) {
+        failures.push(`停止后封装版仍在计数（${result.autoAtStop} → ${result.stopped.autoCount}）`)
+      }
+      if (result.reset.manualCount !== 0 || result.reset.autoCount !== 0) {
+        failures.push(
+          `重置后计数没有归零（手写：${result.reset.manualCount} / 封装：${result.reset.autoCount}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '异步请求状态机',
     route: '/cases/composables/use-async-task',
     facts: async ({ evaluate }) =>

@@ -1,7 +1,7 @@
 # 案例清单
 
 > 本文件由 `npm run gen:cases` 根据 `src/examples/registry.ts` 自动生成，请勿手动修改。
-> 共 85 个案例 / 9 个分类。
+> 共 86 个案例 / 9 个分类。
 
 ## CSS 技巧（css）
 
@@ -100,6 +100,7 @@
 | [use-event-listener](/cases/composables/use-event-listener) | useEventListener / useRafFn 封装范式 | 进阶 | `组合式函数` `自动清理` `useRafFn` | 把事件监听与逐帧回调封装成函数，挂载时注册、卸载时自动清理，不用每处手写收尾 |
 | [use-keyboard-shortcut](/cases/composables/use-keyboard-shortcut) | useKeyboardShortcuts：把快捷键表交给一个监听器 | 进阶 | `组合式函数` `键盘事件` `快捷键` `事件清理` | 按键一张表注册，输入框里自动让路，修饰键必须完全一致 |
 | [use-media-query](/cases/composables/use-media-query) | useMediaQuery：断点判断交给浏览器 | 进阶 | `组合式函数` `matchMedia` `断点` `自动清理` | 窗口一拖就重算断点；改用媒体查询的 change 事件，只在跨断点时更新 |
+| [use-polling](/cases/composables/use-polling) | usePolling：轮询要等上一次跑完 | 进阶 | `组合式函数` `轮询` `定时器` `页面可见性` | setInterval 会叠并发；改成跑完再排下一次，后台自动暂停 |
 | [use-storage](/cases/composables/use-storage) | useStorage：让 localStorage 变成响应式状态 | 进阶 | `组合式函数` `localStorage` `持久化` `数据校验` | 改状态就自动存；读时校验字段，脏数据回退默认值并修好存储 |
 
 ## 工程实践（practice）
