@@ -17,7 +17,9 @@
  *   npm run check:ui                          # 默认验 preview（需要先 build + preview）
  *   npm run check:ui -- --only 抽屉           # 只验名字/路由命中的场景（改单个案例用这个，5~10 秒）
  *   npm run check:ui -- --case practice/vitest-gate   # 单案例通用巡检（任意案例都能验）
- *   npm run check:ui -- --sweep               # 全案例巡检：81 条路由 × 375px
+ *   npm run check:ui -- --sweep               # 全案例巡检：84 条路由 × 375px
+ *   npm run check:ui -- --shot composables/use-keyboard-shortcut --out docs/screenshots/composables/use-keyboard-shortcut --width 375
+ *                                             # 只截演示区并写到指定目录（留档用，不断言）
  *   node scripts/check-ui.mjs --base http://localhost:5173   # 验 dev 服务器
  *
  * 退出码：全部通过 0，有失败 1（可直接进 CI 或本地门禁）
@@ -94,6 +96,23 @@ function readShots() {
 /** 是否拍暗色（--dark）：一次性把浅/暗两套都截出来，省得手动切主题 */
 function readDark() {
   return process.argv.includes('--dark')
+}
+
+/** 截图输出目录（--out，相对路径按当前工作目录解析）：默认仍是临时目录 */
+function readOutDir() {
+  const index = process.argv.indexOf('--out')
+  if (index > -1 && process.argv[index + 1] && !process.argv[index + 1].startsWith('--')) {
+    return path.resolve(process.argv[index + 1])
+  }
+  return SHOT_DIR
+}
+
+/** 截图宽度（--width 375 / 1280 / both）：留档通常只要 375，避免多存一张 1280 */
+function readWidths() {
+  const index = process.argv.indexOf('--width')
+  const raw = index > -1 ? process.argv[index + 1] : ''
+  if (raw === '375' || raw === '1280') return [Number(raw)]
+  return [1280, 375]
 }
 
 /** 案例目录根：用来把「只给案例 id」补全成「分类/案例」 */
@@ -3460,23 +3479,32 @@ async function checkAnimationCases(port) {
  * 给一个案例的演示区拍截图（1280 / 375 各一张，可选暗色）
  * 只截 .demo-card，避免每次都被顶栏和说明区占掉大半个图
  */
-async function shootCase(port, casePath, dark) {
+async function shootCase(port, casePath, dark, outDir, widths) {
   const route = `/cases/${casePath}`
   const target = await openPage(port, BASE + route)
   const page = await connectPage(target)
   const files = []
 
   try {
-    // 暗色：站点从 localStorage 读 moyu-theme，这里直接写进去并补 .dark 类，不用刷新
-    if (dark) {
-      await page.evaluate(`(() => {
-        localStorage.setItem('moyu-theme', 'dark')
-        document.documentElement.classList.add('dark')
-        return true
-      })()`)
+    // 等初始导航落地（about:blank 上访问 localStorage 会抛 SecurityError）
+    for (let i = 0; i < 50; i++) {
+      const origin = await page.evaluate('location.origin').catch(() => '')
+      if (origin && origin !== 'null') break
+      await sleep(100)
     }
 
-    for (const width of [1280, 375]) {
+    // 主题：先写 localStorage 再刷新，让 useTheme 初始化时读到目标主题。
+    // 只加 .dark 类不够——Naive UI 用的是 JS 主题对象，不会跟着 class 变。
+    await page.evaluate(
+      `(() => {
+        localStorage.setItem('moyu-theme', ${dark ? "'dark'" : "'light'"})
+        return true
+      })()`,
+    )
+    await page.send('Page.navigate', { url: BASE + route })
+    await sleep(500)
+
+    for (const width of widths) {
       await page.send('Emulation.setDeviceMetricsOverride', {
         width,
         height: 900,
@@ -3506,7 +3534,7 @@ async function shootCase(port, casePath, dark) {
         clip: { ...box, scale: 1 },
       })
       const file = path.join(
-        SHOT_DIR,
+        outDir,
         `${casePath.replace(/\//g, '-')}-${width}${dark ? '-dark' : ''}.png`,
       )
       writeFileSync(file, Buffer.from(shot.data, 'base64'))
@@ -3539,9 +3567,11 @@ try {
   const results = []
   if (SHOTS.length > 0) {
     // 截图模式：只出图不断言，路径打印出来方便直接打开
-    mkdirSync(SHOT_DIR, { recursive: true })
+    const outDir = readOutDir()
+    const widths = readWidths()
+    mkdirSync(outDir, { recursive: true })
     for (const casePath of SHOTS) {
-      const files = await shootCase(chrome.port, resolveCasePath(casePath), DARK)
+      const files = await shootCase(chrome.port, resolveCasePath(casePath), DARK, outDir, widths)
       for (const file of files) results.push({ name: `截图 ${path.basename(file)}`, route: casePath, result: { file }, failures: [] })
     }
   } else if (CASE) {
@@ -3584,7 +3614,7 @@ try {
   if (SHOTS.length > 0) {
     // 截图不是断言，不统计通过率
     for (const item of results) console.log(`✓ ${item.name}`)
-    console.log(`\n[check:ui] 截图完成：${results.length} 张 → ${SHOT_DIR}`)
+    console.log(`\n[check:ui] 截图完成：${results.length} 张 → ${readOutDir()}`)
   } else if (SWEEP) {
     // 81 条路由逐条打印会刷屏，只列失败项，通过数看汇总
     for (const item of failed) {

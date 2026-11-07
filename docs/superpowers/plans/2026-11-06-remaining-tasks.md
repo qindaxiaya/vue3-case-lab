@@ -181,7 +181,7 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 
 ---
 
-### Task 5：375px 截图留档（需先确认存储方式）
+### Task 5：375px 截图留档（已选方案 B：只给新案例留档）
 
 **现状证据**
 
@@ -196,15 +196,17 @@ Task 4 会动框架（`CasePage` / `CodeWorkbench`）与代码片段标记约定
 | B. 只给新案例留档 | 每案例 2 张（浅/暗）≈ 200 KB | 建 `docs/screenshots/<分类>/<案例>/`，提交时附上，跑 `--shot --out` 指定目录 |
 | C. 全量归档 | 84 × 2~4 张，压缩后 ≈ 8~15 MB | 体积明显膨胀，仓库不再轻量 |
 
-**步骤（若选 B）**
+**步骤（方案 B，已执行）**
 
-- [ ] `check:ui --shot` 增加 `--out <dir>`（默认仍是 `node_modules/.tmp/shots`）
-- [ ] 新案例 PR 模板 / AGENTS 约定：新增案例提交 2 张（浅色 375 + 暗色 375）
-- [ ] 在 `AGENTS.md` 写清「截图库不入 CI，只在新增案例时附」
+- [x] `check:ui --shot` 增加 `--out <dir>`（默认仍是 `node_modules/.tmp/shots`）与 `--width 375`（只出窄屏，避免多存 1280）
+- [x] 修 `--shot --dark`：先写 `moyu-theme` 再刷新页面，让 Naive UI 的 JS 主题跟着切换（只加 `.dark` 类时 Naive 仍是浅色）
+- [x] 新案例 PR 模板 / AGENTS 约定：新增案例提交 2 张（浅色 375 + 暗色 375）
+- [x] 在 `AGENTS.md` 与 `docs/screenshots/README.md` 写清「截图库不入 CI，只在新增案例时附」
+- [x] 实跑留档示例：`composables/use-keyboard-shortcut` 浅 / 暗两张 375px 图
 
-**验收（L1）：** `--out` 生效、路径创建、文件名可读；`check:ui` 其余场景不受影响。
+**验收（L1）：** `--out` / `--width` 生效、路径创建、文件名可读；暗色图里 Naive 控件也是深色；`check:ui` 其余场景不受影响。
 
-**涉及文件：** `scripts/check-ui.mjs`、`AGENTS.md`、`docs/screenshots/`（新增，若选 B）
+**涉及文件：** `scripts/check-ui.mjs`、`AGENTS.md`、`docs/screenshots/README.md`、`docs/screenshots/composables/use-keyboard-shortcut/`
 
 ---
 
