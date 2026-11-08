@@ -74,7 +74,7 @@ function selectFiltered(): void {
 测量说明：
 
 - 环境：本机 Chrome，案例页 `/cases/admin/cross-page-selection`。
-- 取样：`npm run check:ui -- --base http://localhost:5174 --only 跨页选择` 的常驻场景。
+- 取样：npm run check:ui -- --base http://localhost:5174 --only 跨页选择 的常驻场景。
 - 数据是页面内固定演示数据，不是接口返回量。
 
 ## 5. 追问与边界（面试高频）
