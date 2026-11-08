@@ -1,0 +1,65 @@
+const PAGE_SIZE = 5
+
+const status = ref<FilterStatus>('all')
+const page = ref(1)
+//! 用 Set 存跨页选择：翻页、筛选只改可见行，不清空它
+const selectedIds = ref<Set<number>>(new Set())
+
+const filteredRows = computed(() =>
+  status.value === 'all' ? rows : rows.filter((row) => row.status === status.value),
+)
+
+const pageRows = computed(() => {
+  const start = (page.value - 1) * PAGE_SIZE
+  return filteredRows.value.slice(start, start + PAGE_SIZE)
+})
+
+//! 本页全选只由本页行派生，跨页已选不影响它
+const pageAllSelected = computed(
+  () => pageRows.value.length > 0 && pageRows.value.every((row) => selectedIds.value.has(row.id)),
+)
+
+//! 半选 = 本页选了但没选满，和全选不是互斥的两个布尔值
+const pageIndeterminate = computed(
+  () =>
+    !pageAllSelected.value && pageRows.value.some((row) => selectedIds.value.has(row.id)),
+)
+
+/** 单行勾选：复制一份 Set 再改，保证视图拿到新引用 */
+function toggleRow(id: number): void {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+/** 本页全选 / 取消本页：只并入或移除当前页的 id */
+function togglePage(): void {
+  const next = new Set(selectedIds.value)
+  if (pageAllSelected.value) {
+    pageRows.value.forEach((row) => next.delete(row.id))
+  } else {
+    pageRows.value.forEach((row) => next.add(row.id))
+  }
+  selectedIds.value = next
+}
+
+//! 选择全部筛选结果：范围是筛选后的全部行，不是当前页
+function selectFiltered(): void {
+  const next = new Set(selectedIds.value)
+  filteredRows.value.forEach((row) => next.add(row.id))
+  selectedIds.value = next
+}
+
+/** 切筛选回到第 1 页，但保留已选集合 */
+function setStatus(value: string | number | boolean | undefined): void {
+  if (value !== 'all' && value !== 'pending' && value !== 'done') return
+  status.value = value
+  page.value = 1
+}
+
+function reset(): void {
+  selectedIds.value = new Set()
+  status.value = 'all'
+  page.value = 1
+}
