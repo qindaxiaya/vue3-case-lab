@@ -4847,6 +4847,130 @@ const SCENARIOS = [
     },
   },
   {
+    name: '表单联动显隐与清空',
+    route: '/cases/admin/form-dependency',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.fd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (group, text) =>
+          [...root.querySelectorAll(group + ' .n-radio-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const setInput = (field, value) => {
+          const input = root.querySelector('[data-field="' + field + '"] input')
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          company: num('visible-company'),
+          address: num('visible-address'),
+          pickup: num('visible-pickup'),
+          errors: num('error-count'),
+          cleared: num('cleared-count'),
+          status: stat('status-text'),
+        })
+
+        const initial = read()
+        radio('.fd-invoice', '企业').click()
+        await wait(120)
+        const companyVisible = read()
+        setInput('companyName', '杭州某某科技有限公司')
+        setInput('taxNo', '91330100MA2B12345X')
+        await wait(80)
+        radio('.fd-invoice', '个人').click()
+        await wait(120)
+        const personalAgain = read()
+
+        radio('.fd-delivery', '自提').click()
+        await wait(120)
+        const pickup = read()
+
+        setInput('buyer', '')
+        await wait(80)
+        button('提交').click()
+        await wait(100)
+        const buyerError = read()
+
+        setInput('buyer', '王小明')
+        await wait(80)
+        button('提交').click()
+        await wait(100)
+        const success = read()
+
+        button('重置').click()
+        await wait(120)
+        const reset = read()
+
+        return {
+          initial,
+          companyVisible,
+          personalAgain,
+          pickup,
+          buyerError,
+          success,
+          reset,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.company !== 0 ||
+        result.initial.address !== 1 ||
+        result.initial.pickup !== 0 ||
+        result.initial.cleared !== 0
+      ) {
+        failures.push(
+          `初始状态不对（企业 ${result.initial.company} / 地址 ${result.initial.address} / 自提 ${result.initial.pickup} / 清空 ${result.initial.cleared}）`,
+        )
+      }
+      if (result.companyVisible.company !== 2) {
+        failures.push(`切企业后企业字段 ${result.companyVisible.company}，应为 2`)
+      }
+      if (result.personalAgain.company !== 0 || result.personalAgain.cleared !== 2) {
+        failures.push(
+          `切回个人后不对（企业 ${result.personalAgain.company} / 清空 ${result.personalAgain.cleared}）`,
+        )
+      }
+      if (
+        result.pickup.address !== 0 ||
+        result.pickup.pickup !== 1 ||
+        result.pickup.cleared !== 3
+      ) {
+        failures.push(
+          `切自提后不对（地址 ${result.pickup.address} / 自提 ${result.pickup.pickup} / 清空 ${result.pickup.cleared}）`,
+        )
+      }
+      if (result.buyerError.errors !== 1 || !result.buyerError.status.includes('必填')) {
+        failures.push(
+          `购买人为空提交不对（错误 ${result.buyerError.errors} / 状态 ${result.buyerError.status}）`,
+        )
+      }
+      if (result.success.errors !== 0 || result.success.status !== '提交成功') {
+        failures.push(
+          `补全购买人后提交不对（错误 ${result.success.errors} / 状态 ${result.success.status}）`,
+        )
+      }
+      if (
+        result.reset.company !== 0 ||
+        result.reset.address !== 1 ||
+        result.reset.pickup !== 0 ||
+        result.reset.cleared !== 0 ||
+        result.reset.status !== '待填写'
+      ) {
+        failures.push(
+          `重置后不对（企业 ${result.reset.company} / 地址 ${result.reset.address} / 自提 ${result.reset.pickup} / 清空 ${result.reset.cleared} / 状态 ${result.reset.status}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '穿梭框移动与禁用项',
     route: '/cases/admin/transfer-list',
     facts: async ({ evaluate }) =>
