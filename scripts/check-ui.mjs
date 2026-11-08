@@ -4847,6 +4847,127 @@ const SCENARIOS = [
     },
   },
   {
+    name: '动态表单增删行与校验',
+    route: '/cases/admin/dynamic-form',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.df-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const rows = () => [...root.querySelectorAll('[data-row]')]
+        const setInput = (row, field, value) => {
+          const input = row.querySelector('[data-field="' + field + '"] input')
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          rows: num('row-count'),
+          valid: num('valid-count'),
+          errors: num('error-count'),
+          submits: num('submit-count'),
+          status: stat('status-text'),
+        })
+
+        const initial = read()
+        button('添加一行').click()
+        await wait(120)
+        const added = read()
+        const newRow = rows().at(-1)
+        setInput(newRow, 'name', '订书机')
+        setInput(newRow, 'qty', '3')
+        setInput(newRow, 'price', '18.5')
+        await wait(120)
+        const filled = read()
+
+        rows()[1].querySelector('[data-action="delete"]').click()
+        await wait(120)
+        const deleted = read()
+        const ids = rows().map((row) => row.getAttribute('data-row'))
+        const uniqueIds = new Set(ids).size === ids.length
+
+        const first = rows()[0]
+        setInput(first, 'name', '')
+        await wait(80)
+        button('提交').click()
+        await wait(120)
+        const failed = read()
+        const failedRows = rows().length
+
+        setInput(first, 'name', 'A4 纸')
+        await wait(80)
+        button('提交').click()
+        await wait(120)
+        const submitted = read()
+
+        button('重置').click()
+        await wait(120)
+        const reset = read()
+
+        return {
+          initial,
+          added,
+          filled,
+          deleted,
+          ids,
+          uniqueIds,
+          failed,
+          failedRows,
+          submitted,
+          reset,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.rows !== 2 || result.initial.valid !== 2 || result.initial.errors !== 0) {
+        failures.push(
+          `初始状态不对（${result.initial.rows} 行 / 合法 ${result.initial.valid} / 错误 ${result.initial.errors}）`,
+        )
+      }
+      if (result.added.rows !== 3 || result.added.valid !== 2) {
+        failures.push(`添加一行后不对（${result.added.rows} 行 / 合法 ${result.added.valid}）`)
+      }
+      if (result.filled.valid !== 3) {
+        failures.push(`填完新行后合法 ${result.filled.valid}，应为 3`)
+      }
+      if (result.deleted.rows !== 2 || result.deleted.valid !== 2) {
+        failures.push(
+          `删除中间行后不对（${result.deleted.rows} 行 / 合法 ${result.deleted.valid}）`,
+        )
+      }
+      if (!result.uniqueIds) {
+        failures.push(`删除后行 id 重复：${result.ids.join(',')}`)
+      }
+      if (
+        result.failed.errors !== 1 ||
+        result.failed.submits !== 0 ||
+        result.failedRows !== 2
+      ) {
+        failures.push(
+          `清空名称提交后不对（错误 ${result.failed.errors} / 提交 ${result.failed.submits} / 行 ${result.failedRows}）`,
+        )
+      }
+      if (result.submitted.errors !== 0 || result.submitted.submits !== 1) {
+        failures.push(
+          `补回名称提交后不对（错误 ${result.submitted.errors} / 提交 ${result.submitted.submits}）`,
+        )
+      }
+      if (
+        result.reset.rows !== 2 ||
+        result.reset.submits !== 0 ||
+        result.reset.status !== '待填写'
+      ) {
+        failures.push(
+          `重置后不对（${result.reset.rows} 行 / 提交 ${result.reset.submits} / 状态 ${result.reset.status}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '表单联动显隐与清空',
     route: '/cases/admin/form-dependency',
     facts: async ({ evaluate }) =>
