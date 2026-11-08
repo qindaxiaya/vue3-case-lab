@@ -1,6 +1,6 @@
 # admin 第四批 5 个后台组件案例 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 在 `admin` 分类新增 5 个自包含后台案例：保存视图、审批流、穿梭框、表单联动、动态表单，并完成 DoD、截图、文档与 PR。
 
@@ -49,7 +49,7 @@
 - `data-stat`：`view-count`、`result-count`、`visible-columns`、`dirty`、`current-view`、`status-text`
 - 选择器：`.sv-demo`、`[data-view]`、`[data-field="keyword"] input`、`.sv-status`、`.sv-sort`
 
-- [ ] **Step 1: 写 `check:ui` 失败场景**
+- [x] **Step 1: 写 `check:ui` 失败场景**
 
 场景 `保存视图与默认视图恢复`，路由 `/cases/admin/saved-views`。断言：
 - 初始：视图 3 个、结果 6 条、可见列 4 个、脏标记 0、当前视图「全部订单」。
@@ -60,22 +60,22 @@
 - 点默认视图「高金额」：结果 2 条、可见列 3 个；默认视图的删除按钮不可用。
 - 点「恢复默认」：当前视图「全部订单」、结果 6 条、脏标记 0。
 
-- [ ] **Step 2: 运行场景确认失败**
+- [x] **Step 2: 运行场景确认失败**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 保存视图`
 Expected: 路由不存在 / 演示区找不到 `.sv-demo`。
 
-- [ ] **Step 3: 实现 Demo**
+- [x] **Step 3: 实现 Demo**
 
 三个默认视图：全部订单、待处理、高金额。顶部是关键词、状态、排序、列显隐控件；中间是订单结果表；右侧是视图列表，每项显示名称与默认标记，点击切换。保存为新视图用 `n-input` 弹层或内联输入，更新当前视图覆盖当前视图的 `query`，删除非默认视图后回到默认视图，恢复默认回到「全部订单」。用 `JSON.stringify` 比较当前状态与视图快照计算 `dirty`。订单状态用 `n-radio-group`，排序用 `n-radio-group` 或 `n-select`，列显隐用 `n-checkbox`。
 
-- [ ] **Step 4: 补齐 meta / notes / code**
+- [x] **Step 4: 补齐 meta / notes / code**
 
 标题「SavedViews：筛选条件别每次重新点」；sell「筛选、排序、列显隐存成视图，一键切回」；summary「视图保存查询、排序与列显隐，默认视图不可删」。
 notes 第 3 段标 3 处：视图快照、脏标记比较、默认视图保护。第 4 段用场景实测 3/6/4、3/3、4/0、2/3 等。
 `code` 与 Demo 同源，标 `//!` 重点行。
 
-- [ ] **Step 5: 验证**
+- [x] **Step 5: 验证**
 
 Run: `npx eslint src/examples/admin/saved-views --max-warnings 0 && npm run type-check && npm run check:ui -- --base http://localhost:5174 --only 保存视图`
 Expected: 场景通过。
@@ -99,7 +99,7 @@ Expected: 场景通过。
 - `data-stat`：`status-text`、`step-text`、`history-count`、`current-role`、`action-count`
 - 选择器：`.af-demo`、`.af-role`、`.af-history`、`[data-action]`
 
-- [ ] **Step 1: 写失败场景**
+- [x] **Step 1: 写失败场景**
 
 场景 `审批流按角色推进`。断言：
 - 初始：状态「待审批」、步骤「主管审批」、历史 1 条（提交申请）。
@@ -108,21 +108,21 @@ Expected: 场景通过。
 - 主管点「驳回」：状态「已驳回」、历史 2 条；再点「通过」不改变状态。
 - 重置后主管点「转交」：步骤「财务审批」、历史 2 条，且当前角色切到财务后才能继续。
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 审批流`
 Expected: 路由不存在。
 
-- [ ] **Step 3: 实现 Demo**
+- [x] **Step 3: 实现 Demo**
 
 一张申请卡片 + 角色单选组 + 操作按钮 + 审批时间线。状态机只允许：主管审批通过 -> 财务审批；财务审批通过 -> 已通过；主管 / 财务驳回 -> 已驳回；主管转交 -> 财务审批。已通过 / 已驳回后操作按钮全部禁用。角色没有权限时按钮禁用并提示。重置恢复初始申请。
 
-- [ ] **Step 4: 补齐 meta / notes / code**
+- [x] **Step 4: 补齐 meta / notes / code**
 
 标题「ApprovalFlow：审批流别只改一个状态」；sell「审批要按步骤走：角色、状态、时间线一致」；summary「角色驱动审批步骤，状态机防跳步，时间线留痕」。
 notes 第 3 段标 3 处：状态迁移表、角色权限判断、历史追加。第 4 段用场景实测步骤与历史条数。
 
-- [ ] **Step 5: 验证**
+- [x] **Step 5: 验证**
 
 Run: `npx eslint src/examples/admin/approval-flow --max-warnings 0 && npm run type-check && npm run check:ui -- --base http://localhost:5174 --only 审批流`
 Expected: 场景通过。
@@ -145,7 +145,7 @@ Expected: 场景通过。
 - `data-stat`：`source-count`、`target-count`、`selected-count`、`disabled-count`、`visible-count`
 - 选择器：`.tl-demo`、`[data-side="source"]`、`[data-side="target"]`、`[data-item]`、`[data-field="keyword"] input`
 
-- [ ] **Step 1: 写失败场景**
+- [x] **Step 1: 写失败场景**
 
 场景 `穿梭框移动与禁用项`。断言：
 - 初始：源 6、目标 0、已选 0、禁用 1。
@@ -155,21 +155,21 @@ Expected: 场景通过。
 - 搜索「报表」：可见 2；点「全选可移」再移动：源 4、目标 2。
 - 清空搜索，目标侧选中第一项并「移回」：源 5、目标 1。
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 穿梭框`
 Expected: 路由不存在。
 
-- [ ] **Step 3: 实现 Demo**
+- [x] **Step 3: 实现 Demo**
 
 左右两栏列表，顶部搜索框同时过滤两侧（搜索只影响显示，不改变已选）。源侧「全选可移」只选未禁用且可见项；「移动选中」把源侧选中项移到目标并清空选择；目标侧「移回」同理。每项用 `n-checkbox`，禁用项 `disabled`。底部显示源 / 目标 / 已选 / 禁用计数，重置恢复初始。
 
-- [ ] **Step 4: 补齐 meta / notes / code**
+- [x] **Step 4: 补齐 meta / notes / code**
 
 标题「TransferList：穿梭框别把禁用项也移走」；sell「搜索、禁用、已选计数：穿梭框的边界都在这」；summary「搜索过滤、禁用排除、批量移动与移回，计数同步」。
 notes 第 3 段标 3 处：全选过滤禁用、搜索不丢已选、移动后清选择。第 4 段用场景实测 6/0、1/5、4/2、5/1。
 
-- [ ] **Step 5: 验证**
+- [x] **Step 5: 验证**
 
 Run: `npx eslint src/examples/admin/transfer-list --max-warnings 0 && npm run type-check && npm run check:ui -- --base http://localhost:5174 --only 穿梭框`
 Expected: 场景通过。
@@ -192,7 +192,7 @@ Expected: 场景通过。
 - `data-stat`：`visible-company`、`visible-address`、`visible-pickup`、`error-count`、`cleared-count`、`status-text`
 - 选择器：`.fd-demo`、`.fd-invoice`、`.fd-delivery`、`[data-field="buyer"] input`、`[data-field="companyName"] input`、`[data-field="taxNo"] input`、`[data-field="address"] input`
 
-- [ ] **Step 1: 写失败场景**
+- [x] **Step 1: 写失败场景**
 
 场景 `表单联动显隐与清空`。断言：
 - 初始个人 / 快递：企业字段 0、地址 1、自提点 0、清空计数 0。
@@ -202,21 +202,21 @@ Expected: 场景通过。
 - 填购买人后提交：错误 0、状态「提交成功」。
 - 重置：个人 / 快递、清空计数 0、状态「待填写」。
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 表单联动`
 Expected: 路由不存在。
 
-- [ ] **Step 3: 实现 Demo**
+- [x] **Step 3: 实现 Demo**
 
 发票类型与配送方式用 `n-radio-group`。类型切到个人时隐藏并清空企业名称 / 税号；切到企业时显示并标记必填。配送切到自提时隐藏并清空地址、显示自提点；切回快递反向处理。提交时只校验可见必填字段，错误数量与状态写入 `data-stat`。每次清空依赖字段累加 `cleared-count`。
 
-- [ ] **Step 4: 补齐 meta / notes / code**
+- [x] **Step 4: 补齐 meta / notes / code**
 
 标题「FormDependency：隐藏的字段也要清空」；sell「联动不是显隐：隐藏字段要清值、校验要跟着变」；summary「类型联动显隐与清空，提交只校验可见必填项」。
 notes 第 3 段标 3 处：显隐派生、清空依赖、可见字段校验。第 4 段用场景实测可见字段与清空计数。
 
-- [ ] **Step 5: 验证**
+- [x] **Step 5: 验证**
 
 Run: `npx eslint src/examples/admin/form-dependency --max-warnings 0 && npm run type-check && npm run check:ui -- --base http://localhost:5174 --only 表单联动`
 Expected: 场景通过。
@@ -238,7 +238,7 @@ Expected: 场景通过。
 - `data-stat`：`row-count`、`valid-count`、`error-count`、`submit-count`、`status-text`
 - 选择器：`.df-demo`、`[data-row]`、`[data-field="name"] input`、`[data-field="qty"] input`、`[data-field="price"] input`
 
-- [ ] **Step 1: 写失败场景**
+- [x] **Step 1: 写失败场景**
 
 场景 `动态表单增删行与校验`。断言：
 - 初始：2 行、合法 2、错误 0。
@@ -248,21 +248,21 @@ Expected: 场景通过。
 - 填回名称后提交：错误 0、提交次数 1。
 - 重置：2 行、提交次数 0、状态「待填写」。
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 动态表单`
 Expected: 路由不存在。
 
-- [ ] **Step 3: 实现 Demo**
+- [x] **Step 3: 实现 Demo**
 
 表格每行三个输入：名称、数量、单价，行尾删除按钮。底部「添加一行」「提交」「重置」。提交时逐行校验：名称非空、数量为正整数、单价为正数；错误行写 `error` 字段并保留，合法行清错。`valid-count` 与 `error-count` 从当前行实时计算。删除行用 id 定位，不用数组下标做 key。
 
-- [ ] **Step 4: 补齐 meta / notes / code**
+- [x] **Step 4: 补齐 meta / notes / code**
 
 标题「DynamicForm：动态行别用数组下标当 key」；sell「增删行、行内校验、提交过滤：动态表单的三个坑」；summary「动态增删行，逐行校验，错误行保留可修改」。
 notes 第 3 段标 3 处：id 自增、按 id 删除、提交校验。第 4 段用场景实测 2/2、3/2、2/2、1 错、1 提交。
 
-- [ ] **Step 5: 验证**
+- [x] **Step 5: 验证**
 
 Run: `npx eslint src/examples/admin/dynamic-form --max-warnings 0 && npm run type-check && npm run check:ui -- --base http://localhost:5174 --only 动态表单`
 Expected: 场景通过。
@@ -277,27 +277,27 @@ Expected: 场景通过。
 - Modify: `docs/screenshots/README.md`（103 → 108）
 - Create: `docs/screenshots/admin/<5 个案例>/*.png`
 
-- [ ] **Step 1: 生成清单**
+- [x] **Step 1: 生成清单**
 
 Run: `npm run gen:cases && npm run gen:cases -- --check`
 Expected: 108 个案例 / 10 个分类，一致。
 
-- [ ] **Step 2: 跑内容与静态门禁**
+- [x] **Step 2: 跑内容与静态门禁**
 
 Run: `npx vitest run && npm run audit:cases && npm run lint && npm run build && npm run check:bundle`
 Expected: vitest 60/60、audit 0 P0/P1/P2、lint/build/bundle 通过。
 
-- [ ] **Step 3: 跑浏览器验收**
+- [x] **Step 3: 跑浏览器验收**
 
 Run: `npm run check:ui -- --base http://localhost:5174 --only 保存视图 && ...`（5 个新场景逐个跑）
 Run: `npm run check:ui -- --base http://localhost:5174 --sweep`
 Expected: 5 个新场景通过、108/108 案例巡检通过。
 
-- [ ] **Step 4: 生成 375px 截图**
+- [x] **Step 4: 生成 375px 截图**
 
 每个案例跑浅色与 `--dark` 两次：
 `npm run check:ui -- --base http://localhost:5174 --shot admin/<案例> --width 375 --out docs/screenshots/admin/<案例>`
 
-- [ ] **Step 5: 更新文档并提交**
+- [x] **Step 5: 更新文档并提交**
 
 更新 `AGENTS.md` 当前进度与决策记录、`docs/screenshots/README.md` 存量数；提交 `feat(admin): 新增第四批 5 个后台组件案例`，push、开 PR、等 CI、rebase merge、同步 main、删除远程分支。

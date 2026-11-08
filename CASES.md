@@ -1,7 +1,7 @@
 # 案例清单
 
 > 本文件由 `npm run gen:cases` 根据 `src/examples/registry.ts` 自动生成，请勿手动修改。
-> 共 103 个案例 / 10 个分类。
+> 共 108 个案例 / 10 个分类。
 
 ## CSS 技巧（css）
 
@@ -140,13 +140,16 @@
 
 | 案例 | 标题 | 难度 | 标签 | 摘要 |
 | --- | --- | --- | --- | --- |
+| [approval-flow](/cases/admin/approval-flow) | ApprovalFlow：审批流别只改一个状态 | 进阶 | `后台` `审批` `状态机` `权限` | 角色驱动审批步骤，状态机防跳步，时间线留痕 |
 | [audit-log](/cases/admin/audit-log) | AuditLog：审计日志要能还原现场 | 进阶 | `后台` `审计` `日志` `脱敏` | 失败也记录，敏感字段脱敏，按结果筛选并展开变更详情 |
 | [batch-actions](/cases/admin/batch-actions) | BatchActions：表格批量操作别漏掉半选 | 入门 | `后台` `表格` `批量操作` `选择` | 全选、半选、批量执行后清空选择 |
 | [batch-import](/cases/admin/batch-import) | BatchImport：批量导入先把错误说清楚 | 进阶 | `后台` `导入` `校验` `表格` | 逐行校验、错误预览、只导入合法行 |
 | [column-settings](/cases/admin/column-settings) | ColumnSettings：表格列别写死在代码里 | 入门 | `后台` `表格` `列设置` `持久化` | 列显隐、顺序、恢复默认，配置只存列 key |
 | [confirm-action](/cases/admin/confirm-action) | ConfirmAction：确认框要能等异步结果 | 进阶 | `后台` `确认框` `Promise` `异步` | 确认、loading、失败不关闭，一个 Promise 搞定 |
 | [department-tree](/cases/admin/department-tree) | DepartmentTree：部门选择别只给平铺列表 | 进阶 | `后台` `部门` `树形选择` `搜索` | 末级部门才可选，搜索自动展开，回显完整路径 |
+| [dynamic-form](/cases/admin/dynamic-form) | DynamicForm：动态行别用数组下标当 key | 进阶 | `后台` `表单` `动态行` `校验` | 动态增删行，逐行校验，错误行保留可修改 |
 | [editable-batch-save](/cases/admin/editable-batch-save) | EditableBatchSave：可编辑表格别改一格存一次 | 进阶 | `后台` `表格` `批量保存` `脏数据` | 攒脏行统一保存，失败行保留可重试 |
+| [form-dependency](/cases/admin/form-dependency) | FormDependency：隐藏的字段也要清空 | 进阶 | `后台` `表单` `联动` `校验` | 类型联动显隐与清空，提交只校验可见必填项 |
 | [form-drawer](/cases/admin/form-drawer) | FormDrawer：新增编辑共用一个抽屉 | 进阶 | `后台` `抽屉` `表单` `校验` | 新增编辑共用抽屉，校验、loading、脏数据保护 |
 | [import-progress](/cases/admin/import-progress) | ImportProgress：长任务进度要能暂停和取消 | 进阶 | `后台` `导入` `进度` `定时器` | 分批处理、真实进度、暂停继续、取消汇总 |
 | [notification-center](/cases/admin/notification-center) | NotificationCenter：通知中心别只做红点 | 入门 | `后台` `通知` `未读` `列表` | 全部/未读切换、单条已读、全部已读、重置 |
@@ -154,4 +157,6 @@
 | [permission-menu](/cases/admin/permission-menu) | PermissionMenu：菜单别和权限各写一份 | 进阶 | `后台` `权限` `菜单` `树` | 权限点驱动菜单树，父级自动收起，越权入口不渲染 |
 | [query-bar](/cases/admin/query-bar) | QueryBar：后台查询栏别堆成一排 | 入门 | `后台` `查询栏` `筛选` `表单` | 收起多余条件，重置干净，查询中不重复提交 |
 | [remote-select](/cases/admin/remote-select) | RemoteSelect：远程搜索别被旧结果覆盖 | 进阶 | `后台` `远程搜索` `防抖` `竞态` | 输入防抖、加载态、空结果、旧响应丢弃 |
+| [saved-views](/cases/admin/saved-views) | SavedViews：筛选条件别每次重新点 | 入门 | `后台` `筛选` `视图` `保存` | 视图保存查询、排序与列显隐，默认视图不可删 |
 | [step-form](/cases/admin/step-form) | StepForm：分步表单别一次问完 | 入门 | `后台` `表单` `分步` `校验` | 按步骤校验，下一步通过才前进，提交前再兜底 |
+| [transfer-list](/cases/admin/transfer-list) | TransferList：穿梭框别把禁用项也移走 | 入门 | `后台` `穿梭框` `权限` `批量操作` | 搜索过滤、禁用排除、批量移动与移回，计数同步 |
