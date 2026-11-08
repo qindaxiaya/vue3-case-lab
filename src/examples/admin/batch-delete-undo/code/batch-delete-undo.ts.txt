@@ -1,0 +1,70 @@
+const UNDO_MS = 3000
+
+//! 待撤销批次只存 id、过期时间，真正恢复顺序靠 removedRows 里的原索引
+const pending = ref<PendingDelete | null>(null)
+const removedRows = ref<RemovedRow[]>([])
+const remaining = ref(0)
+
+let timer: ReturnType<typeof setInterval> | null = null
+
+/** 结束上一批撤销窗口：只清状态，不动已经删掉的行 */
+function finalizePending(): void {
+  pending.value = null
+  removedRows.value = []
+  remaining.value = 0
+  if (timer !== null) {
+    window.clearInterval(timer)
+    timer = null
+  }
+}
+
+/**! 每 100ms 刷新剩余秒数，到 0 就把撤销入口收掉 */
+function startCountdown(expiresAt: number): void {
+  if (timer !== null) window.clearInterval(timer)
+  timer = window.setInterval(() => {
+    const left = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+    remaining.value = left
+    if (left <= 0) finalizePending()
+  }, 100)
+}
+
+/**! 删除时记下原索引，撤销才能插回原来的位置 */
+function deleteSelected(): void {
+  if (selectedIds.value.size === 0) return
+  if (pending.value) finalizePending()
+
+  const ids = [...selectedIds.value]
+  const snapshot: RemovedRow[] = []
+  rows.value.forEach((row, index) => {
+    if (selectedIds.value.has(row.id)) snapshot.push({ row, index })
+  })
+
+  const expiresAt = Date.now() + UNDO_MS
+  rows.value = rows.value.filter((row) => !selectedIds.value.has(row.id))
+  removedRows.value = snapshot
+  pending.value = { ids, expiresAt }
+  selectedIds.value = new Set()
+  remaining.value = Math.ceil(UNDO_MS / 1000)
+  startCountdown(expiresAt)
+}
+
+/** 按原索引升序插回，多行删除也能恢复成删除前的顺序 */
+function undoDelete(): void {
+  if (!pending.value) return
+  const snapshot = [...removedRows.value].sort((a, b) => a.index - b.index)
+  snapshot.forEach(({ row, index }) => {
+    rows.value.splice(index, 0, row)
+  })
+  finalizePending()
+}
+
+function reset(): void {
+  finalizePending()
+  rows.value = initialRows.map((row) => ({ ...row }))
+  selectedIds.value = new Set()
+}
+
+onUnmounted(() => {
+  //! 卸载时清定时器，避免回调去改已经销毁的页面状态
+  if (timer !== null) window.clearInterval(timer)
+})
