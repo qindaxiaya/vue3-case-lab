@@ -1,0 +1,49 @@
+const show = ref(false)
+const activeIndex = ref(-1)
+const triggerEl = ref<HTMLElement | null>(null)
+const rowButtons = new Map<number, HTMLElement>()
+
+const activeOrder = computed(() => orders[activeIndex.value] ?? null)
+const prevDisabled = computed(() => activeIndex.value <= 0)
+const nextDisabled = computed(
+  () => activeIndex.value < 0 || activeIndex.value >= orders.length - 1,
+)
+
+/** 收集每行按钮的真实 DOM，组件库的 click 事件不一定带 currentTarget */
+function setRowButton(id: number, el: unknown): void {
+  const component = el as { $el?: unknown } | null
+  const node = component?.$el ?? el
+  if (node instanceof HTMLElement) rowButtons.set(id, node)
+  else rowButtons.delete(id)
+}
+
+//! 打开时记住触发按钮，关闭后焦点要回到原处，键盘用户才不会迷路
+function open(index: number): void {
+  triggerEl.value = rowButtons.get(orders[index].id) ?? null
+  activeIndex.value = index
+  show.value = true
+}
+
+function close(): void {
+  show.value = false
+}
+
+function prev(): void {
+  if (!prevDisabled.value) activeIndex.value--
+}
+
+function next(): void {
+  if (!nextDisabled.value) activeIndex.value++
+}
+
+function restoreFocus(): void {
+  const target = triggerEl.value
+  // 抽屉内部的焦点陷阱可能在退场后还会把焦点拉回去，等一拍再归还
+  window.setTimeout(() => target?.focus(), 0)
+}
+
+function reset(): void {
+  show.value = false
+  activeIndex.value = -1
+  triggerEl.value = null
+}

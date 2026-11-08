@@ -6075,6 +6075,160 @@ const SCENARIOS = [
     },
   },
   {
+    name: '快速查看抽屉与上下条',
+    route: '/cases/admin/quick-view-drawer',
+    facts: async ({ evaluate }) => {
+      const first = await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.qvd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const openButton = (id) => root.querySelector('[data-open="' + id + '"]')
+        const drawerButton = (text) =>
+          [...document.querySelectorAll('.qvd-drawer .n-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const read = () => ({
+          open: stat('drawer-open') === 'true',
+          drawer: Boolean(document.querySelector('.qvd-drawer')),
+          id: stat('active-id'),
+          index: num('active-index'),
+          prev: stat('prev-disabled') === 'true',
+          next: stat('next-disabled') === 'true',
+        })
+
+        const initial = read()
+        openButton(3).click()
+        await wait(450)
+        const opened = read()
+
+        drawerButton('下一条').click()
+        await wait(80)
+        const next1 = read()
+        drawerButton('下一条').click()
+        await wait(80)
+        const next2 = read()
+        drawerButton('上一条').click()
+        await wait(80)
+        const prev = read()
+
+        drawerButton('关闭').click()
+        await wait(500)
+        const closed = read()
+        const focusId = document.activeElement?.getAttribute('data-open') ?? ''
+
+        return { initial, opened, next1, next2, prev, closed, focusId }
+      })()`)
+
+      const boundary = await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.qvd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        root.querySelector('[data-open="6"]').click()
+        await wait(450)
+        return {
+          open: stat('drawer-open') === 'true',
+          id: stat('active-id'),
+          index: num('active-index'),
+          prev: stat('prev-disabled') === 'true',
+          next: stat('next-disabled') === 'true',
+        }
+      })()`)
+
+      await evaluate(
+        `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }))`,
+      )
+      await sleep(500)
+
+      const escaped = await evaluate(`(() => {
+        const root = document.querySelector('.qvd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        return {
+          open: stat('drawer-open') === 'true',
+          drawer: Boolean(document.querySelector('.qvd-drawer')),
+          focusId: document.activeElement?.getAttribute('data-open') ?? '',
+        }
+      })()`)
+
+      const reset = await evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.qvd-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        button('重置').click()
+        await wait(500)
+        return {
+          open: stat('drawer-open') === 'true',
+          drawer: Boolean(document.querySelector('.qvd-drawer')),
+          id: stat('active-id'),
+        }
+      })()`)
+
+      return { first, boundary, escaped, reset }
+    },
+    assert: (result) => {
+      const failures = []
+      if (result.first.initial.open || result.first.initial.drawer) {
+        failures.push('初始抽屉不是关闭状态')
+      }
+      if (
+        !result.first.opened.open ||
+        !result.first.opened.drawer ||
+        result.first.opened.id !== '3' ||
+        result.first.opened.index !== 2 ||
+        result.first.opened.prev ||
+        result.first.opened.next
+      ) {
+        failures.push(
+          `打开第 3 行不对（打开 ${result.first.opened.open} / id ${result.first.opened.id} / 索引 ${result.first.opened.index} / 上一条禁用 ${result.first.opened.prev} / 下一条禁用 ${result.first.opened.next}）`,
+        )
+      }
+      if (result.first.next1.id !== '4' || result.first.next2.id !== '5') {
+        failures.push(
+          `下一条没有连续前进（${result.first.next1.id} → ${result.first.next2.id}）`,
+        )
+      }
+      if (result.first.prev.id !== '4') {
+        failures.push(`上一条没有回到 id 4（${result.first.prev.id}）`)
+      }
+      if (result.first.closed.open || result.first.closed.drawer) {
+        failures.push('点关闭后抽屉没有消失')
+      }
+      if (result.first.focusId !== '3') {
+        failures.push(`关闭后焦点没有回到第 3 行按钮（${result.first.focusId}）`)
+      }
+      if (
+        !result.boundary.open ||
+        result.boundary.id !== '6' ||
+        result.boundary.index !== 5 ||
+        result.boundary.prev ||
+        !result.boundary.next
+      ) {
+        failures.push(
+          `第 6 行边界不对（打开 ${result.boundary.open} / id ${result.boundary.id} / 索引 ${result.boundary.index} / 上一条禁用 ${result.boundary.prev} / 下一条禁用 ${result.boundary.next}）`,
+        )
+      }
+      if (result.escaped.open || result.escaped.drawer) {
+        failures.push('按 Escape 后抽屉没有关闭')
+      }
+      if (result.escaped.focusId !== '6') {
+        failures.push(`Escape 关闭后焦点没有回到第 6 行按钮（${result.escaped.focusId}）`)
+      }
+      if (result.reset.open || result.reset.drawer || result.reset.id !== '—') {
+        failures.push(
+          `重置后不对（打开 ${result.reset.open} / 抽屉 ${result.reset.drawer} / id ${result.reset.id}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
