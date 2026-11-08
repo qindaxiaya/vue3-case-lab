@@ -5839,6 +5839,119 @@ const SCENARIOS = [
     },
   },
   {
+    name: '日期范围快捷筛选与自定义校验',
+    route: '/cases/admin/date-range-presets',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.drp-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const preset = (name) => root.querySelector('[data-preset="' + name + '"]')
+        const setInput = (field, value) => {
+          const input = root.querySelector('[data-field="' + field + '"] input')
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          preset: stat('preset'),
+          result: num('result-count'),
+          range: stat('range-text'),
+          error: stat('error-text'),
+        })
+
+        const initial = read()
+        preset('today').click()
+        await wait(100)
+        const today = read()
+        preset('30d').click()
+        await wait(100)
+        const month = read()
+
+        setInput('start', '2026-10-31')
+        setInput('end', '2026-11-06')
+        button('应用自定义').click()
+        await wait(100)
+        const custom = read()
+
+        setInput('start', '2026-11-06')
+        setInput('end', '2026-11-01')
+        button('应用自定义').click()
+        await wait(100)
+        const invalid = read()
+
+        button('重置').click()
+        await wait(100)
+        const reset = read()
+
+        return { initial, today, month, custom, invalid, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.preset !== '近 7 天' ||
+        result.initial.result !== 6 ||
+        result.initial.range !== '2026-11-02 ~ 2026-11-08' ||
+        result.initial.error !== ''
+      ) {
+        failures.push(
+          `初始状态不对（${result.initial.preset} / ${result.initial.result} 条 / ${result.initial.range} / 错误 ${result.initial.error}）`,
+        )
+      }
+      if (
+        result.today.preset !== '今天' ||
+        result.today.result !== 2 ||
+        result.today.range !== '2026-11-08 ~ 2026-11-08'
+      ) {
+        failures.push(
+          `今天不对（${result.today.preset} / ${result.today.result} 条 / ${result.today.range}）`,
+        )
+      }
+      if (
+        result.month.preset !== '近 30 天' ||
+        result.month.result !== 10 ||
+        result.month.range !== '2026-10-10 ~ 2026-11-08'
+      ) {
+        failures.push(
+          `近 30 天不对（${result.month.preset} / ${result.month.result} 条 / ${result.month.range}）`,
+        )
+      }
+      if (
+        result.custom.preset !== '自定义' ||
+        result.custom.result !== 5 ||
+        result.custom.range !== '2026-10-31 ~ 2026-11-06' ||
+        result.custom.error !== ''
+      ) {
+        failures.push(
+          `自定义不对（${result.custom.preset} / ${result.custom.result} 条 / ${result.custom.range} / 错误 ${result.custom.error}）`,
+        )
+      }
+      if (
+        !result.invalid.error.includes('结束日期不能早于开始日期') ||
+        result.invalid.result !== 5 ||
+        result.invalid.range !== '2026-10-31 ~ 2026-11-06'
+      ) {
+        failures.push(
+          `非法范围应只提示、不改结果（错误 ${result.invalid.error} / ${result.invalid.result} 条 / ${result.invalid.range}）`,
+        )
+      }
+      if (
+        result.reset.preset !== '近 7 天' ||
+        result.reset.result !== 6 ||
+        result.reset.range !== '2026-11-02 ~ 2026-11-08' ||
+        result.reset.error !== ''
+      ) {
+        failures.push(
+          `重置后不对（${result.reset.preset} / ${result.reset.result} 条 / ${result.reset.range} / 错误 ${result.reset.error}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
