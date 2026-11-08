@@ -75,7 +75,7 @@
 
 ## 当前进度
 
-- **阶段**：共 108 案例 / 10 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26 · admin 20）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 113 案例 / 10 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26 · admin 25）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务，已完成，保留为历史记录）
 - 遗留任务计划：`docs/superpowers/plans/2026-11-06-remaining-tasks.md`（Task 1~6 已完成，`v0.2` 已发布；保留为历史记录）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
@@ -374,7 +374,16 @@
   - `admin/dynamic-form`：增删行、逐行校验、错误行保留、id 只增不复用；场景「动态表单增删行与校验」
   - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 更新到 108
   - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 122.3 KB）、`audit:cases` 108 案例 0 P0/P1/P2、全量 `check:ui` 70/70、`--sweep` 108/108
-- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/admin/query-bar`、`/cases/admin/batch-actions`、`/cases/admin/confirm-action`、`/cases/admin/form-drawer`、`/cases/admin/pagination`、`/cases/admin/column-settings`、`/cases/admin/step-form`、`/cases/admin/remote-select`、`/cases/admin/notification-center`、`/cases/admin/batch-import`、`/cases/admin/permission-menu`、`/cases/admin/audit-log`、`/cases/admin/department-tree`、`/cases/admin/import-progress`、`/cases/admin/editable-batch-save`、`/cases/admin/saved-views`、`/cases/admin/approval-flow`、`/cases/admin/transfer-list`、`/cases/admin/form-dependency`、`/cases/admin/dynamic-form`、`/cases/performance/pull-refresh`
+- ✅ 2026-11-08 继续扩充 `admin` 分类 5 个案例（共 113 案例 / 10 分类）：第五批补「跨页选择 / 批量删除撤销 / 日期范围 / 会话过期 / 快速查看」五个带状态与焦点的后台交互
+  - `admin/cross-page-selection`：跨页保留选择，筛选全选只作用于当前结果，清空与翻页后计数自洽；场景「跨页选择保留与筛选全选」
+  - `admin/batch-delete-undo`：批量删除后 3 秒内可撤销，超时清空撤销条，重复删除与重置不串状态；场景「批量删除撤销与超时」
+  - `admin/date-range-presets`：近 7 天 / 今天 / 近 30 天快捷范围，自定义范围校验起止顺序；场景「日期范围快捷筛选与自定义校验」
+  - `admin/session-expiry`：会话倒计时、剩 2 秒警告、操作续期、过期后重新登录；场景「会话过期提醒与续期」
+  - `admin/quick-view-drawer`：行内只读抽屉、上下条按索引切换、首尾禁用、关闭 / Escape 后焦点归还；场景「快速查看抽屉与上下条」
+  - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 更新到 113
+  - 踩坑：`n-drawer` 只是外层，内容 / 标题 / footer 必须放进 `n-drawer-content`，否则抽屉能打开但里面是空的；关闭后焦点陷阱可能晚于 `after-leave` 把焦点拉回，归还焦点要等一拍；`check:ui` 里 Escape 用页面派发键盘事件，CDP 按键在 dev 下不稳定
+  - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 125.0 KB）、`audit:cases` 113 案例 0 P0/P1/P2、全量 `check:ui` 75/75、`--sweep` 113/113
+- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/admin/query-bar`、`/cases/admin/batch-actions`、`/cases/admin/confirm-action`、`/cases/admin/form-drawer`、`/cases/admin/pagination`、`/cases/admin/column-settings`、`/cases/admin/step-form`、`/cases/admin/remote-select`、`/cases/admin/notification-center`、`/cases/admin/batch-import`、`/cases/admin/permission-menu`、`/cases/admin/audit-log`、`/cases/admin/department-tree`、`/cases/admin/import-progress`、`/cases/admin/editable-batch-save`、`/cases/admin/saved-views`、`/cases/admin/approval-flow`、`/cases/admin/transfer-list`、`/cases/admin/form-dependency`、`/cases/admin/dynamic-form`、`/cases/admin/cross-page-selection`、`/cases/admin/batch-delete-undo`、`/cases/admin/date-range-presets`、`/cases/admin/session-expiry`、`/cases/admin/quick-view-drawer`、`/cases/performance/pull-refresh`
 
 ## 决策记录
 
@@ -487,3 +496,4 @@
 | 2026-11-08 | **`admin` 第二批仍只做单点交互，不引入通用表格组件** | 第二批补的是后台里高频但彼此独立的 5 个点：列设置、分步表单、远程搜索、通知中心、批量导入。每个案例仍只解决一个交互，并保留一个真实边界：固定列不能隐藏、提交前兜底校验、旧响应按 token 丢弃、未读计数从同一份数据派生、错误行带行号预览。没有抽通用 DataTable / Form 组件：这些案例是教学单元，抽成框架会把「为什么这样设计」藏进抽象层；复用只发生在演示区共享控件（如 `demo-resize-handle`）。`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 98 个案例 |
 | 2026-11-08 | **`admin` 第三批补「权限 / 审计 / 树形 / 长任务 / 批量保存」五个真实交互** | 第三批不再重复前两批的查询、分页、表单单点，而是补后台里容易做错的五个边界：菜单按权限点过滤且空分组收起、审计日志连失败一起记并脱敏、树形部门只选末级且搜索保留祖先、导入进度来自已处理条数且能暂停取消、可编辑表格改一格只标脏且失败行保留。每个案例仍只解决一个交互，数据与计数来自页面自身；`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 103 个案例 |
 | 2026-11-08 | **`admin` 第四批补「视图 / 审批 / 穿梭 / 联动 / 动态行」五个状态流转交互** | 第四批继续只做单点，但每个案例都带一条会变化的状态链：保存视图要能恢复默认且默认视图不可删、审批流驳回后不能继续审批且转交后权限跟着走、穿梭框全选只作用于可见项且禁用项不可移动、表单联动隐藏即清空且只校验可见必填、动态表单增删行后 id 只增不复用。saved-views 为了让「高金额」视图真的筛出 2 条，在计划之外补了金额门槛字段与输入框；form-dependency 预填地址与自提点，才能稳定复现「切自提清空 3 个值」与「购买人为空只报 1 个错」。每个案例仍只解决一个交互，数据与计数来自页面自身；`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 108 个案例 |
+| 2026-11-08 | **`admin` 第五批补「跨页选择 / 撤销 / 日期 / 会话 / 快速查看」五个状态与焦点交互** | 第五批继续只做单点，但每个案例都带跨操作的状态：跨页选择要区分「当前页全选」与「筛选结果全选」、批量删除要在 3 秒窗口内可撤销且超时清空、日期快捷范围与自定义范围共用起止校验、会话倒计时剩 2 秒进入警告且操作可续期、快速查看抽屉用索引驱动上下条并在关闭后归还焦点。quick-view-drawer 踩了两个 Naive UI 坑：`n-drawer` 必须包 `n-drawer-content` 才有内容和 footer；关闭时焦点陷阱可能晚于 `after-leave` 把焦点拉回，`restoreFocus` 里用 `setTimeout(0)` 等一拍再 focus。`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 113 个案例 |
