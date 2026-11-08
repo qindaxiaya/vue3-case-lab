@@ -1,0 +1,74 @@
+interface Person {
+  id: number
+  name: string
+  dept: string
+}
+
+const keyword = ref('')
+const results = ref<Person[]>([])
+const selected = ref<Person | null>(null)
+const loading = ref(false)
+const queryCount = ref(0)
+const staleDropped = ref(0)
+
+let debounceTimer: number | null = null
+let requestToken = 0
+const requestTimers = new Set<number>()
+
+//! 输入后等 250ms 再请求，避免每敲一个字都打接口
+function onInput(value: string): void {
+  keyword.value = value
+  selected.value = null
+  if (debounceTimer !== null) window.clearTimeout(debounceTimer)
+  if (!value.trim()) {
+    results.value = []
+    loading.value = false
+    return
+  }
+  debounceTimer = window.setTimeout(() => {
+    debounceTimer = null
+    void fetchResults(value.trim())
+  }, 250)
+}
+
+/**
+ * 模拟远程请求：每次请求都有自己的 token。
+ * 旧请求晚回来时 token 已经变了，只计数、不写结果。
+ */
+function fetchResults(query: string): void {
+  queryCount.value++
+  const token = ++requestToken
+  loading.value = true
+
+  const timer = window.setTimeout(() => {
+    requestTimers.delete(timer)
+    //! token 不是最新的：这次响应已经过期，直接丢掉
+    if (token !== requestToken) {
+      staleDropped.value++
+      return
+    }
+    results.value = people.filter(
+      (person) => person.name.includes(query) || person.dept.includes(query),
+    )
+    loading.value = false
+  }, 350)
+  requestTimers.add(timer)
+}
+
+//! 选中后关闭列表；清空时取消在途请求并让 token 失效
+function select(person: Person): void {
+  selected.value = person
+  keyword.value = person.name
+  results.value = []
+}
+
+function clear(): void {
+  if (debounceTimer !== null) window.clearTimeout(debounceTimer)
+  requestToken++
+  for (const timer of requestTimers) window.clearTimeout(timer)
+  requestTimers.clear()
+  keyword.value = ''
+  results.value = []
+  selected.value = null
+  loading.value = false
+}

@@ -4052,6 +4052,396 @@ const SCENARIOS = [
     },
   },
   {
+    name: '列设置显示隐藏与恢复默认',
+    route: '/cases/admin/column-settings',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.cs-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const headers = () => [...root.querySelectorAll('thead th')].map((el) => el.textContent.trim())
+        const buttonIn = (selector, text) =>
+          [...root.querySelector(selector).querySelectorAll('.n-button')]
+            .find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          visible: num('visible-count'),
+          hidden: num('hidden-count'),
+          order: stat('column-order'),
+          headers: headers(),
+          reset: num('reset-count'),
+        })
+
+        const initial = read()
+        buttonIn('[data-column="amount"]', '上移').click()
+        await wait(120)
+        const moved = read()
+
+        root.querySelector('[data-column="updated"] [role="checkbox"]').click()
+        await wait(120)
+        const hidden = read()
+        const fixedDisabled = !!root.querySelector('[data-column="name"] .n-checkbox--disabled')
+
+        ;[...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === '恢复默认').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, moved, hidden, fixedDisabled, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.visible !== 5 || result.initial.hidden !== 0) {
+        failures.push(`初始列数不对（${result.initial.visible} 显示 / ${result.initial.hidden} 隐藏）`)
+      }
+      if (result.initial.headers.length !== 5) {
+        failures.push(`初始表头数量不对（${result.initial.headers.length}）`)
+      }
+      if (result.moved.order !== '名称 / 状态 / 负责人 / 金额 / 更新时间') {
+        failures.push(`上移后顺序不对（${result.moved.order}）`)
+      }
+      if (result.hidden.visible !== 4 || result.hidden.hidden !== 1) {
+        failures.push(`隐藏后列数不对（${result.hidden.visible} 显示 / ${result.hidden.hidden} 隐藏）`)
+      }
+      if (result.hidden.order !== '名称 / 状态 / 负责人 / 金额') {
+        failures.push(`隐藏后顺序不对（${result.hidden.order}）`)
+      }
+      if (result.hidden.headers.length !== 4 || result.hidden.headers.includes('更新时间')) {
+        failures.push(`隐藏后表头没有同步（${result.hidden.headers.join(' / ')}）`)
+      }
+      if (!result.fixedDisabled) {
+        failures.push('固定列没有被禁用')
+      }
+      if (
+        result.reset.visible !== 5 ||
+        result.reset.order !== '名称 / 状态 / 负责人 / 更新时间 / 金额' ||
+        result.reset.headers.length !== 5
+      ) {
+        failures.push(`恢复默认没有还原（${result.reset.visible} 列 / ${result.reset.order}）`)
+      }
+      if (result.reset.reset !== 1) {
+        failures.push(`恢复默认次数不对（${result.reset.reset}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '分步表单逐步校验',
+    route: '/cases/admin/step-form',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.sf-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const fill = (selector, value) => {
+          const input = root.querySelector(selector + ' input')
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const pickSelect = async (selector, optionText) => {
+          const trigger = root.querySelector(selector + ' .n-base-selection')
+          if (!trigger) return false
+          trigger.click()
+          for (let i = 0; i < 24; i++) {
+            const option = [...document.querySelectorAll('.n-base-select-option')]
+              .find((item) => (item.textContent ?? '').trim() === optionText)
+            if (option) {
+              option.click()
+              await wait(150)
+              return true
+            }
+            await wait(50)
+          }
+          return false
+        }
+        const read = () => ({
+          step: num('step'),
+          errors: num('error-count'),
+          submits: num('submit-count'),
+          done: stat('done'),
+          summary: stat('summary'),
+        })
+
+        const initial = read()
+        button('下一步').click()
+        await wait(100)
+        const empty = read()
+
+        fill('.sf-name', '张三')
+        fill('.sf-email', 'zhang')
+        await wait(80)
+        button('下一步').click()
+        await wait(100)
+        const badEmail = read()
+
+        fill('.sf-email', 'zhang@example.com')
+        await wait(80)
+        button('下一步').click()
+        await wait(100)
+        const step2 = read()
+
+        const plan = [...root.querySelectorAll('.sf-plan .n-radio-button')]
+          .find((el) => el.textContent.trim() === '专业版')
+        plan?.click()
+        await wait(80)
+        const seatsPicked = await pickSelect('.sf-seats', '10 人')
+        button('下一步').click()
+        await wait(100)
+        const step3 = read()
+
+        button('提交').click()
+        await wait(700)
+        const submitted = read()
+
+        return { initial, empty, badEmail, step2, step3, submitted, planPicked: !!plan, seatsPicked }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.step !== 1 || result.initial.errors !== 0) {
+        failures.push(`初始步骤不对（第 ${result.initial.step} 步 / ${result.initial.errors} 个错误）`)
+      }
+      if (result.empty.step !== 1 || result.empty.errors !== 2) {
+        failures.push(`空表单没有被拦住（第 ${result.empty.step} 步 / ${result.empty.errors} 个错误）`)
+      }
+      if (result.badEmail.step !== 1 || result.badEmail.errors !== 1) {
+        failures.push(`非法邮箱没有被拦住（第 ${result.badEmail.step} 步 / ${result.badEmail.errors} 个错误）`)
+      }
+      if (result.step2.step !== 2 || result.step2.errors !== 0) {
+        failures.push(`第一步通过后没有进入第二步（第 ${result.step2.step} 步 / ${result.step2.errors} 个错误）`)
+      }
+      if (!result.planPicked || !result.seatsPicked) {
+        failures.push('套餐或席位没有选中')
+      }
+      if (result.step3.step !== 3) {
+        failures.push(`第二步没有进入第三步（第 ${result.step3.step} 步）`)
+      }
+      if (result.submitted.submits !== 1 || result.submitted.done !== '已提交') {
+        failures.push(`提交结果不对（${result.submitted.submits} 次 / ${result.submitted.done}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '远程搜索防抖与旧结果丢弃',
+    route: '/cases/admin/remote-select',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.rs-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const input = root.querySelector('.rs-input input')
+        const type = (value) => {
+          input.value = value
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          query: num('query-count'),
+          stale: num('stale-dropped'),
+          count: num('result-count'),
+          names: stat('result-names'),
+          selected: stat('selected'),
+        })
+
+        const initial = read()
+        type('张')
+        await wait(300)
+        type('李')
+        await wait(900)
+        const raced = read()
+
+        const first = root.querySelector('.person')
+        const firstId = first?.getAttribute('data-person')
+        first?.click()
+        await wait(150)
+        const picked = read()
+
+        return { initial, raced, picked, firstId }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.query !== 0 || result.initial.count !== 0) {
+        failures.push(`初始状态不对（${result.initial.query} 次请求 / ${result.initial.count} 条结果）`)
+      }
+      if (result.raced.query !== 2) {
+        failures.push(`防抖后请求次数不对（${result.raced.query}）`)
+      }
+      if (result.raced.stale !== 1) {
+        failures.push(`没有丢弃旧响应（${result.raced.stale}）`)
+      }
+      if (result.raced.names !== '李娜、李强') {
+        failures.push(`最终结果被旧响应覆盖（${result.raced.names}）`)
+      }
+      if (!result.firstId) {
+        failures.push('结果列表没有可点击的负责人')
+      }
+      if (result.picked.selected !== '李娜 · 设计组' || result.picked.count !== 0) {
+        failures.push(`选中结果不对（${result.picked.selected} / ${result.picked.count} 条结果）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '通知中心已读与全部已读',
+    route: '/cases/admin/notification-center',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.nc-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (text) =>
+          [...root.querySelectorAll('.n-radio-button')]
+            .find((el) => el.textContent.trim().startsWith(text))
+        const read = () => ({
+          unread: num('unread-count'),
+          read: num('read-count'),
+          visible: num('visible-count'),
+          tab: stat('tab'),
+          action: stat('last-action'),
+        })
+
+        const initial = read()
+        root.querySelector('[data-unread="true"]').click()
+        await wait(120)
+        const oneRead = read()
+
+        radio('未读').click()
+        await wait(120)
+        const unreadTab = read()
+
+        button('全部已读').click()
+        await wait(120)
+        const allRead = read()
+
+        button('重置').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, oneRead, unreadTab, allRead, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.unread !== 4 || result.initial.read !== 2 || result.initial.visible !== 6) {
+        failures.push(
+          `初始通知状态不对（未读 ${result.initial.unread} / 已读 ${result.initial.read} / 列表 ${result.initial.visible}）`,
+        )
+      }
+      if (result.oneRead.unread !== 3 || result.oneRead.read !== 3 || result.oneRead.visible !== 6) {
+        failures.push(
+          `单条已读没有同步（未读 ${result.oneRead.unread} / 已读 ${result.oneRead.read} / 列表 ${result.oneRead.visible}）`,
+        )
+      }
+      if (result.unreadTab.tab !== '未读' || result.unreadTab.visible !== 3) {
+        failures.push(`未读标签筛选不对（${result.unreadTab.tab} / ${result.unreadTab.visible} 条）`)
+      }
+      if (result.allRead.unread !== 0 || result.allRead.read !== 6 || result.allRead.visible !== 0) {
+        failures.push(
+          `全部已读结果不对（未读 ${result.allRead.unread} / 已读 ${result.allRead.read} / 列表 ${result.allRead.visible}）`,
+        )
+      }
+      if (
+        result.reset.unread !== 4 ||
+        result.reset.read !== 2 ||
+        result.reset.visible !== 6 ||
+        result.reset.tab !== '全部'
+      ) {
+        failures.push(
+          `重置没有回到初始（未读 ${result.reset.unread} / 已读 ${result.reset.read} / 列表 ${result.reset.visible} / ${result.reset.tab}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
+    name: '批量导入逐行校验',
+    route: '/cases/admin/batch-import',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.bi-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          total: num('total-rows'),
+          valid: num('valid-count'),
+          errors: num('error-count'),
+          imported: num('imported-count'),
+          status: stat('status-text'),
+          hasImported: stat('has-imported'),
+        })
+
+        const initial = read()
+        button('填入示例').click()
+        await wait(120)
+        const filled = read()
+
+        button('校验并预览').click()
+        await wait(120)
+        const checked = read()
+        const rows = [...root.querySelectorAll('[data-row]')].map((el) => ({
+          line: el.getAttribute('data-row'),
+          valid: el.getAttribute('data-valid'),
+          text: el.textContent.trim(),
+        }))
+
+        button('导入合法行').click()
+        await wait(700)
+        const imported = read()
+
+        button('清空').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, filled, checked, rows, imported, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.total !== 0 || result.initial.status !== '等待校验') {
+        failures.push(`初始导入状态不对（${result.initial.total} 行 / ${result.initial.status}）`)
+      }
+      if (result.filled.total !== 0 || !result.filled.status.includes('已填入示例')) {
+        failures.push(`填入示例后不应直接解析（${result.filled.total} 行 / ${result.filled.status}）`)
+      }
+      if (result.checked.total !== 6 || result.checked.valid !== 3 || result.checked.errors !== 3) {
+        failures.push(
+          `逐行校验结果不对（${result.checked.total} 行 / ${result.checked.valid} 合法 / ${result.checked.errors} 错误）`,
+        )
+      }
+      if (result.rows.length !== 6 || result.rows.filter((row) => row.valid === 'true').length !== 3) {
+        failures.push(`预览行状态不对（${result.rows.length} 行）`)
+      }
+      const errorText = result.rows.filter((row) => row.valid === 'false').map((row) => row.text).join(' | ')
+      if (!errorText.includes('vip') || !errorText.includes('文件内邮箱重复') || !errorText.includes('邮箱已存在')) {
+        failures.push(`错误原因没有展示（${errorText}）`)
+      }
+      if (
+        result.imported.imported !== 3 ||
+        result.imported.hasImported !== '是' ||
+        result.imported.status !== '已导入 3 条'
+      ) {
+        failures.push(
+          `导入结果不对（${result.imported.imported} 条 / ${result.imported.status} / ${result.imported.hasImported}）`,
+        )
+      }
+      if (result.reset.total !== 0 || result.reset.status !== '等待校验') {
+        failures.push(`清空没有恢复初始（${result.reset.total} 行 / ${result.reset.status}）`)
+      }
+      return failures
+    },
+  },
+  {
     name: '查询栏条件回显与防重复提交',
     route: '/cases/admin/query-bar',
     facts: async ({ evaluate }) =>

@@ -1,0 +1,35 @@
+interface Notice {
+  id: number
+  type: NoticeType
+  title: string
+  detail: string
+  time: string
+  read: boolean
+}
+
+const notices = ref<Notice[]>(initialNotices.map((notice) => ({ ...notice })))
+const tab = ref<'all' | 'unread'>('all')
+
+//! 未读数和未读列表都从同一份 notices 派生，不维护第二份数组
+const unreadCount = computed(() => notices.value.filter((notice) => !notice.read).length)
+const visibleNotices = computed(() =>
+  tab.value === 'all' ? notices.value : notices.value.filter((notice) => !notice.read),
+)
+
+//! 点单条只改这一条，不碰其他未读
+function markRead(notice: Notice): void {
+  if (notice.read) return
+  notice.read = true
+}
+
+//! 全部已读：一次改完，列表按当前 tab 自动刷新
+function markAllRead(): void {
+  if (unreadCount.value === 0) return
+  for (const notice of notices.value) notice.read = true
+}
+
+//! 重置要连筛选状态一起回初始，否则用户会停在「未读 0」的空列表
+function reset(): void {
+  notices.value = initialNotices.map((notice) => ({ ...notice }))
+  tab.value = 'all'
+}

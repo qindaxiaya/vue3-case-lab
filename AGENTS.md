@@ -75,7 +75,7 @@
 
 ## 当前进度
 
-- **阶段**：共 93 案例 / 10 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26 · admin 5）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
+- **阶段**：共 98 案例 / 10 分类（css 5 · basics 5 · animation 8 · performance 11 · observer 5 · virtual 3 · vue3 17 · composables 8 · practice 26 · admin 10）；「不造轮子」「框架案例抽离」「一案例一演示」约定已固化
 - 计划：`docs/superpowers/plans/2026-10-16-vue3-case-library.md`（14 个任务，已完成，保留为历史记录）
 - 遗留任务计划：`docs/superpowers/plans/2026-11-06-remaining-tasks.md`（Task 1~6 已完成，`v0.2` 已发布；保留为历史记录）
 - 设计文档：`docs/superpowers/specs/2026-10-16-vue3-case-library-design.md`（P0+P1 案例清单）
@@ -350,7 +350,15 @@
   - `admin/pagination`：分页边界，每页条数变化回第 1 页、删到空页自动回退、重置数据；场景「分页边界与每页条数切换」
   - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 更新到 93
   - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 113.4 KB）、`audit:cases` 93 案例 0 P0/P1/P2、全量 `check:ui` 55/55、`--sweep` 93/93
-- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/admin/query-bar`、`/cases/admin/batch-actions`、`/cases/admin/confirm-action`、`/cases/admin/form-drawer`、`/cases/admin/pagination`、`/cases/performance/pull-refresh`
+- ✅ 2026-11-08 继续扩充 `admin` 分类 5 个案例（共 98 案例 / 10 分类）：仍按「小而完整」选型，全部自包含、不引新依赖
+  - `admin/column-settings`：表格列显隐 / 排序 / 持久化 / 恢复默认，固定列禁止隐藏；场景「列设置显示隐藏与恢复默认」
+  - `admin/step-form`：分步表单，当前步骤只校验当前字段、上一步保留内容、提交前再兜底；场景「分步表单逐步校验」
+  - `admin/remote-select`：远程搜索，输入防抖、加载态、空结果、旧响应按 token 丢弃；场景「远程搜索防抖与旧结果丢弃」
+  - `admin/notification-center`：通知中心，全部 / 未读切换、单条已读、全部已读、重置；场景「通知中心已读与全部已读」
+  - `admin/batch-import`：批量导入，逐行校验、错误预览、只导入合法行；场景「批量导入逐行校验」
+  - 每个案例四件套齐全（Demo / meta / notes 五段 / code 同源），375px 浅 + 暗截图留档；`CASES.md` 更新到 98
+  - 验收：`npx vitest run` 60/60、`type-check`、`lint`、`build`、`check:bundle`（首屏 gzip 116.4 KB）、`audit:cases` 98 案例 0 P0/P1/P2、全量 `check:ui` 60/60、`--sweep` 98/98
+- dev 地址：当前主工作区 `http://localhost:5174/`，列表 `/cases`，动画案例 `/cases/animation/skeleton-shimmer`，案例页 `/cases/performance/perf-observer`、`/cases/observer/intersection-observer`、`/cases/vue3/reactive-loss`、`/cases/practice/request-race`、`/cases/practice/dynamic-chunk`、`/cases/vue3/transition-group`、`/cases/composables/use-media-query`、`/cases/composables/use-storage`、`/cases/composables/use-keyboard-shortcut`、`/cases/composables/use-async-task`、`/cases/composables/use-polling`、`/cases/composables/use-network-status`、`/cases/composables/use-autosave`、`/cases/admin/query-bar`、`/cases/admin/batch-actions`、`/cases/admin/confirm-action`、`/cases/admin/form-drawer`、`/cases/admin/pagination`、`/cases/admin/column-settings`、`/cases/admin/step-form`、`/cases/admin/remote-select`、`/cases/admin/notification-center`、`/cases/admin/batch-import`、`/cases/performance/pull-refresh`
 
 ## 决策记录
 
@@ -460,3 +468,4 @@
 | 2026-11-07 | **遗留任务 1~5 合并为单个 PR，`v0.2` 指向合并后的 main** | 任务 1~4 本来就是依次堆叠的分支（Task 2 基于 Task 1、Task 3 基于 Task 2、Task 4 基于 Task 3），再拆 5 个 PR 需要逐个改 base 并反复解决 AGENTS / 计划文档冲突；用户明确「一口气干完」，所以用 `chore/remaining-tasks` 一次 PR 收口 5 个提交，rebase 合并保留每个任务独立 commit。tag 在 PR 合并后打，确保 Release 指向真正的 main 提交；当时 `github.com:443` 连接超时，tag 改用 Git Data API 创建（annotated tag 对象 `05a4a1d` → `229c662`），效果与 `git push origin v0.2` 一致 |
 | 2026-11-07 | **composables 扩到 8 个案例：每个案例只讲一个「生命周期问题」** | 已有 `use-event-listener`（清理）、`use-media-query`（初始值 + 断点）、`use-storage`（脏数据）、`use-keyboard-shortcut`（让路）后，继续加案例必须避开这些维度。新增四个各覆盖一类问题：`use-async-task` 管请求状态与旧响应、`use-polling` 管定时器链与后台暂停、`use-network-status` 管事件订阅范围与清理、`use-autosave` 管防抖 / 串行 / 离开页面兜底。每个案例都用「手写 vs 封装」同屏对照，计数来自真实事件或 `data-stat`，不写毫秒估算；网络与自动保存把数据源 / 保存函数做成可注入，测试和演示才能稳定复现。`check:ui` 同步新增 4 个常驻场景，`--sweep` 覆盖 88 个案例 |
 | 2026-11-08 | **新增 `admin` 分类：后台组件只做「小而完整」的单点交互** | 用户要「好用但不复杂」的后台组件，所以没有做组件库，也没有把表格、表单、权限一次性铺全；先选 5 个高频单点：查询栏、批量操作、Promise 确认框、表单抽屉、分页。每个案例只解决一个交互，并保留一个真实边界：查询中防重复提交、半选三态、失败不关框、脏数据保护、删到空页自动回退。演示仍用 Naive 控件，数据与计数来自页面自身；`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 93 个案例 |
+| 2026-11-08 | **`admin` 第二批仍只做单点交互，不引入通用表格组件** | 第二批补的是后台里高频但彼此独立的 5 个点：列设置、分步表单、远程搜索、通知中心、批量导入。每个案例仍只解决一个交互，并保留一个真实边界：固定列不能隐藏、提交前兜底校验、旧响应按 token 丢弃、未读计数从同一份数据派生、错误行带行号预览。没有抽通用 DataTable / Form 组件：这些案例是教学单元，抽成框架会把「为什么这样设计」藏进抽象层；复用只发生在演示区共享控件（如 `demo-resize-handle`）。`check:ui` 新增 5 个常驻场景，`--sweep` 覆盖 98 个案例 |

@@ -1,0 +1,59 @@
+type Plan = 'basic' | 'pro' | 'enterprise'
+
+interface FormState {
+  name: string
+  email: string
+  plan: Plan
+  seats: string
+}
+
+const form = reactive<FormState>({
+  name: '',
+  email: '',
+  plan: 'basic',
+  seats: '5',
+})
+
+const step = ref(1)
+const errors = ref<{ name?: string; email?: string }>({})
+const loading = ref(false)
+const submitted = ref(false)
+const submitCount = ref(0)
+let submitTimer: number | null = null
+
+//! 只校验当前步骤，不提前暴露后面步骤的错误
+function validateStep1(): boolean {
+  const next: { name?: string; email?: string } = {}
+  if (form.name.trim().length < 2) next.name = '姓名至少 2 个字'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) next.email = '邮箱格式不对'
+  errors.value = next
+  return Object.keys(next).length === 0
+}
+
+//! 下一步通过校验才前进；上一步保留已填内容
+function next(): void {
+  if (submitted.value) return
+  if (step.value === 1 && !validateStep1()) return
+  if (step.value < 3) step.value++
+}
+
+function back(): void {
+  if (submitted.value) return
+  if (step.value > 1) step.value--
+}
+
+//! 提交前再校验一次，防止用户绕过按钮状态
+function submit(): void {
+  if (loading.value || submitted.value) return
+  if (!validateStep1()) {
+    step.value = 1
+    return
+  }
+  loading.value = true
+  submitTimer = window.setTimeout(() => {
+    loading.value = false
+    submitted.value = true
+    submitCount.value++
+    submitTimer = null
+  }, 500)
+}
