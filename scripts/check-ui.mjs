@@ -4847,6 +4847,126 @@ const SCENARIOS = [
     },
   },
   {
+    name: '保存视图与默认视图恢复',
+    route: '/cases/admin/saved-views',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.sv-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (group, text) =>
+          [...root.querySelectorAll(group + ' .n-radio-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const view = (text) =>
+          [...root.querySelectorAll('[data-view]')].find((el) =>
+            (el.textContent ?? '').includes(text),
+          )
+        const read = () => ({
+          views: num('view-count'),
+          result: num('result-count'),
+          columns: num('visible-columns'),
+          dirty: num('dirty'),
+          current: stat('current-view'),
+        })
+
+        const initial = read()
+        radio('.sv-status', '待处理').click()
+        await wait(120)
+        const filtered = read()
+
+        const nameInput = root.querySelector('[data-field="viewName"] input')
+        nameInput.value = '待处理视图'
+        nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(80)
+        button('保存为新视图').click()
+        await wait(140)
+        const saved = read()
+
+        radio('.sv-sort', '金额从高到低').click()
+        await wait(120)
+        const sorted = read()
+        button('更新当前视图').click()
+        await wait(120)
+        const updated = read()
+
+        button('删除当前视图').click()
+        await wait(140)
+        const deleted = read()
+
+        view('高金额').click()
+        await wait(140)
+        const high = read()
+        const deleteDisabled = Boolean(button('删除当前视图')?.disabled)
+
+        button('恢复默认').click()
+        await wait(140)
+        const restored = read()
+
+        return { initial, filtered, saved, sorted, updated, deleted, high, deleteDisabled, restored }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.views !== 3 ||
+        result.initial.result !== 6 ||
+        result.initial.columns !== 4 ||
+        result.initial.dirty !== 0 ||
+        result.initial.current !== '全部订单'
+      ) {
+        failures.push(
+          `初始状态不对（${result.initial.views} 视图 / ${result.initial.result} 条 / ${result.initial.columns} 列 / ${result.initial.current}）`,
+        )
+      }
+      if (result.filtered.result !== 3 || result.filtered.dirty !== 1) {
+        failures.push(
+          `待处理筛选不对（${result.filtered.result} 条 / 脏 ${result.filtered.dirty}）`,
+        )
+      }
+      if (
+        result.saved.views !== 4 ||
+        result.saved.dirty !== 0 ||
+        result.saved.current !== '待处理视图'
+      ) {
+        failures.push(
+          `保存新视图不对（${result.saved.views} 视图 / ${result.saved.current} / 脏 ${result.saved.dirty}）`,
+        )
+      }
+      if (result.sorted.dirty !== 1 || result.updated.dirty !== 0) {
+        failures.push(
+          `更新当前视图不对（改排序后脏 ${result.sorted.dirty} / 更新后脏 ${result.updated.dirty}）`,
+        )
+      }
+      if (
+        result.deleted.views !== 3 ||
+        result.deleted.current !== '全部订单' ||
+        result.deleted.result !== 6
+      ) {
+        failures.push(
+          `删除当前视图不对（${result.deleted.views} 视图 / ${result.deleted.current} / ${result.deleted.result} 条）`,
+        )
+      }
+      if (result.high.result !== 2 || result.high.columns !== 3) {
+        failures.push(`高金额视图不对（${result.high.result} 条 / ${result.high.columns} 列）`)
+      }
+      if (!result.deleteDisabled) failures.push('默认视图的删除按钮仍可用')
+      if (
+        result.restored.current !== '全部订单' ||
+        result.restored.result !== 6 ||
+        result.restored.dirty !== 0
+      ) {
+        failures.push(
+          `恢复默认不对（${result.restored.current} / ${result.restored.result} 条 / 脏 ${result.restored.dirty}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '查询栏条件回显与防重复提交',
     route: '/cases/admin/query-bar',
     facts: async ({ evaluate }) =>
