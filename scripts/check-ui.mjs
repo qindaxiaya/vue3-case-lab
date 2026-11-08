@@ -4847,6 +4847,145 @@ const SCENARIOS = [
     },
   },
   {
+    name: '审批流按角色推进',
+    route: '/cases/admin/approval-flow',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.af-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const action = (name) => root.querySelector('[data-action="' + name + '"]')
+        const role = (text) =>
+          [...root.querySelectorAll('.af-role .n-radio-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const read = () => ({
+          status: stat('status-text'),
+          step: stat('step-text'),
+          history: num('history-count'),
+          role: stat('current-role'),
+        })
+
+        const initial = read()
+        action('approve').click()
+        await wait(120)
+        const managerApproved = read()
+
+        role('财务').click()
+        await wait(120)
+        const financeRole = read()
+        action('approve').click()
+        await wait(120)
+        const financeApproved = read()
+
+        action('reset').click()
+        await wait(120)
+        const resetOne = read()
+
+        action('reject').click()
+        await wait(120)
+        const rejected = read()
+        const approveAfterRejectDisabled = Boolean(action('approve')?.disabled)
+        action('approve').click()
+        await wait(120)
+        const afterRejectApprove = read()
+
+        action('reset').click()
+        await wait(120)
+        action('transfer').click()
+        await wait(120)
+        const transferred = read()
+        const managerApproveAfterTransferDisabled = Boolean(action('approve')?.disabled)
+
+        role('财务').click()
+        await wait(120)
+        const financeApproveEnabled = !action('approve')?.disabled
+        action('approve').click()
+        await wait(120)
+        const transferredApproved = read()
+
+        return {
+          initial,
+          managerApproved,
+          financeRole,
+          financeApproved,
+          resetOne,
+          rejected,
+          approveAfterRejectDisabled,
+          afterRejectApprove,
+          transferred,
+          managerApproveAfterTransferDisabled,
+          financeApproveEnabled,
+          transferredApproved,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.status !== '待审批' ||
+        result.initial.step !== '主管审批' ||
+        result.initial.history !== 1
+      ) {
+        failures.push(
+          `初始状态不对（${result.initial.status} / ${result.initial.step} / 历史 ${result.initial.history}）`,
+        )
+      }
+      if (result.managerApproved.step !== '财务审批' || result.managerApproved.history !== 2) {
+        failures.push(
+          `主管通过后不对（${result.managerApproved.step} / 历史 ${result.managerApproved.history}）`,
+        )
+      }
+      if (result.financeRole.role !== '财务') {
+        failures.push(`切换财务角色后当前角色为 ${result.financeRole.role}`)
+      }
+      if (
+        result.financeApproved.status !== '已通过' ||
+        result.financeApproved.step !== '完成' ||
+        result.financeApproved.history !== 3
+      ) {
+        failures.push(
+          `财务通过后不对（${result.financeApproved.status} / ${result.financeApproved.step} / 历史 ${result.financeApproved.history}）`,
+        )
+      }
+      if (
+        result.resetOne.status !== '待审批' ||
+        result.resetOne.step !== '主管审批' ||
+        result.resetOne.history !== 1
+      ) {
+        failures.push(
+          `重置后不对（${result.resetOne.status} / ${result.resetOne.step} / 历史 ${result.resetOne.history}）`,
+        )
+      }
+      if (result.rejected.status !== '已驳回' || result.rejected.history !== 2) {
+        failures.push(`主管驳回后不对（${result.rejected.status} / 历史 ${result.rejected.history}）`)
+      }
+      if (!result.approveAfterRejectDisabled) failures.push('驳回后通过按钮仍可用')
+      if (result.afterRejectApprove.status !== '已驳回') {
+        failures.push(`驳回后点通过仍改变了状态（${result.afterRejectApprove.status}）`)
+      }
+      if (result.transferred.step !== '财务审批' || result.transferred.history !== 2) {
+        failures.push(
+          `主管转交后不对（${result.transferred.step} / 历史 ${result.transferred.history}）`,
+        )
+      }
+      if (!result.managerApproveAfterTransferDisabled) {
+        failures.push('转交后主管角色仍可通过')
+      }
+      if (!result.financeApproveEnabled) failures.push('转交后切到财务角色，通过按钮仍不可用')
+      if (
+        result.transferredApproved.status !== '已通过' ||
+        result.transferredApproved.history !== 3
+      ) {
+        failures.push(
+          `转交后财务通过不对（${result.transferredApproved.status} / 历史 ${result.transferredApproved.history}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '保存视图与默认视图恢复',
     route: '/cases/admin/saved-views',
     facts: async ({ evaluate }) =>

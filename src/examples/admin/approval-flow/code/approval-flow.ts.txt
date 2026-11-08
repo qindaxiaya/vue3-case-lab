@@ -1,0 +1,117 @@
+type Role = 'manager' | 'finance' | 'applicant'
+type Status = 'pending' | 'approved' | 'rejected'
+type Step = 'manager' | 'finance' | 'done'
+
+interface HistoryItem {
+  actor: string
+  action: string
+  note: string
+}
+
+interface Application {
+  id: string
+  title: string
+  amount: number
+  applicant: string
+  status: Status
+  step: Step
+  history: HistoryItem[]
+}
+
+/** 每次重置都新建一份，避免时间线数组被上一次操作继续追加 */
+function createApplication(): Application {
+  return {
+    id: 'A-1024',
+    title: '差旅报销申请',
+    amount: 3280,
+    applicant: '李雷',
+    status: 'pending',
+    step: 'manager',
+    history: [{ actor: '申请人', action: '提交申请', note: '等待主管审批' }],
+  }
+}
+
+const application = ref<Application>(createApplication())
+const currentRole = ref<Role>('manager')
+const actionCount = ref(0)
+
+const roleLabels: Record<Role, string> = {
+  manager: '主管',
+  finance: '财务',
+  applicant: '申请人',
+}
+
+const statusLabels: Record<Status, string> = {
+  pending: '待审批',
+  approved: '已通过',
+  rejected: '已驳回',
+}
+
+const stepLabels: Record<Step, string> = {
+  manager: '主管审批',
+  finance: '财务审批',
+  done: '完成',
+}
+
+const roleLabel = computed(() => roleLabels[currentRole.value])
+const statusText = computed(() => statusLabels[application.value.status])
+const stepText = computed(() => stepLabels[application.value.step])
+
+//! 通过和驳回都只允许当前步骤对应的角色操作，避免主管替财务点通过
+const canApprove = computed(() => {
+  if (application.value.status !== 'pending') return false
+  if (application.value.step === 'manager') return currentRole.value === 'manager'
+  if (application.value.step === 'finance') return currentRole.value === 'finance'
+  return false
+})
+
+const canReject = computed(() => canApprove.value)
+
+const canTransfer = computed(
+  () =>
+    application.value.status === 'pending' &&
+    application.value.step === 'manager' &&
+    currentRole.value === 'manager',
+)
+
+//! 每次成功操作只追加一条历史，并累计操作次数
+function pushHistory(actor: string, action: string, note: string): void {
+  application.value.history.push({ actor, action, note })
+  actionCount.value += 1
+}
+
+function approve(): void {
+  if (!canApprove.value) return
+  if (application.value.step === 'manager') {
+    application.value.step = 'finance'
+    pushHistory(roleLabel.value, '通过', '转交财务审批')
+    return
+  }
+  if (application.value.step === 'finance') {
+    application.value.status = 'approved'
+    application.value.step = 'done'
+    pushHistory(roleLabel.value, '通过', '审批完成')
+  }
+}
+
+function reject(): void {
+  if (!canReject.value) return
+  application.value.status = 'rejected'
+  pushHistory(
+    roleLabel.value,
+    '驳回',
+    currentRole.value === 'manager' ? '金额说明不完整' : '发票信息有误',
+  )
+}
+
+function transfer(): void {
+  if (!canTransfer.value) return
+  application.value.step = 'finance'
+  pushHistory(roleLabel.value, '转交', '转交财务处理')
+}
+
+function reset(): void {
+  application.value = createApplication()
+  currentRole.value = 'manager'
+  actionCount.value = 0
+}
