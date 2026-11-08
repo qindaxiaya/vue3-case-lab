@@ -1,0 +1,131 @@
+type Status = 'all' | 'pending' | 'done'
+type Sort = 'created-desc' | 'amount-desc'
+
+interface QueryState {
+  keyword: string
+  status: Status
+  sort: Sort
+  /** 最低金额：0 表示不限制，视图可以保存金额门槛 */
+  minAmount: number
+  columns: {
+    owner: boolean
+    amount: boolean
+  }
+}
+
+interface SavedView {
+  id: string
+  name: string
+  query: QueryState
+  isDefault: boolean
+}
+
+const query = reactive<QueryState>({
+  keyword: '',
+  status: 'all',
+  sort: 'created-desc',
+  minAmount: 0,
+  columns: { owner: true, amount: true },
+})
+
+const views = ref<SavedView[]>([
+  { id: 'all', name: '全部订单', query: cloneQuery(query), isDefault: true },
+  {
+    id: 'pending',
+    name: '待处理',
+    query: {
+      keyword: '',
+      status: 'pending',
+      sort: 'created-desc',
+      minAmount: 0,
+      columns: { owner: true, amount: true },
+    },
+    isDefault: true,
+  },
+  {
+    id: 'high-amount',
+    name: '高金额',
+    query: {
+      keyword: '',
+      status: 'all',
+      sort: 'amount-desc',
+      minAmount: 1000,
+      columns: { owner: false, amount: true },
+    },
+    isDefault: true,
+  },
+])
+
+const currentViewId = ref('all')
+const currentView = computed(() =>
+  views.value.find((view) => view.id === currentViewId.value),
+)
+
+//! 视图保存的是查询副本，切换时复制回来，改筛选不会污染原视图
+function cloneQuery(source: QueryState): QueryState {
+  return {
+    keyword: source.keyword,
+    status: source.status,
+    sort: source.sort,
+    minAmount: source.minAmount,
+    columns: { ...source.columns },
+  }
+}
+
+function applyQuery(source: QueryState): void {
+  query.keyword = source.keyword
+  query.status = source.status
+  query.sort = source.sort
+  query.minAmount = source.minAmount
+  query.columns = { ...source.columns }
+}
+
+//! 用稳定顺序的字符串比较当前查询和视图快照，得到「未保存」标记
+function serialize(source: QueryState): string {
+  return JSON.stringify([
+    source.keyword.trim(),
+    source.status,
+    source.sort,
+    source.minAmount,
+    source.columns.owner,
+    source.columns.amount,
+  ])
+}
+
+const dirty = computed(() => {
+  if (!currentView.value) return false
+  return serialize(query) !== serialize(currentView.value.query)
+})
+
+function switchView(id: string): void {
+  const target = views.value.find((view) => view.id === id)
+  if (!target) return
+  currentViewId.value = id
+  applyQuery(target.query)
+}
+
+function saveAsNew(): void {
+  const name = newViewName.value.trim() || `视图 ${views.value.length + 1}`
+  const id = `view-${nextViewId++}`
+  views.value.push({ id, name, query: cloneQuery(query), isDefault: false })
+  currentViewId.value = id
+  newViewName.value = ''
+}
+
+//! 默认视图只读：更新和删除都直接返回，按钮也同步禁用
+function updateCurrent(): void {
+  const target = currentView.value
+  if (!target || target.isDefault) return
+  target.query = cloneQuery(query)
+}
+
+function deleteCurrent(): void {
+  const target = currentView.value
+  if (!target || target.isDefault) return
+  views.value = views.value.filter((view) => view.id !== target.id)
+  switchView('all')
+}
+
+function restoreDefault(): void {
+  switchView('all')
+}
