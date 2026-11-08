@@ -1,0 +1,102 @@
+type ColumnKey = 'name' | 'status' | 'owner' | 'updated' | 'amount'
+
+const allColumns = [
+  { key: 'name', label: '名称', fixed: true },
+  { key: 'status', label: '状态' },
+  { key: 'owner', label: '负责人' },
+  { key: 'updated', label: '更新时间' },
+  { key: 'amount', label: '金额' },
+] as const
+
+const STORAGE_KEY = 'demo-admin-columns'
+
+/** 当前列顺序：只影响显示顺序，不影响数据本身 */
+const order = ref<ColumnKey[]>(allColumns.map((column) => column.key))
+
+/** 当前显隐：用普通对象，方便整体替换和模板直接读 */
+const visible = ref<Record<ColumnKey, boolean>>({
+  name: true,
+  status: true,
+  owner: true,
+  updated: true,
+  amount: true,
+})
+
+//! 配置只存列 key：改标题、改宽度不会把旧配置顶掉
+function loadConfig(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw) as { order?: unknown; visible?: unknown }
+
+    if (Array.isArray(data.order)) {
+      const valid = data.order.filter(
+        (key): key is ColumnKey => typeof key === 'string' && allColumns.some((column) => column.key === key),
+      )
+      // 旧版本删掉过列时，缺的列补在末尾，避免表格少列
+      order.value = [...valid, ...allColumns.map((column) => column.key).filter((key) => !valid.includes(key))]
+    }
+
+    if (data.visible && typeof data.visible === 'object') {
+      const saved = data.visible as Record<string, unknown>
+      for (const column of allColumns) {
+        if (typeof saved[column.key] === 'boolean') visible.value[column.key] = saved[column.key]
+      }
+    }
+  } catch {
+    // 配置坏了就清掉，下一次改动会重新写一份合法的
+    localStorage.removeItem(STORAGE_KEY)
+  }
+}
+
+loadConfig()
+
+//! 任何改动都自动落盘；重置时跳过一次，避免刚清掉又写回默认值
+watch(
+  [order, visible],
+  () => {
+    if (skipNextSave) {
+      skipNextSave = false
+      return
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ order: order.value, visible: visible.value }))
+  },
+  { deep: true },
+)
+
+/** 表格只渲染当前可见列，顺序跟着 order 走 */
+const visibleColumns = computed(() =>
+  order.value
+    .filter((key) => visible.value[key])
+    .map((key) => allColumns.find((column) => column.key === key)!)
+    .filter(Boolean),
+)
+
+/** 固定列和最后一列不允许隐藏：至少保留一列能识别行 */
+function setVisible(key: ColumnKey, checked: boolean): void {
+  const column = allColumns.find((item) => item.key === key)
+  if (!column || column.fixed) return
+  if (!checked && visibleColumns.value.length <= 1) return
+  visible.value = { ...visible.value, [key]: checked }
+}
+
+/** 上移 / 下移：交换相邻两项，越界直接忽略 */
+function move(key: ColumnKey, delta: -1 | 1): void {
+  const index = order.value.indexOf(key)
+  const target = index + delta
+  if (index < 0 || target < 0 || target >= order.value.length) return
+  const next = [...order.value]
+  ;[next[index], next[target]] = [next[target], next[index]]
+  order.value = next
+}
+
+/** 恢复默认：顺序、显隐、本地存储一起回到初始状态 */
+function reset(): void {
+  skipNextSave = true
+  order.value = allColumns.map((column) => column.key)
+  visible.value = { name: true, status: true, owner: true, updated: true, amount: true }
+  localStorage.removeItem(STORAGE_KEY)
+  queueMicrotask(() => {
+    skipNextSave = false
+  })
+}
