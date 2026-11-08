@@ -1,0 +1,129 @@
+// ============================================================
+// 导入进度：分批处理、暂停继续、取消汇总
+// ============================================================
+
+type Mode = 'fake' | 'batch'
+type Status = 'idle' | 'running' | 'paused' | 'cancelled' | 'done'
+
+const TOTAL = 120
+const BATCH_SIZE = 10
+const BATCH_MS = 120
+
+const mode = ref<Mode>('batch')
+const status = ref<Status>('idle')
+const processed = ref(0)
+const failed = ref(0)
+const fakeProgress = ref(0)
+
+let batchTimer: number | null = null
+let fakeTimer: number | null = null
+
+const progress = computed(() =>
+  mode.value === 'fake' ? fakeProgress.value : Math.round((processed.value / TOTAL) * 100),
+)
+const batchIndex = computed(() => Math.ceil(processed.value / BATCH_SIZE))
+const statusText = computed(() => {
+  if (status.value === 'idle') return '待开始'
+  if (status.value === 'running') return '处理中'
+  if (status.value === 'paused') return '已暂停'
+  if (status.value === 'cancelled') return '已取消'
+  return mode.value === 'fake' ? '已完成（假进度）' : '已完成'
+})
+
+function clearTimers(): void {
+  if (batchTimer !== null) {
+    window.clearTimeout(batchTimer)
+    batchTimer = null
+  }
+  if (fakeTimer !== null) {
+    window.clearInterval(fakeTimer)
+    fakeTimer = null
+  }
+}
+
+//! 真实模式：每批处理 BATCH_SIZE 行，处理完再排下一批
+function scheduleBatch(): void {
+  batchTimer = window.setTimeout(() => {
+    batchTimer = null
+    if (status.value !== 'running') return
+
+    processed.value = Math.min(TOTAL, processed.value + BATCH_SIZE)
+    if (processed.value >= TOTAL) {
+      status.value = 'done'
+      return
+    }
+    scheduleBatch()
+  }, BATCH_MS)
+}
+
+/** 假进度：百分比自己涨到 100，但 processed 一直是 0 */
+function startFake(): void {
+  fakeProgress.value = 0
+  status.value = 'running'
+  fakeTimer = window.setInterval(() => {
+    fakeProgress.value = Math.min(100, fakeProgress.value + 10)
+    if (fakeProgress.value >= 100) {
+      status.value = 'done'
+      clearTimers()
+    }
+  }, 60)
+}
+
+function start(): void {
+  if (status.value === 'running' || status.value === 'paused') return
+  clearTimers()
+  processed.value = 0
+  failed.value = 0
+  fakeProgress.value = 0
+
+  if (mode.value === 'fake') {
+    startFake()
+    return
+  }
+
+  status.value = 'running'
+  scheduleBatch()
+}
+
+//! 暂停只停下一批，已经处理完的进度保留
+function pause(): void {
+  if (mode.value !== 'batch' || status.value !== 'running') return
+  if (batchTimer !== null) {
+    window.clearTimeout(batchTimer)
+    batchTimer = null
+  }
+  status.value = 'paused'
+}
+
+function resume(): void {
+  if (mode.value !== 'batch' || status.value !== 'paused') return
+  status.value = 'running'
+  scheduleBatch()
+}
+
+//! 取消要作废在途定时器，否则取消后还会继续加进度
+function cancel(): void {
+  if (status.value !== 'running' && status.value !== 'paused') return
+  clearTimers()
+  status.value = 'cancelled'
+}
+
+function reset(): void {
+  clearTimers()
+  processed.value = 0
+  failed.value = 0
+  fakeProgress.value = 0
+  status.value = 'idle'
+}
+
+function onModeChange(value: string | number | boolean | undefined): void {
+  if (value !== 'fake' && value !== 'batch') return
+  clearTimers()
+  mode.value = value
+  processed.value = 0
+  failed.value = 0
+  fakeProgress.value = 0
+  status.value = 'idle'
+}
+
+onUnmounted(clearTimers)

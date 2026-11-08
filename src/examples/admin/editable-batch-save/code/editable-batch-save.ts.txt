@@ -1,0 +1,85 @@
+// ============================================================
+// 可编辑表格批量保存：编辑只标脏，保存才提交
+// ============================================================
+
+type Mode = 'instant' | 'batch'
+type Field = 'name' | 'amount'
+
+interface EditableRow {
+  id: number
+  name: string
+  amount: number
+  dirty: boolean
+  failed: boolean
+}
+
+function createRows(): EditableRow[] {
+  return [
+    { id: 1, name: '机械键盘', amount: 199, dirty: false, failed: false },
+    { id: 2, name: '无线鼠标', amount: 89, dirty: false, failed: false },
+    { id: 3, name: '显示器', amount: 1299, dirty: false, failed: false },
+    { id: 4, name: '降噪耳机', amount: 399, dirty: false, failed: false },
+  ]
+}
+
+const mode = ref<Mode>('batch')
+const rows = ref<EditableRow[]>(createRows())
+const saveCount = ref(0)
+const statusText = ref('待修改')
+
+const dirtyCount = computed(() => rows.value.filter((row) => row.dirty).length)
+const failedCount = computed(() => rows.value.filter((row) => row.failed).length)
+
+function onEdit(row: EditableRow, field: Field, value: string | number): void {
+  if (field === 'name') {
+    row.name = String(value)
+  } else {
+    row.amount = Number(value) || 0
+  }
+  row.dirty = true
+  row.failed = false
+
+  if (mode.value === 'instant') {
+    //! 即时保存：每改一格就发一次请求，表格里立刻变干净
+    saveCount.value++
+    row.dirty = false
+    statusText.value = '已保存'
+  } else {
+    statusText.value = '有未保存修改'
+  }
+}
+
+function saveAll(): void {
+  const pending = rows.value.filter((row) => row.dirty)
+  if (!pending.length) {
+    statusText.value = '没有待保存修改'
+    return
+  }
+
+  saveCount.value += pending.length
+  let failed = 0
+  for (const row of pending) {
+    if (row.id === 3) {
+      //! 失败行保留脏标记，用户改完还能再点保存
+      row.failed = true
+      failed++
+      continue
+    }
+    row.dirty = false
+    row.failed = false
+  }
+
+  statusText.value = failed ? `${failed} 行保存失败，已保留` : '全部保存成功'
+}
+
+function reset(): void {
+  rows.value = createRows()
+  saveCount.value = 0
+  statusText.value = '待修改'
+}
+
+function onModeChange(value: string | number | boolean | undefined): void {
+  if (value !== 'instant' && value !== 'batch') return
+  mode.value = value
+  reset()
+}
