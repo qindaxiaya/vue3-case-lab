@@ -5587,6 +5587,156 @@ const SCENARIOS = [
     },
   },
   {
+    name: '跨页选择保留与筛选全选',
+    route: '/cases/admin/cross-page-selection',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.cps-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (text) =>
+          [...root.querySelectorAll('.cps-filter .n-radio-button')].find(
+            (el) => el.textContent.trim() === text,
+          )
+        const rowCheck = (id) => root.querySelector('[data-row-check="' + id + '"]')
+        const pageAll = () => root.querySelector('[data-stat="page-all"]')
+        const read = () => ({
+          selected: num('selected-count'),
+          filtered: num('filtered-count'),
+          page: num('page-index'),
+          rows: root.querySelectorAll('[data-row]').length,
+          status: stat('filter-status'),
+          pageAll: pageAll()?.getAttribute('aria-checked') ?? '',
+        })
+
+        const initial = read()
+        rowCheck(1).click()
+        await wait(80)
+        const one = read()
+        button('下一页').click()
+        await wait(80)
+        const next = read()
+        button('选择本页').click()
+        await wait(80)
+        const pageSelected = read()
+
+        // 先清空：已选 6 里已经包含全部已完成行，直接点「选择全部筛选结果」加不出新 id
+        button('清空选择').click()
+        await wait(80)
+
+        radio('待处理').click()
+        await wait(100)
+        const pending = read()
+        button('选择全部筛选结果').click()
+        await wait(80)
+        const pendingAll = read()
+        radio('已完成').click()
+        await wait(100)
+        const done = read()
+        button('选择全部筛选结果').click()
+        await wait(80)
+        const allFiltered = read()
+
+        button('清空选择').click()
+        await wait(80)
+        const cleared = read()
+
+        radio('待处理').click()
+        await wait(100)
+        button('选择全部筛选结果').click()
+        await wait(80)
+        const pendingAgain = read()
+        button('下一页').click()
+        await wait(80)
+        const pendingNext = read()
+
+        button('重置').click()
+        await wait(100)
+        const reset = read()
+
+        return {
+          initial,
+          one,
+          next,
+          pageSelected,
+          pending,
+          done,
+          allFiltered,
+          cleared,
+          pendingAgain,
+          pendingAll,
+          pendingNext,
+          reset,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.selected !== 0 ||
+        result.initial.filtered !== 10 ||
+        result.initial.page !== 1 ||
+        result.initial.rows !== 5
+      ) {
+        failures.push(
+          `初始状态不对（已选 ${result.initial.selected} / 筛选 ${result.initial.filtered} / 第 ${result.initial.page} 页 / ${result.initial.rows} 行）`,
+        )
+      }
+      if (result.one.selected !== 1) failures.push(`勾选第 1 行后已选 ${result.one.selected}，应为 1`)
+      if (result.next.selected !== 1 || result.next.page !== 2) {
+        failures.push(
+          `翻页后选择丢了（已选 ${result.next.selected} / 第 ${result.next.page} 页）`,
+        )
+      }
+      if (result.pageSelected.selected !== 6) {
+        failures.push(`选择本页后已选 ${result.pageSelected.selected}，应为 6`)
+      }
+      if (
+        result.pending.filtered !== 6 ||
+        result.pending.selected !== 0 ||
+        result.pending.page !== 1 ||
+        result.pending.status !== '待处理'
+      ) {
+        failures.push(
+          `切待处理不对（筛选 ${result.pending.filtered} / 已选 ${result.pending.selected} / 第 ${result.pending.page} 页 / ${result.pending.status}）`,
+        )
+      }
+      if (result.pendingAll.selected !== 6) {
+        failures.push(`待处理全选后已选 ${result.pendingAll.selected}，应为 6`)
+      }
+      if (result.done.filtered !== 4 || result.done.selected !== 6) {
+        failures.push(
+          `切已完成不对（筛选 ${result.done.filtered} / 已选 ${result.done.selected}）`,
+        )
+      }
+      if (result.allFiltered.selected !== 10) {
+        failures.push(`选择全部筛选结果后已选 ${result.allFiltered.selected}，应为 10`)
+      }
+      if (result.cleared.selected !== 0) {
+        failures.push(`清空后已选 ${result.cleared.selected}，应为 0`)
+      }
+      if (result.pendingAgain.selected !== 6 || result.pendingNext.selected !== 6) {
+        failures.push(
+          `待处理全选后翻页不对（全选 ${result.pendingAgain.selected} / 翻页后 ${result.pendingNext.selected}）`,
+        )
+      }
+      if (
+        result.reset.selected !== 0 ||
+        result.reset.filtered !== 10 ||
+        result.reset.page !== 1 ||
+        result.reset.status !== '全部'
+      ) {
+        failures.push(
+          `重置后不对（已选 ${result.reset.selected} / 筛选 ${result.reset.filtered} / 第 ${result.reset.page} 页 / ${result.reset.status}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
