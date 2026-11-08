@@ -4847,6 +4847,117 @@ const SCENARIOS = [
     },
   },
   {
+    name: '穿梭框移动与禁用项',
+    route: '/cases/admin/transfer-list',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.tl-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const side = (name) => root.querySelector('[data-side="' + name + '"]')
+        const read = () => ({
+          source: num('source-count'),
+          target: num('target-count'),
+          selected: num('selected-count'),
+          disabled: num('disabled-count'),
+          visible: num('visible-count'),
+        })
+
+        const initial = read()
+        button('全选可移').click()
+        await wait(100)
+        const allSelected = read()
+        button('移动选中').click()
+        await wait(120)
+        const moved = read()
+
+        button('重置').click()
+        await wait(120)
+        const resetOne = read()
+
+        const input = root.querySelector('[data-field="keyword"] input')
+        input.value = '报表'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(120)
+        const searched = read()
+        button('全选可移').click()
+        await wait(80)
+        button('移动选中').click()
+        await wait(120)
+        const movedReports = read()
+
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(120)
+        side('target').querySelector('[data-item]').click()
+        await wait(100)
+        const targetSelected = read()
+        button('移回').click()
+        await wait(120)
+        const movedBack = read()
+
+        return {
+          initial,
+          allSelected,
+          moved,
+          resetOne,
+          searched,
+          movedReports,
+          targetSelected,
+          movedBack,
+        }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.source !== 6 ||
+        result.initial.target !== 0 ||
+        result.initial.selected !== 0 ||
+        result.initial.disabled !== 1
+      ) {
+        failures.push(
+          `初始状态不对（源 ${result.initial.source} / 目标 ${result.initial.target} / 已选 ${result.initial.selected} / 禁用 ${result.initial.disabled}）`,
+        )
+      }
+      if (result.allSelected.selected !== 5) {
+        failures.push(`全选可移后已选 ${result.allSelected.selected}，应为 5`)
+      }
+      if (
+        result.moved.source !== 1 ||
+        result.moved.target !== 5 ||
+        result.moved.selected !== 0
+      ) {
+        failures.push(
+          `移动选中后不对（源 ${result.moved.source} / 目标 ${result.moved.target} / 已选 ${result.moved.selected}）`,
+        )
+      }
+      if (result.resetOne.source !== 6 || result.resetOne.target !== 0) {
+        failures.push(`重置后不对（源 ${result.resetOne.source} / 目标 ${result.resetOne.target}）`)
+      }
+      if (result.searched.visible !== 2) {
+        failures.push(`搜索「报表」后可见 ${result.searched.visible}，应为 2`)
+      }
+      if (result.movedReports.source !== 4 || result.movedReports.target !== 2) {
+        failures.push(
+          `搜索后移动不对（源 ${result.movedReports.source} / 目标 ${result.movedReports.target}）`,
+        )
+      }
+      if (result.targetSelected.selected !== 1) {
+        failures.push(`目标侧选中一项后已选 ${result.targetSelected.selected}`)
+      }
+      if (result.movedBack.source !== 5 || result.movedBack.target !== 1) {
+        failures.push(
+          `移回后不对（源 ${result.movedBack.source} / 目标 ${result.movedBack.target}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '审批流按角色推进',
     route: '/cases/admin/approval-flow',
     facts: async ({ evaluate }) =>
