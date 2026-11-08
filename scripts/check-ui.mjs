@@ -5737,6 +5737,108 @@ const SCENARIOS = [
     },
   },
   {
+    name: '批量删除撤销与超时',
+    route: '/cases/admin/batch-delete-undo',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.bdu-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const rowCheck = (id) => root.querySelector('[data-row-check="' + id + '"]')
+        const read = () => {
+          const bar = Boolean(root.querySelector('.undo-bar'))
+          return {
+            rows: num('row-count'),
+            selected: num('selected-count'),
+            undo: bar ? num('undo-count') : 0,
+            remaining: bar ? num('remaining') : 0,
+            status: stat('status-text'),
+            bar,
+          }
+        }
+
+        const initial = read()
+        rowCheck(1).click()
+        rowCheck(2).click()
+        await wait(80)
+        const selected = read()
+        button('删除所选').click()
+        await wait(120)
+        const deleted = read()
+
+        button('撤销删除').click()
+        await wait(120)
+        const undone = read()
+
+        rowCheck(1).click()
+        await wait(80)
+        button('删除所选').click()
+        await wait(120)
+        const deletedAgain = read()
+        await wait(3400)
+        const expired = read()
+
+        button('重置').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, selected, deleted, undone, deletedAgain, expired, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.rows !== 8 || result.initial.selected !== 0 || result.initial.bar) {
+        failures.push(
+          `初始状态不对（${result.initial.rows} 行 / 已选 ${result.initial.selected} / 撤销条 ${result.initial.bar}）`,
+        )
+      }
+      if (result.selected.selected !== 2) {
+        failures.push(`勾选 2 行后已选 ${result.selected.selected}，应为 2`)
+      }
+      if (
+        result.deleted.rows !== 6 ||
+        result.deleted.selected !== 0 ||
+        result.deleted.undo !== 2 ||
+        !result.deleted.bar ||
+        result.deleted.remaining < 1 ||
+        result.deleted.remaining > 3
+      ) {
+        failures.push(
+          `删除后不对（${result.deleted.rows} 行 / 已选 ${result.deleted.selected} / 撤销 ${result.deleted.undo} 条 / 剩余 ${result.deleted.remaining} 秒 / 条 ${result.deleted.bar}）`,
+        )
+      }
+      if (
+        result.undone.rows !== 8 ||
+        result.undone.undo !== 0 ||
+        result.undone.remaining !== 0 ||
+        result.undone.bar
+      ) {
+        failures.push(
+          `撤销后不对（${result.undone.rows} 行 / 撤销 ${result.undone.undo} 条 / 剩余 ${result.undone.remaining} 秒 / 条 ${result.undone.bar}）`,
+        )
+      }
+      if (result.deletedAgain.rows !== 7 || !result.deletedAgain.bar) {
+        failures.push(
+          `再次删除不对（${result.deletedAgain.rows} 行 / 条 ${result.deletedAgain.bar}）`,
+        )
+      }
+      if (result.expired.rows !== 7 || result.expired.bar || result.expired.remaining !== 0) {
+        failures.push(
+          `超时后撤销入口应消失（${result.expired.rows} 行 / 剩余 ${result.expired.remaining} 秒 / 条 ${result.expired.bar}）`,
+        )
+      }
+      if (result.reset.rows !== 8 || result.reset.selected !== 0) {
+        failures.push(
+          `重置后不对（${result.reset.rows} 行 / 已选 ${result.reset.selected}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({
