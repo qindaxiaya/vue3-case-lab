@@ -5952,6 +5952,129 @@ const SCENARIOS = [
     },
   },
   {
+    name: '会话过期提醒与续期',
+    route: '/cases/admin/session-expiry',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.se-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          remaining: num('remaining'),
+          phase: root.getAttribute('data-phase') ?? '',
+          phaseText: stat('phase'),
+          activity: num('activity-count'),
+          warning: stat('warning-visible') === 'true',
+          warningBox: Boolean(root.querySelector('.warning-banner')),
+          relogin: Boolean(root.querySelector('[data-action="relogin"]')),
+        })
+
+        // 页面打开后倒计时可能已经跑了几秒，先重置拿到确定的初始态
+        button('重置').click()
+        await wait(100)
+        const initial = read()
+
+        await wait(1200)
+        button('模拟活动').click()
+        await wait(100)
+        const touched = read()
+
+        let warning = null
+        for (let i = 0; i < 65; i++) {
+          await wait(100)
+          const current = read()
+          if (current.phase === 'warning') {
+            warning = current
+            break
+          }
+        }
+
+        button('继续使用').click()
+        await wait(100)
+        const extended = read()
+
+        button('退出登录').click()
+        await wait(100)
+        const loggedOut = read()
+
+        button('重新登录').click()
+        await wait(100)
+        const relogged = read()
+
+        button('重置').click()
+        await wait(100)
+        const reset = read()
+
+        return { initial, touched, warning, extended, loggedOut, relogged, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (
+        result.initial.remaining !== 6 ||
+        result.initial.phase !== 'active' ||
+        result.initial.activity !== 0 ||
+        result.initial.warning
+      ) {
+        failures.push(
+          `初始状态不对（剩余 ${result.initial.remaining} / ${result.initial.phase} / 活动 ${result.initial.activity} / 警告 ${result.initial.warning}）`,
+        )
+      }
+      if (
+        result.touched.remaining !== 6 ||
+        result.touched.activity !== 1 ||
+        result.touched.phase !== 'active'
+      ) {
+        failures.push(
+          `模拟活动后不对（剩余 ${result.touched.remaining} / 活动 ${result.touched.activity} / ${result.touched.phase}）`,
+        )
+      }
+      if (
+        !result.warning ||
+        !result.warning.warning ||
+        !result.warning.warningBox ||
+        result.warning.remaining < 1 ||
+        result.warning.remaining > 2
+      ) {
+        failures.push(
+          `没有进入警告态（${result.warning ? `${result.warning.phase} / 剩余 ${result.warning.remaining} / 警告 ${result.warning.warning}` : '超时未出现'}）`,
+        )
+      }
+      if (
+        result.extended.phase !== 'active' ||
+        result.extended.remaining !== 6 ||
+        result.extended.warning
+      ) {
+        failures.push(
+          `继续使用后不对（${result.extended.phase} / 剩余 ${result.extended.remaining} / 警告 ${result.extended.warning}）`,
+        )
+      }
+      if (result.loggedOut.phase !== 'expired' || !result.loggedOut.relogin) {
+        failures.push(
+          `退出登录后不对（${result.loggedOut.phase} / 重新登录 ${result.loggedOut.relogin}）`,
+        )
+      }
+      if (result.relogged.phase !== 'active' || result.relogged.remaining !== 6) {
+        failures.push(
+          `重新登录后不对（${result.relogged.phase} / 剩余 ${result.relogged.remaining}）`,
+        )
+      }
+      if (
+        result.reset.phase !== 'active' ||
+        result.reset.remaining !== 6 ||
+        result.reset.activity !== 0
+      ) {
+        failures.push(
+          `重置后不对（${result.reset.phase} / 剩余 ${result.reset.remaining} / 活动 ${result.reset.activity}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '无效路由兜底',
     route: '/nope/not-here',
     facts: async ({ evaluate }) => ({

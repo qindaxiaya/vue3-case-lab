@@ -1,0 +1,73 @@
+const SESSION_SECONDS = 6
+const WARN_SECONDS = 2
+const TICK_MS = 1000
+
+const remaining = ref(SESSION_SECONDS)
+const phase = ref<Phase>('active')
+const activityCount = ref(0)
+
+let timer: ReturnType<typeof setInterval> | null = null
+
+const warningVisible = computed(() => phase.value === 'warning')
+
+function stopTimer(): void {
+  if (timer !== null) {
+    window.clearInterval(timer)
+    timer = null
+  }
+}
+
+//! 倒计时状态机：active → warning → expired，到 0 立刻停表
+function startTimer(): void {
+  stopTimer()
+  timer = window.setInterval(() => {
+    if (phase.value === 'expired') {
+      stopTimer()
+      return
+    }
+    remaining.value = Math.max(0, remaining.value - 1)
+    if (remaining.value === 0) {
+      phase.value = 'expired'
+      stopTimer()
+    } else if (remaining.value <= WARN_SECONDS) {
+      phase.value = 'warning'
+    }
+  }, TICK_MS)
+}
+
+//! 活动只在 active 生效：警告态已经进入续期确认，不能靠活动偷偷续命
+function touch(): void {
+  if (phase.value !== 'active') return
+  remaining.value = SESSION_SECONDS
+  activityCount.value++
+  startTimer()
+}
+
+function extend(): void {
+  if (phase.value !== 'warning') return
+  phase.value = 'active'
+  remaining.value = SESSION_SECONDS
+  startTimer()
+}
+
+function logout(): void {
+  phase.value = 'expired'
+  remaining.value = 0
+  stopTimer()
+}
+
+function relogin(): void {
+  phase.value = 'active'
+  remaining.value = SESSION_SECONDS
+  startTimer()
+}
+
+function reset(): void {
+  phase.value = 'active'
+  remaining.value = SESSION_SECONDS
+  activityCount.value = 0
+  startTimer()
+}
+
+onMounted(startTimer)
+onUnmounted(stopTimer)
