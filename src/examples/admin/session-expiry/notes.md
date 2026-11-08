@@ -80,7 +80,7 @@ onUnmounted(stopTimer)
 测量说明：
 
 - 环境：本机 Chrome，案例页 `/cases/admin/session-expiry`。
-- 取样：`npm run check:ui -- --base http://localhost:5174 --only 会话过期` 的常驻场景。
+- 取样：npm run check:ui -- --base http://localhost:5174 --only 会话过期 的常驻场景。
 - 6 秒是演示值，真实会话通常 15~30 分钟，不是性能结论。
 
 ## 5. 追问与边界（面试高频）

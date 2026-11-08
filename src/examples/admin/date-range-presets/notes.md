@@ -86,7 +86,7 @@ const resultRows = computed(() =>
 测量说明：
 
 - 环境：本机 Chrome，案例页 `/cases/admin/date-range-presets`。
-- 取样：`npm run check:ui -- --base http://localhost:5174 --only 日期范围` 的常驻场景。
+- 取样：npm run check:ui -- --base http://localhost:5174 --only 日期范围 的常驻场景。
 - 固定基准日 2026-11-08，结果不随真实日期变化。
 
 ## 5. 追问与边界（面试高频）

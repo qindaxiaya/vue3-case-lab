@@ -80,7 +80,7 @@ function undoDelete(): void {
 测量说明：
 
 - 环境：本机 Chrome，案例页 `/cases/admin/batch-delete-undo`。
-- 取样：`npm run check:ui -- --base http://localhost:5174 --only 批量删除` 的常驻场景。
+- 取样：npm run check:ui -- --base http://localhost:5174 --only 批量删除 的常驻场景。
 - 3400ms 是场景等待时间，比 3000ms 窗口多留 400ms，避免定时器边界抖动。
 
 ## 5. 追问与边界（面试高频）
