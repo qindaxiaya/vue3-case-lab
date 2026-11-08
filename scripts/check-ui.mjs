@@ -4442,6 +4442,411 @@ const SCENARIOS = [
     },
   },
   {
+    name: '权限菜单按角色裁剪',
+    route: '/cases/admin/permission-menu',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.pm-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const role = (text) =>
+          [...root.querySelectorAll('.n-radio-button')]
+            .find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          visible: num('visible-count'),
+          hidden: num('hidden-count'),
+          groups: num('group-count'),
+          current: stat('current-role'),
+          plain: root.querySelectorAll('.pm-plain [data-menu-item]').length,
+          guarded: root.querySelectorAll('.pm-guarded [data-menu-item]').length,
+        })
+
+        const initial = read()
+        role('访客').click()
+        await wait(120)
+        const viewer = read()
+        role('管理员').click()
+        await wait(120)
+        const admin = read()
+        ;[...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === '重置').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, viewer, admin, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.visible !== 4 || result.initial.hidden !== 3 || result.initial.groups !== 2) {
+        failures.push(
+          `编辑角色菜单不对（可见 ${result.initial.visible} / 隐藏 ${result.initial.hidden} / 分组 ${result.initial.groups}）`,
+        )
+      }
+      if (result.initial.current !== '编辑') {
+        failures.push(`初始角色不对（${result.initial.current}）`)
+      }
+      if (result.viewer.visible !== 1 || result.viewer.hidden !== 6 || result.viewer.groups !== 1) {
+        failures.push(
+          `访客菜单不对（可见 ${result.viewer.visible} / 隐藏 ${result.viewer.hidden} / 分组 ${result.viewer.groups}）`,
+        )
+      }
+      if (result.admin.visible !== 7 || result.admin.hidden !== 0 || result.admin.groups !== 3) {
+        failures.push(
+          `管理员菜单不对（可见 ${result.admin.visible} / 隐藏 ${result.admin.hidden} / 分组 ${result.admin.groups}）`,
+        )
+      }
+      if (result.initial.plain !== 7 || result.viewer.plain !== 7 || result.admin.plain !== 7) {
+        failures.push(
+          `写死菜单应始终 7 项（${result.initial.plain} / ${result.viewer.plain} / ${result.admin.plain}）`,
+        )
+      }
+      if (result.initial.guarded !== 4 || result.viewer.guarded !== 1 || result.admin.guarded !== 7) {
+        failures.push(
+          `权限菜单渲染数量不对（${result.initial.guarded} / ${result.viewer.guarded} / ${result.admin.guarded}）`,
+        )
+      }
+      if (result.reset.current !== '编辑' || result.reset.visible !== 4) {
+        failures.push(`重置没有回到编辑角色（${result.reset.current} / ${result.reset.visible}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '审计日志记录失败与脱敏',
+    route: '/cases/admin/audit-log',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.al-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')]
+            .find((el) => el.textContent.trim().startsWith(text))
+        const radio = (text) =>
+          [...root.querySelectorAll('.n-radio-button')]
+            .find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          total: num('total-count'),
+          failed: num('failed-count'),
+          visible: num('visible-count'),
+          masked: num('masked-count'),
+          simple: root.querySelectorAll('.al-simple [data-simple]').length,
+          audit: root.querySelectorAll('.al-audit [data-audit]').length,
+        })
+
+        const initial = read()
+        button('新增订单').click()
+        await wait(80)
+        button('修改金额').click()
+        await wait(80)
+        button('删除订单').click()
+        await wait(120)
+        const afterActions = read()
+
+        radio('失败').click()
+        await wait(120)
+        const failedOnly = read()
+        const failedEntry = root.querySelector('.al-audit [data-audit]')
+        failedEntry?.click()
+        await wait(120)
+        const detailText = root.querySelector('[data-detail]')?.textContent.trim() ?? ''
+
+        ;[...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === '重置').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, afterActions, failedOnly, detailText, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.total !== 0 || result.initial.audit !== 0) {
+        failures.push(`初始日志不为空（${result.initial.total} 条 / ${result.initial.audit} 行）`)
+      }
+      if (result.afterActions.simple !== 2) {
+        failures.push(`简易日志只应记成功操作（${result.afterActions.simple} 条）`)
+      }
+      if (result.afterActions.total !== 3 || result.afterActions.audit !== 3) {
+        failures.push(
+          `审计日志应记 3 条（统计 ${result.afterActions.total} / 列表 ${result.afterActions.audit}）`,
+        )
+      }
+      if (result.afterActions.failed !== 1) {
+        failures.push(`失败操作没有记录（${result.afterActions.failed} 条）`)
+      }
+      if (result.afterActions.masked < 1) {
+        failures.push(`敏感字段没有脱敏（${result.afterActions.masked}）`)
+      }
+      if (result.failedOnly.visible !== 1 || result.failedOnly.audit !== 1) {
+        failures.push(
+          `失败筛选不对（可见 ${result.failedOnly.visible} / 列表 ${result.failedOnly.audit}）`,
+        )
+      }
+      if (!result.detailText.includes('变更前') || !result.detailText.includes('138****8000')) {
+        failures.push(`详情没有显示变更前后或脱敏手机号（${result.detailText}）`)
+      }
+      if (result.reset.total !== 0 || result.reset.audit !== 0 || result.reset.simple !== 0) {
+        failures.push(
+          `重置没有清空（${result.reset.total} 条 / 审计 ${result.reset.audit} / 简易 ${result.reset.simple}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
+    name: '部门树只允许选末级',
+    route: '/cases/admin/department-tree',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.dt-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const tree = root.querySelector('.dt-tree')
+        const node = (text) =>
+          [...tree.querySelectorAll('.n-tree-node-content__text')]
+            .find((el) => (el.textContent ?? '').trim().startsWith(text))
+        const read = () => ({
+          path: stat('selected-path'),
+          reject: num('reject-count'),
+          visible: num('visible-count'),
+        })
+
+        const initial = read()
+        node('技术部')?.click()
+        await wait(120)
+        const parentRejected = read()
+
+        const input = root.querySelector('.dt-search input')
+        input.value = '杭州'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        await wait(250)
+        const searched = read()
+        const searchText = tree.textContent ?? ''
+        node('杭州研发组')?.click()
+        await wait(120)
+        const picked = read()
+
+        ;[...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === '重置').click()
+        await wait(120)
+        const reset = read()
+
+        return { initial, parentRejected, searched, searchText, picked, reset }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.path !== '未选择' || result.initial.reject !== 0) {
+        failures.push(`初始状态不对（${result.initial.path} / 拒绝 ${result.initial.reject}）`)
+      }
+      if (result.parentRejected.path !== '未选择' || result.parentRejected.reject !== 1) {
+        failures.push(
+          `父部门没有被拒绝（${result.parentRejected.path} / 拒绝 ${result.parentRejected.reject}）`,
+        )
+      }
+      if (!result.searchText.includes('杭州研发组') || !result.searchText.includes('技术部')) {
+        failures.push(`搜索没有显示命中叶子与父级路径（${result.searchText}）`)
+      }
+      if (result.searched.visible < 1) {
+        failures.push(`搜索后没有可见节点（${result.searched.visible}）`)
+      }
+      if (result.picked.path !== '总部 / 技术部 / 杭州研发组') {
+        failures.push(`选中路径不对（${result.picked.path}）`)
+      }
+      if (result.reset.path !== '未选择' || result.reset.reject !== 0) {
+        failures.push(`重置没有清空（${result.reset.path} / 拒绝 ${result.reset.reject}）`)
+      }
+      return failures
+    },
+  },
+  {
+    name: '导入进度暂停继续与取消',
+    route: '/cases/admin/import-progress',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.ip-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (text) =>
+          [...root.querySelectorAll('.n-radio-button')].find((el) => el.textContent.trim() === text)
+        const read = () => ({
+          processed: num('processed-count'),
+          progress: num('progress'),
+          batch: num('batch-index'),
+          status: stat('status-text'),
+        })
+
+        const initial = read()
+        button('开始').click()
+        await wait(340)
+        const running = read()
+        button('暂停').click()
+        await wait(120)
+        const paused = read()
+        await wait(300)
+        const pausedAgain = read()
+        button('继续').click()
+        await wait(280)
+        const resumed = read()
+        button('取消').click()
+        await wait(120)
+        const cancelled = read()
+        await wait(300)
+        const cancelledAgain = read()
+
+        button('重置').click()
+        await wait(120)
+        radio('假进度').click()
+        await wait(120)
+        button('开始').click()
+        await wait(700)
+        const fake = read()
+
+        return { initial, running, paused, pausedAgain, resumed, cancelled, cancelledAgain, fake }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.processed !== 0 || result.initial.progress !== 0) {
+        failures.push(`初始进度不对（${result.initial.processed} / ${result.initial.progress}%）`)
+      }
+      if (result.running.processed < 20 || result.running.processed >= 120) {
+        failures.push(`开始后处理条数不对（${result.running.processed}）`)
+      }
+      if (!result.running.status.includes('处理中')) {
+        failures.push(`开始后状态不对（${result.running.status}）`)
+      }
+      if (!result.paused.status.includes('已暂停')) {
+        failures.push(`暂停状态不对（${result.paused.status}）`)
+      }
+      if (
+        result.pausedAgain.processed !== result.paused.processed ||
+        result.pausedAgain.progress !== result.paused.progress
+      ) {
+        failures.push(
+          `暂停后仍在推进（${result.paused.processed}→${result.pausedAgain.processed}）`,
+        )
+      }
+      if (result.resumed.processed <= result.paused.processed) {
+        failures.push(`继续后没有接着处理（${result.paused.processed}→${result.resumed.processed}）`)
+      }
+      if (!result.cancelled.status.includes('已取消')) {
+        failures.push(`取消状态不对（${result.cancelled.status}）`)
+      }
+      if (
+        result.cancelledAgain.processed !== result.cancelled.processed ||
+        result.cancelled.progress >= 100
+      ) {
+        failures.push(
+          `取消后仍在推进或已跑满（${result.cancelled.processed}→${result.cancelledAgain.processed} / ${result.cancelled.progress}%）`,
+        )
+      }
+      if (result.fake.progress !== 100 || result.fake.processed !== 0) {
+        failures.push(
+          `假进度应到 100% 但不处理数据（${result.fake.progress}% / ${result.fake.processed}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
+    name: '可编辑表格批量保存失败行保留',
+    route: '/cases/admin/editable-batch-save',
+    facts: async ({ evaluate }) =>
+      evaluate(`(async () => {
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+        const root = document.querySelector('.ebs-demo')
+        const stat = (name) =>
+          root.querySelector('[data-stat="' + name + '"]')?.textContent.trim() ?? ''
+        const num = (name) => Number(/[0-9]+/.exec(stat(name))?.[0] ?? NaN)
+        const button = (text) =>
+          [...root.querySelectorAll('.n-button')].find((el) => el.textContent.trim() === text)
+        const radio = (text) =>
+          [...root.querySelectorAll('.n-radio-button')].find((el) => el.textContent.trim() === text)
+        const input = (row, field) =>
+          root.querySelector('[data-row="' + row + '"] [data-field="' + field + '"] input')
+        const set = (el, value) => {
+          el.value = value
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        const read = () => ({
+          dirty: num('dirty-count'),
+          save: num('save-count'),
+          failed: num('failed-count'),
+          status: stat('status-text'),
+        })
+
+        const initial = read()
+        set(input(1, 'name'), '键盘 Pro')
+        await wait(80)
+        set(input(2, 'amount'), '99')
+        await wait(80)
+        set(input(3, 'amount'), '1399')
+        await wait(120)
+        const edited = read()
+
+        button('保存全部').click()
+        await wait(140)
+        const firstSave = read()
+        button('保存全部').click()
+        await wait(140)
+        const retry = read()
+
+        button('重置').click()
+        await wait(120)
+        const reset = read()
+        radio('即时保存').click()
+        await wait(120)
+        set(input(1, 'name'), '键盘 Max')
+        await wait(140)
+        const instant = read()
+
+        return { initial, edited, firstSave, retry, reset, instant }
+      })()`),
+    assert: (result) => {
+      const failures = []
+      if (result.initial.dirty !== 0 || result.initial.save !== 0 || result.initial.failed !== 0) {
+        failures.push(
+          `初始状态不对（脏 ${result.initial.dirty} / 保存 ${result.initial.save} / 失败 ${result.initial.failed}）`,
+        )
+      }
+      if (result.edited.dirty !== 3 || result.edited.save !== 0) {
+        failures.push(
+          `批量模式改三格应先攒 3 行待保存（脏 ${result.edited.dirty} / 保存 ${result.edited.save}）`,
+        )
+      }
+      if (result.firstSave.save !== 3 || result.firstSave.failed !== 1 || result.firstSave.dirty !== 1) {
+        failures.push(
+          `首次保存应保存 3 行、失败 1 行、保留 1 行（${result.firstSave.save} / ${result.firstSave.failed} / ${result.firstSave.dirty}）`,
+        )
+      }
+      if (!result.firstSave.status.includes('失败')) {
+        failures.push(`首次保存没有提示失败（${result.firstSave.status}）`)
+      }
+      if (result.retry.save !== 4 || result.retry.failed !== 1 || result.retry.dirty !== 1) {
+        failures.push(
+          `重试应再保存 1 行、失败仍 1 行（${result.retry.save} / ${result.retry.failed} / ${result.retry.dirty}）`,
+        )
+      }
+      if (result.reset.dirty !== 0 || result.reset.save !== 0 || result.reset.failed !== 0) {
+        failures.push(
+          `重置没有还原（脏 ${result.reset.dirty} / 保存 ${result.reset.save} / 失败 ${result.reset.failed}）`,
+        )
+      }
+      if (result.instant.save < 1 || result.instant.dirty !== 0) {
+        failures.push(
+          `即时保存改一格就应保存且不留脏行（保存 ${result.instant.save} / 脏 ${result.instant.dirty}）`,
+        )
+      }
+      return failures
+    },
+  },
+  {
     name: '查询栏条件回显与防重复提交',
     route: '/cases/admin/query-bar',
     facts: async ({ evaluate }) =>

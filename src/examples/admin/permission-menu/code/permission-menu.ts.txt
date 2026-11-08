@@ -1,0 +1,96 @@
+// ============================================================
+// 权限菜单：同一份菜单树按权限点过滤
+// ============================================================
+
+type Role = 'admin' | 'editor' | 'viewer'
+
+interface MenuNode {
+  key: string
+  label: string
+  permission: string
+  children?: MenuNode[]
+}
+
+const MENU_TREE: MenuNode[] = [
+  {
+    key: 'dashboard',
+    label: '工作台',
+    permission: 'dashboard.view',
+    children: [
+      { key: 'dashboard-home', label: '概览', permission: 'dashboard.home' },
+      { key: 'dashboard-todo', label: '待办', permission: 'dashboard.todo' },
+    ],
+  },
+  {
+    key: 'content',
+    label: '内容管理',
+    permission: 'content.view',
+    children: [
+      { key: 'content-article', label: '文章管理', permission: 'content.article' },
+      { key: 'content-comment', label: '评论审核', permission: 'content.comment' },
+    ],
+  },
+  {
+    key: 'system',
+    label: '系统管理',
+    permission: 'system.view',
+    children: [
+      { key: 'system-user', label: '用户管理', permission: 'system.user' },
+      { key: 'system-role', label: '角色权限', permission: 'system.role' },
+      { key: 'system-audit', label: '审计日志', permission: 'system.audit' },
+    ],
+  },
+]
+
+/** 角色到权限点的映射：真实项目由登录接口返回，不写死在前端 */
+const ROLE_PERMISSIONS: Record<Role, string[]> = {
+  admin: [
+    'dashboard.home',
+    'dashboard.todo',
+    'content.article',
+    'content.comment',
+    'system.user',
+    'system.role',
+    'system.audit',
+  ],
+  editor: ['dashboard.home', 'dashboard.todo', 'content.article', 'content.comment'],
+  viewer: ['dashboard.home'],
+}
+
+const role = ref<Role>('editor')
+
+/** 把树拍平，只保留叶子菜单 */
+function flattenLeaves(nodes: MenuNode[]): MenuNode[] {
+  return nodes.flatMap((node) => (node.children ? flattenLeaves(node.children) : [node]))
+}
+
+const allLeaves = flattenLeaves(MENU_TREE)
+const totalLeafCount = allLeaves.length
+
+//! 叶子按权限点过滤，分组按子项剪枝
+function filterMenu(nodes: MenuNode[], permissions: Set<string>): MenuNode[] {
+  return nodes.flatMap((node) => {
+    if (node.children) {
+      const children = filterMenu(node.children, permissions)
+      //! 没有可见子项的分组一起丢掉，避免留下空分组
+      return children.length ? [{ ...node, children }] : []
+    }
+    return permissions.has(node.permission) ? [node] : []
+  })
+}
+
+//! 角色一变就重新过滤整棵树，菜单不缓存旧结果
+const visibleTree = computed(() => {
+  const permissions = new Set(ROLE_PERMISSIONS[role.value])
+  return filterMenu(MENU_TREE, permissions)
+})
+
+const visibleCount = computed(() => flattenLeaves(visibleTree.value).length)
+const hiddenCount = computed(() => totalLeafCount - visibleCount.value)
+const groupCount = computed(() => visibleTree.value.filter((node) => node.children?.length).length)
+
+function onRoleChange(value: string | number | boolean | undefined): void {
+  if (value === 'admin' || value === 'editor' || value === 'viewer') {
+    role.value = value
+  }
+}

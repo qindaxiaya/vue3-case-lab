@@ -1,0 +1,109 @@
+// ============================================================
+// 审计日志：成功失败都追加，敏感字段脱敏
+// ============================================================
+
+type AuditResult = 'success' | 'failed'
+type Filter = 'all' | AuditResult
+
+interface AuditEntry {
+  id: number
+  actor: string
+  action: string
+  target: string
+  result: AuditResult
+  reason?: string
+  before: Record<string, string>
+  after: Record<string, string>
+  phone: string
+  time: string
+}
+
+const MASKED_PHONE = '138****8000'
+
+const simpleLog = ref<string[]>([])
+const auditLog = ref<AuditEntry[]>([])
+const filter = ref<Filter>('all')
+const expandedId = ref<number | null>(null)
+
+let nextId = 1
+
+//! 筛选只影响展示，原始日志不动
+const visibleAudit = computed(() => {
+  if (filter.value === 'all') return auditLog.value
+  return auditLog.value.filter((entry) => entry.result === filter.value)
+})
+
+const failedCount = computed(
+  () => auditLog.value.filter((entry) => entry.result === 'failed').length,
+)
+const maskedCount = computed(
+  () => auditLog.value.filter((entry) => entry.phone === MASKED_PHONE).length,
+)
+
+function nowText(): string {
+  return new Date().toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+//! 审计日志只追加，不覆盖旧记录
+function append(entry: Omit<AuditEntry, 'id' | 'time'>): void {
+  auditLog.value = [
+    {
+      ...entry,
+      id: nextId++,
+      time: nowText(),
+      phone: MASKED_PHONE,
+    },
+    ...auditLog.value,
+  ]
+}
+
+function createOrder(): void {
+  append({
+    actor: '张三（运营）',
+    action: '新增订单',
+    target: '订单 #A1024',
+    result: 'success',
+    before: {},
+    after: { 金额: '¥299', 状态: '待付款' },
+    phone: MASKED_PHONE,
+  })
+  simpleLog.value = ['新增订单 · 订单 #A1024 · 成功', ...simpleLog.value]
+}
+
+function updateAmount(): void {
+  append({
+    actor: '张三（运营）',
+    action: '修改金额',
+    target: '订单 #A1024',
+    result: 'success',
+    before: { 金额: '¥299' },
+    after: { 金额: '¥199' },
+    phone: MASKED_PHONE,
+  })
+  simpleLog.value = ['修改金额 · 订单 #A1024 · 成功', ...simpleLog.value]
+}
+
+//! 失败操作也要写审计日志，否则出事时只看到成功记录
+function removeOrder(): void {
+  append({
+    actor: '张三（运营）',
+    action: '删除订单',
+    target: '订单 #A1024',
+    result: 'failed',
+    reason: '订单已发货，不能删除',
+    before: { 状态: '已发货' },
+    after: { 状态: '已发货（未删除）' },
+    phone: MASKED_PHONE,
+  })
+}
+
+function onFilterChange(value: string | number | boolean | undefined): void {
+  if (value === 'all' || value === 'success' || value === 'failed') {
+    filter.value = value
+    expandedId.value = null
+  }
+}
+
+function toggleDetail(id: number): void {
+  expandedId.value = expandedId.value === id ? null : id
+}

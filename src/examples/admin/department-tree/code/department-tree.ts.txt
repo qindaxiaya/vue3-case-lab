@@ -1,0 +1,130 @@
+// ============================================================
+// 树形部门选择：只选末级，搜索保留路径
+// ============================================================
+
+interface DeptNode {
+  key: string
+  label: string
+  children?: DeptNode[]
+  [key: string]: unknown
+}
+
+const DEPARTMENTS: DeptNode[] = [
+  {
+    key: 'hq',
+    label: '总部',
+    children: [
+      {
+        key: 'tech',
+        label: '技术部',
+        children: [
+          { key: 'hz-dev', label: '杭州研发组' },
+          { key: 'sh-dev', label: '上海研发组' },
+        ],
+      },
+      {
+        key: 'product',
+        label: '产品部',
+        children: [
+          { key: 'design', label: '设计组' },
+          { key: 'operation', label: '运营组' },
+        ],
+      },
+      {
+        key: 'finance',
+        label: '财务部',
+        children: [{ key: 'accounting', label: '会计组' }],
+      },
+    ],
+  },
+]
+
+const keyword = ref('')
+const selectedKeys = ref<string[]>([])
+const expandedKeys = ref<string[]>([])
+const rejectCount = ref(0)
+
+function flattenLeaves(nodes: DeptNode[]): DeptNode[] {
+  return nodes.flatMap((node) => (node.children ? flattenLeaves(node.children) : [node]))
+}
+
+function allParentKeys(nodes: DeptNode[]): string[] {
+  return nodes.flatMap((node) =>
+    node.children ? [node.key, ...allParentKeys(node.children)] : [],
+  )
+}
+
+function findNode(nodes: DeptNode[], key: string): DeptNode | null {
+  for (const node of nodes) {
+    if (node.key === key) return node
+    if (node.children) {
+      const found = findNode(node.children, key)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+//! 从根到目标节点回溯完整路径
+function findPath(nodes: DeptNode[], key: string, path: string[] = []): string[] | null {
+  for (const node of nodes) {
+    const nextPath = [...path, node.label]
+    if (node.key === key) return nextPath
+    if (node.children) {
+      const found = findPath(node.children, key, nextPath)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/** 给父节点加「含子部门」提示，避免用户以为它和叶子一样可选 */
+function decorate(nodes: DeptNode[]): DeptNode[] {
+  return nodes.map((node) =>
+    node.children
+      ? { ...node, label: `${node.label}（含子部门）`, children: decorate(node.children) }
+      : node,
+  )
+}
+
+//! 搜索时保留命中节点及其祖先；父节点命中则保留整棵子树
+function filterTree(nodes: DeptNode[], text: string): DeptNode[] {
+  if (!text) return nodes
+  return nodes.flatMap((node) => {
+    const children = node.children ? filterTree(node.children, text) : []
+    if (node.label.includes(text)) {
+      return [{ ...node, children: node.children ? node.children : undefined }]
+    }
+    return children.length ? [{ ...node, children }] : []
+  })
+}
+
+const decoratedTree = decorate(DEPARTMENTS)
+const visibleTree = computed(() => filterTree(decoratedTree, keyword.value.trim()))
+
+const selectedPath = computed(() => {
+  if (!selectedKeys.value.length) return '未选择'
+  const path = findPath(DEPARTMENTS, selectedKeys.value[0])
+  return path ? path.join(' / ') : '未选择'
+})
+
+//! 父部门只负责展开，不能作为选中值
+function onSelectedKeys(keys: Array<string | number>): void {
+  const key = keys.length ? String(keys[keys.length - 1]) : ''
+  if (!key) return
+  const node = findNode(DEPARTMENTS, key)
+  if (node?.children?.length) {
+    rejectCount.value++
+    return
+  }
+  selectedKeys.value = [key]
+}
+
+function onExpandedKeys(keys: Array<string | number>): void {
+  expandedKeys.value = keys.map(String)
+}
+
+watch(keyword, () => {
+  //! 搜索后自动展开命中路径，否则结果藏在折叠节点里
+  expandedKeys.value = allParentKeys(visibleTree.value)
+})

@@ -1,7 +1,7 @@
 # 案例清单
 
 > 本文件由 `npm run gen:cases` 根据 `src/examples/registry.ts` 自动生成，请勿手动修改。
-> 共 98 个案例 / 10 个分类。
+> 共 103 个案例 / 10 个分类。
 
 ## CSS 技巧（css）
 
@@ -140,13 +140,18 @@
 
 | 案例 | 标题 | 难度 | 标签 | 摘要 |
 | --- | --- | --- | --- | --- |
+| [audit-log](/cases/admin/audit-log) | AuditLog：审计日志要能还原现场 | 进阶 | `后台` `审计` `日志` `脱敏` | 失败也记录，敏感字段脱敏，按结果筛选并展开变更详情 |
 | [batch-actions](/cases/admin/batch-actions) | BatchActions：表格批量操作别漏掉半选 | 入门 | `后台` `表格` `批量操作` `选择` | 全选、半选、批量执行后清空选择 |
 | [batch-import](/cases/admin/batch-import) | BatchImport：批量导入先把错误说清楚 | 进阶 | `后台` `导入` `校验` `表格` | 逐行校验、错误预览、只导入合法行 |
 | [column-settings](/cases/admin/column-settings) | ColumnSettings：表格列别写死在代码里 | 入门 | `后台` `表格` `列设置` `持久化` | 列显隐、顺序、恢复默认，配置只存列 key |
 | [confirm-action](/cases/admin/confirm-action) | ConfirmAction：确认框要能等异步结果 | 进阶 | `后台` `确认框` `Promise` `异步` | 确认、loading、失败不关闭，一个 Promise 搞定 |
+| [department-tree](/cases/admin/department-tree) | DepartmentTree：部门选择别只给平铺列表 | 进阶 | `后台` `部门` `树形选择` `搜索` | 末级部门才可选，搜索自动展开，回显完整路径 |
+| [editable-batch-save](/cases/admin/editable-batch-save) | EditableBatchSave：可编辑表格别改一格存一次 | 进阶 | `后台` `表格` `批量保存` `脏数据` | 攒脏行统一保存，失败行保留可重试 |
 | [form-drawer](/cases/admin/form-drawer) | FormDrawer：新增编辑共用一个抽屉 | 进阶 | `后台` `抽屉` `表单` `校验` | 新增编辑共用抽屉，校验、loading、脏数据保护 |
+| [import-progress](/cases/admin/import-progress) | ImportProgress：长任务进度要能暂停和取消 | 进阶 | `后台` `导入` `进度` `定时器` | 分批处理、真实进度、暂停继续、取消汇总 |
 | [notification-center](/cases/admin/notification-center) | NotificationCenter：通知中心别只做红点 | 入门 | `后台` `通知` `未读` `列表` | 全部/未读切换、单条已读、全部已读、重置 |
 | [pagination](/cases/admin/pagination) | Pagination：分页别把边界留给用户 | 入门 | `后台` `分页` `表格` `边界` | 页码、每页条数、删到空页自动回退 |
+| [permission-menu](/cases/admin/permission-menu) | PermissionMenu：菜单别和权限各写一份 | 进阶 | `后台` `权限` `菜单` `树` | 权限点驱动菜单树，父级自动收起，越权入口不渲染 |
 | [query-bar](/cases/admin/query-bar) | QueryBar：后台查询栏别堆成一排 | 入门 | `后台` `查询栏` `筛选` `表单` | 收起多余条件，重置干净，查询中不重复提交 |
 | [remote-select](/cases/admin/remote-select) | RemoteSelect：远程搜索别被旧结果覆盖 | 进阶 | `后台` `远程搜索` `防抖` `竞态` | 输入防抖、加载态、空结果、旧响应丢弃 |
 | [step-form](/cases/admin/step-form) | StepForm：分步表单别一次问完 | 入门 | `后台` `表单` `分步` `校验` | 按步骤校验，下一步通过才前进，提交前再兜底 |
