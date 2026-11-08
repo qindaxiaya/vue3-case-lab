@@ -1,0 +1,107 @@
+type InvoiceType = 'personal' | 'company'
+type DeliveryType = 'express' | 'pickup'
+
+interface FormState {
+  buyer: string
+  invoiceType: InvoiceType
+  companyName: string
+  taxNo: string
+  deliveryType: DeliveryType
+  address: string
+  pickupPoint: string
+}
+
+/** 地址和自提点都给默认值，切换配送方式时才能看出「清空」与「恢复」 */
+function createForm(): FormState {
+  return {
+    buyer: '',
+    invoiceType: 'personal',
+    companyName: '',
+    taxNo: '',
+    deliveryType: 'express',
+    address: '杭州市西湖区文三路 100 号',
+    pickupPoint: '菜鸟驿站（文三路店）',
+  }
+}
+
+const form = reactive<FormState>(createForm())
+const clearedCount = ref(0)
+const errorCount = ref(0)
+const statusText = ref('待填写')
+
+//! 显隐是派生状态，模板只读 isCompany / isExpress，不手写 v-if 条件
+const isCompany = computed(() => form.invoiceType === 'company')
+const isExpress = computed(() => form.deliveryType === 'express')
+const visibleCompanyCount = computed(() => (isCompany.value ? 2 : 0))
+
+function resetFeedback(): void {
+  errorCount.value = 0
+  statusText.value = '待填写'
+}
+
+//! 切换类型时清空被隐藏的字段，只清真正有值的，清空计数才准确
+function clearCompanyFields(): void {
+  if (form.companyName.trim()) {
+    form.companyName = ''
+    clearedCount.value += 1
+  }
+  if (form.taxNo.trim()) {
+    form.taxNo = ''
+    clearedCount.value += 1
+  }
+}
+
+function setInvoiceType(value: string | number | boolean | undefined): void {
+  if (value !== 'personal' && value !== 'company') return
+  if (form.invoiceType === value) return
+  form.invoiceType = value
+  if (value === 'personal') clearCompanyFields()
+  resetFeedback()
+}
+
+function setDeliveryType(value: string | number | boolean | undefined): void {
+  if (value !== 'express' && value !== 'pickup') return
+  if (form.deliveryType === value) return
+  form.deliveryType = value
+  if (value === 'pickup') {
+    if (form.address.trim()) {
+      form.address = ''
+      clearedCount.value += 1
+    }
+  } else if (form.pickupPoint.trim()) {
+    form.pickupPoint = ''
+    clearedCount.value += 1
+  }
+  resetFeedback()
+}
+
+//! 只校验当前可见的字段：隐藏字段即使为空也不该拦住提交
+function validate(): string[] {
+  const errors: string[] = []
+  if (!form.buyer.trim()) errors.push('购买人为必填项')
+
+  if (isCompany.value) {
+    if (!form.companyName.trim()) errors.push('企业名称为必填项')
+    if (!form.taxNo.trim()) errors.push('税号为必填项')
+  }
+
+  if (isExpress.value) {
+    if (!form.address.trim()) errors.push('收货地址为必填项')
+  } else if (!form.pickupPoint.trim()) {
+    errors.push('自提点为必填项')
+  }
+
+  return errors
+}
+
+function submit(): void {
+  const errors = validate()
+  errorCount.value = errors.length
+  statusText.value = errors.length ? errors[0] : '提交成功'
+}
+
+function reset(): void {
+  Object.assign(form, createForm())
+  clearedCount.value = 0
+  resetFeedback()
+}
