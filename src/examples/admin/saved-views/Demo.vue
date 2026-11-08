@@ -1,8 +1,9 @@
-<script setup lang="ts">
 // ============================================================
 // 案例：saved-views 保存视图
 // 把查询条件、排序、列显隐存成视图，一键切回
 // ============================================================
+
+<script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 
 // ============================================================
@@ -219,6 +220,7 @@ function restoreDefault(): void {
         clearable
         placeholder="搜索订单或负责人"
       />
+      <span class="sv-amount-label">金额 ≥</span>
       <n-input-number
         :value="query.minAmount"
         data-field="minAmount"
@@ -428,6 +430,12 @@ function restoreDefault(): void {
 .sv-keyword {
   width: 15rem;
   max-width: 100%;
+}
+
+.sv-amount-label {
+  color: var(--text-2);
+  font-size: var(--demo-text-sm);
+  line-height: 36px;
 }
 
 .sv-amount {
