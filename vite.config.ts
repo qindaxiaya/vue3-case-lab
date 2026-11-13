@@ -86,7 +86,7 @@ const MEDIA_EXTS = new Set([
 /**
  * 非 JS 资源输出路径（CSS / 图片 / 字体 / worker）
  * - 入口样式：assets/css/index-<hash>.css
- * - 第三方样式：assets/css/vendor/element-plus...css
+ * - 第三方样式（目前没有独立 CSS 依赖）：assets/css/vendor/...css
  * - 路由页样式：assets/css/pages/CasePage-<hash>.css
  * - 案例样式：assets/css/cases/<分类>/<案例>/Demo-<hash>.css
  * - 高亮主题：assets/css/themes/github-dark-<hash>.css
@@ -145,7 +145,7 @@ function assetFileName(asset: {
  * 为什么不用 output.manualChunks：
  * Vite 8 底层是 Rolldown，manualChunks 会被转换成单个 codeSplitting 组，
  * 而该组默认「递归收编依赖」（includeDependenciesRecursively: true），
- * 会把 Vue 运行时卷进 element-plus 的 chunk，导致首屏被迫预加载 200 KB。
+ * 会把 Vue 运行时卷进第三方库的 chunk，导致首屏被迫预加载 200 KB。
  * 改用 codeSplitting.groups + priority：Vue 优先级最高，先被认领，
  * 其它组就不能再把它卷走。
  */
@@ -163,7 +163,7 @@ export default defineConfig({
   build: {
     // 关闭 sourcemap：线上不需要，还能少一份可被还原的源码
     sourcemap: false,
-    // CSS 按 chunk 拆分：只有打开用到 Element Plus 的案例才下载对应样式
+    // CSS 按 chunk 拆分：案例 scoped 样式只随该案例的 Demo chunk 下发
     cssCodeSplit: true,
     // 单 chunk 超过 600 KB 才告警：拆包后正常规模在 200 KB 以内，
     // 保留告警是为了防止以后又把大依赖塞回主包
