@@ -4,7 +4,7 @@
 //
 // 为什么要有这个脚本：
 // 案例清单只存在于运行时（registry.ts 用 import.meta.glob 扫描目录），
-// 仓库里没有一份可离线引用、可 diff 的索引。84 条记录手写必然过期，
+// 仓库里没有一份可离线引用、可 diff 的索引。一百多条记录手写必然过期，
 // 所以清单必须从「唯一真相」生成，不能手维护。
 //
 // 为什么用 Vite SSR 读 registry，而不是正则解析 meta.ts：
@@ -125,7 +125,12 @@ const { allCases, categories } = await loadRegistry()
 const nextContent = render(allCases, categories)
 
 if (CHECK_ONLY) {
-  const current = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : ''
+  // Windows 默认 core.autocrlf=true，checkout 会把仓库里的 LF 换成 CRLF；
+  // 直接拿它和按 \n join 的内容比较会误报「第 1 行不一致」。
+  // 比对前统一成 LF，保证各平台结论一致（生成时写出的仍是 LF）。
+  const current = existsSync(OUTPUT_FILE)
+    ? readFileSync(OUTPUT_FILE, 'utf8').replace(/\r\n/g, '\n')
+    : ''
 
   if (current === nextContent) {
     console.log('[gen:cases] CASES.md 与注册表一致')
